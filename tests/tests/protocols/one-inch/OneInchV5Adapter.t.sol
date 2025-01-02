@@ -172,7 +172,7 @@ abstract contract TestBase is IntegrationTest {
 
     // TESTS HELPERS
 
-    function __test_takeMultipleOrders_notAllowedFailure_success(TakeOrder[] memory _takeOrders) internal {
+    function __test_takeMultipleOrders_successNotAllowedFailure(TakeOrder[] memory _takeOrders) internal {
         TakeOrderUniqueTokenAmounts memory takeOrdersUniqueTokenAmounts = __getTakeOrdersUniqueTokenAmounts(_takeOrders);
 
         // increase token balances so vault has enough funds to take orders
@@ -228,7 +228,7 @@ abstract contract TestBase is IntegrationTest {
         }
     }
 
-    function __test_takeMultipleOrders_allowedFailure_success(
+    function __test_takeMultipleOrders_successAllowedFailure(
         TakeOrder[] memory _takeOrdersSucceed,
         TakeOrder[] memory _takeOrdersFailed,
         bytes[] memory _takeOrdersFailedReasons
@@ -403,7 +403,7 @@ abstract contract TestBase is IntegrationTest {
 
     // TESTS
 
-    function test_takeOrder_invalidDstReceiver_failure() public {
+    function test_takeOrder_failsInvalidDstReceiver() public {
         vm.expectRevert("parseAssetsForAction: invalid dstReceiver");
 
         __takeOrder({
@@ -421,7 +421,7 @@ abstract contract TestBase is IntegrationTest {
         });
     }
 
-    function test_takeMultipleOrders_invalidDstReceiver_failure() public {
+    function test_takeMultipleOrders_failsInvalidDstReceiver() public {
         vm.expectRevert("parseAssetsForAction: invalid dstReceiver");
 
         bytes[] memory ordersData = new bytes[](1);
@@ -453,7 +453,7 @@ abstract contract TestBaseEthereum is TestBase {
         });
     }
 
-    function test_takeMultipleOrders_notAllowedFailure_success() public {
+    function test_takeMultipleOrders_successNotAllowedFailure() public {
         TakeOrder[] memory takeOrders = new TakeOrder[](3);
 
         takeOrders[0] = TakeOrder({
@@ -496,10 +496,10 @@ abstract contract TestBaseEthereum is TestBase {
             data: hex"00000000000000000000000000000000000000000000000000008100001a0020d6bdbf78c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200206ae4071138002dc6c04028daac072e492d34a3afdbef0ba7e35d8b55c41111111254eeb25477b68fb85ed929f73a9605820000000000000000000000000000000000000000000000000000000000000001c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
         });
 
-        __test_takeMultipleOrders_notAllowedFailure_success(takeOrders);
+        __test_takeMultipleOrders_successNotAllowedFailure(takeOrders);
     }
 
-    function test_takeMultipleOrders_allowedFailure_success() public {
+    function test_takeMultipleOrders_successAllowedFailure() public {
         TakeOrder[] memory takeOrdersSucceed = new TakeOrder[](2);
 
         takeOrdersSucceed[0] = TakeOrder({
@@ -562,7 +562,7 @@ abstract contract TestBaseEthereum is TestBase {
         takeOrdersFailedReasons[1] =
             hex"064a4ec600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"; // 0x064a4ec6 is unknown selector, and couldn't be decoded with cast 4byte-decode
 
-        __test_takeMultipleOrders_allowedFailure_success({
+        __test_takeMultipleOrders_successAllowedFailure({
             _takeOrdersSucceed: takeOrdersSucceed,
             _takeOrdersFailed: takeOrdersFailed,
             _takeOrdersFailedReasons: takeOrdersFailedReasons
@@ -598,7 +598,7 @@ abstract contract TestBasePolygon is TestBase {
         });
     }
 
-    function test_takeMultipleOrders_notAllowedFailure_success() public {
+    function test_takeMultipleOrders_successNotAllowedFailure() public {
         TakeOrder[] memory takeOrders = new TakeOrder[](3);
 
         takeOrders[0] = TakeOrder({
@@ -641,10 +641,10 @@ abstract contract TestBasePolygon is TestBase {
             data: hex"0000000000000000000000000000000000000000000000000000f000001a0020d6bdbf78a9f37d84c856fda3812ad0519dad44fa0a3fe20700a007e5c0d20000000000000000000000000000000000000000000000000000b200004f02a00000000000000000000000000000000000000000000000000000000000000001ee63c1e500acef97e28d22b2ad214d53739c552860cbb5b0c6a9f37d84c856fda3812ad0519dad44fa0a3fe20702a00000000000000000000000000000000000000000000000000000000000000001ee63c1e58179e4240e33c121402dfc9009de266356c91f241d3c499c542cef5e3811e1192ce70d8cc03d5c33591111111254eeb25477b68fb85ed929f73a960582"
         });
 
-        __test_takeMultipleOrders_notAllowedFailure_success(takeOrders);
+        __test_takeMultipleOrders_successNotAllowedFailure(takeOrders);
     }
 
-    function test_takeMultipleOrders_allowedFailure_success() public {
+    function test_takeMultipleOrders_successAllowedFailure() public {
         TakeOrder[] memory takeOrdersSucceed = new TakeOrder[](2);
 
         takeOrdersSucceed[0] = TakeOrder({
@@ -706,7 +706,7 @@ abstract contract TestBasePolygon is TestBase {
         takeOrdersFailedReasons[0] = formatError("AS");
         takeOrdersFailedReasons[1] = abi.encodePacked(ReturnAmountIsNotEnough.selector);
 
-        __test_takeMultipleOrders_allowedFailure_success({
+        __test_takeMultipleOrders_successAllowedFailure({
             _takeOrdersSucceed: takeOrdersSucceed,
             _takeOrdersFailed: takeOrdersFailed,
             _takeOrdersFailedReasons: takeOrdersFailedReasons
@@ -743,7 +743,7 @@ abstract contract TestBaseArbitrum is TestBase {
         });
     }
 
-    function test_takeMultipleOrders_notAllowedFailure_success() public {
+    function test_takeMultipleOrders_successNotAllowedFailure() public {
         TakeOrder[] memory takeOrders = new TakeOrder[](3);
 
         takeOrders[0] = TakeOrder({
@@ -786,10 +786,10 @@ abstract contract TestBaseArbitrum is TestBase {
             data: hex"0000000000000000000000000000000000000000000000000000f000001a0020d6bdbf78a9f37d84c856fda3812ad0519dad44fa0a3fe20700a007e5c0d20000000000000000000000000000000000000000000000000000b200004f02a00000000000000000000000000000000000000000000000000000000000000001ee63c1e500acef97e28d22b2ad214d53739c552860cbb5b0c6a9f37d84c856fda3812ad0519dad44fa0a3fe20702a00000000000000000000000000000000000000000000000000000000000000001ee63c1e58179e4240e33c121402dfc9009de266356c91f241d3c499c542cef5e3811e1192ce70d8cc03d5c33591111111254eeb25477b68fb85ed929f73a960582"
         });
 
-        __test_takeMultipleOrders_notAllowedFailure_success(takeOrders);
+        __test_takeMultipleOrders_successNotAllowedFailure(takeOrders);
     }
 
-    function test_takeMultipleOrders_allowedFailure_success() public {
+    function test_takeMultipleOrders_successAllowedFailure() public {
         TakeOrder[] memory takeOrdersSucceed = new TakeOrder[](2);
 
         takeOrdersSucceed[0] = TakeOrder({
@@ -851,7 +851,7 @@ abstract contract TestBaseArbitrum is TestBase {
         takeOrdersFailedReasons[0] = formatError("AS");
         takeOrdersFailedReasons[1] = abi.encodePacked(ReturnAmountIsNotEnough.selector);
 
-        __test_takeMultipleOrders_allowedFailure_success({
+        __test_takeMultipleOrders_successAllowedFailure({
             _takeOrdersSucceed: takeOrdersSucceed,
             _takeOrdersFailed: takeOrdersFailed,
             _takeOrdersFailedReasons: takeOrdersFailedReasons
@@ -887,7 +887,7 @@ abstract contract TestBaseBaseChain is TestBase {
         });
     }
 
-    function test_takeMultipleOrders_notAllowedFailure_success() public {
+    function test_takeMultipleOrders_successNotAllowedFailure() public {
         TakeOrder[] memory takeOrders = new TakeOrder[](2);
 
         takeOrders[0] = TakeOrder({
@@ -917,10 +917,10 @@ abstract contract TestBaseBaseChain is TestBase {
             data: hex"0000000000000000000000000000000000000002350002070001bd00001a0020d6bdbf78420000000000000000000000000000000000000600a007e5c0d200000000000000000000000000000000000000000000000000017f00004f02a00000000000000000000000000000000000000000000000000000000000000001ee63c1e501b2cc224c1c9fee385f8ad6a55b4d94e92359dc594200000000000000000000000000000000000006512001538aa697ce8cc8252c70c41452dae86ce22a3e833589fcd6edb6e08f4c7c32d4f71b54bda0291300a4a5dcbcdf000000000000000000000000833589fcd6edb6e08f4c7c32d4f71b54bda0291300000000000000000000000050c5725949a6f0c72e6c4a641f24049a917db0cb0000000000000000000000001b55d94b553475e7561fab889bf88fe4f491d29c000000000000000000000000e37e799d5077682fa0a244d46e5649f71457bd09ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a0f2fa6b6650c5725949a6f0c72e6c4a641f24049a917db0cb00000000000000000000000000000000000000000000018694eeb9eff8177b38000000000000000045683028d2c53e8680a06c4eca2750c5725949a6f0c72e6c4a641f24049a917db0cb1111111254eeb25477b68fb85ed929f73a960582"
         });
 
-        __test_takeMultipleOrders_notAllowedFailure_success(takeOrders);
+        __test_takeMultipleOrders_successNotAllowedFailure(takeOrders);
     }
 
-    function test_takeMultipleOrders_allowedFailure_success() public {
+    function test_takeMultipleOrders_successAllowedFailure() public {
         TakeOrder[] memory takeOrdersSucceed = new TakeOrder[](2);
 
         takeOrdersSucceed[0] = TakeOrder({
@@ -968,7 +968,7 @@ abstract contract TestBaseBaseChain is TestBase {
         bytes[] memory takeOrdersFailedReasons = new bytes[](1);
         takeOrdersFailedReasons[0] = abi.encodePacked(ReturnAmountIsNotEnough.selector);
 
-        __test_takeMultipleOrders_allowedFailure_success({
+        __test_takeMultipleOrders_successAllowedFailure({
             _takeOrdersSucceed: takeOrdersSucceed,
             _takeOrdersFailed: takeOrdersFailed,
             _takeOrdersFailedReasons: takeOrdersFailedReasons

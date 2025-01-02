@@ -394,11 +394,11 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
         }
     }
 
-    function test_redeem_partial_success() public {
+    function test_redeem_successPartial() public {
         __test_redeem_success({_redeemAll: false});
     }
 
-    function test_redeem_full_success() public {
+    function test_redeem_successFull() public {
         __test_redeem_success({_redeemAll: true});
     }
 
@@ -480,11 +480,11 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
         );
     }
 
-    function test_removeCollateral_full_success() public {
+    function test_removeCollateral_successFull() public {
         __test_removeCollateral({_removeAll: true});
     }
 
-    function test_removeCollateral_partial_success() public {
+    function test_removeCollateral_successPartial() public {
         __test_removeCollateral({_removeAll: false});
     }
 
@@ -602,11 +602,11 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
         }
     }
 
-    function test_repay_full_success() public {
+    function test_repay_successFull() public {
         __test_repay({_repayAll: true});
     }
 
-    function test_repay_partial_success() public {
+    function test_repay_successPartial() public {
         __test_repay({_repayAll: false});
     }
 }

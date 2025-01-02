@@ -110,7 +110,7 @@ abstract contract UniswapV2PoolPriceFeedTestBase is IntegrationTest, UniswapV2Ut
         assertTrue(uniswapV2PoolPriceFeed.isSupportedAsset({_asset: address(uniswapV2Pool)}), "Unsupported poolToken");
     }
 
-    function test_isSupportedAsset_failWithoutExpectedInterface() public {
+    function test_isSupportedAsset_failsWithoutExpectedInterface() public {
         assertFalse(uniswapV2PoolPriceFeed.isSupportedAsset({_asset: address(token0)}), "Incorrectly supported token");
     }
 }

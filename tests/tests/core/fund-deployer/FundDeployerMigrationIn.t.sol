@@ -38,7 +38,7 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
     event MigrationRequestCreated(address indexed creator, address indexed vaultProxy, address comptrollerProxy);
 
     // TODO: use newFundDeployer instead of core.release.fundDeployer
-    // function test_failWithNonLiveRelease() public {
+    // function test_failsWithNonLiveRelease() public {
     //     vm.expectRevert("Release is not yet live");
     //     vm.prank(vaultOwner);
 
@@ -52,7 +52,7 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
     //     });
     // }
 
-    function test_failWithNonMigrator() public {
+    function test_failsWithNonMigrator() public {
         address randomSigner = makeAddr("RandomSigner");
 
         vm.expectRevert("Only a permissioned migrator can call this function");
@@ -170,7 +170,7 @@ contract FundDeployerCancelMigrationTest is FundDeployerMigrationInTest {
         });
     }
 
-    function test_failWithNonMigrator() public {
+    function test_failsWithNonMigrator() public {
         address randomSigner = makeAddr("RandomSigner");
 
         vm.expectRevert("Only a permissioned migrator can call this function");
@@ -254,7 +254,7 @@ contract FundDeployerExecuteMigrationTest is FundDeployerMigrationInTest {
         vm.warp(executionTimestamp + 1);
     }
 
-    function test_failWithNonMigrator() public {
+    function test_failsWithNonMigrator() public {
         address randomSigner = makeAddr("RandomSigner");
 
         vm.expectRevert("Only a permissioned migrator can call this function");

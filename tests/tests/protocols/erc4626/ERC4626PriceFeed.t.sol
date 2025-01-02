@@ -91,7 +91,7 @@ abstract contract ERC4626PriceFeedTestEthereumBase is ERC4626PriceFeedTestBase {
         __initialize({_version: _version, _chainId: ETHEREUM_CHAIN_ID});
     }
 
-    function test_calcUnderlyingValuesMorphoAaveV2_success() public {
+    function test_calcUnderlyingValues_successMorphoAaveV2() public {
         __test_calcUnderlyingValues_success({
             _erc4626VaultAddress: ETHEREUM_MORPHO_MAWETH_VAULT_ADDRESS,
             _allowedDeviationPer365DaysInBps: 3 * BPS_ONE_PERCENT,
@@ -99,7 +99,7 @@ abstract contract ERC4626PriceFeedTestEthereumBase is ERC4626PriceFeedTestBase {
         });
     }
 
-    function test_calcUnderlyingValuesMorphoAaveV3_success() public {
+    function test_calcUnderlyingValues_successMorphoAaveV3() public {
         __test_calcUnderlyingValues_success({
             _erc4626VaultAddress: ETHEREUM_MORPHO_MA3WETH_VAULT_ADDRESS,
             _allowedDeviationPer365DaysInBps: 3 * BPS_ONE_PERCENT,
@@ -107,7 +107,7 @@ abstract contract ERC4626PriceFeedTestEthereumBase is ERC4626PriceFeedTestBase {
         });
     }
 
-    function test_calcUnderlyingValuesMorphoCompound_success() public {
+    function test_calcUnderlyingValues_successMorphoCompound() public {
         __test_calcUnderlyingValues_success({
             _erc4626VaultAddress: ETHEREUM_MORPHO_MCWETH_VAULT_ADDRESS,
             _allowedDeviationPer365DaysInBps: BPS_ONE_PERCENT,
@@ -115,7 +115,7 @@ abstract contract ERC4626PriceFeedTestEthereumBase is ERC4626PriceFeedTestBase {
         });
     }
 
-    function test_calcUnderlyingValuesSpark_success() public {
+    function test_calcUnderlyingValues_successSpark() public {
         __test_calcUnderlyingValues_success({
             _erc4626VaultAddress: ETHEREUM_SPARK_SDAI_VAULT_ADDRESS,
             _allowedDeviationPer365DaysInBps: 7 * BPS_ONE_PERCENT,

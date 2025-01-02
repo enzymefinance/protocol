@@ -262,7 +262,7 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
         __test_delegate({_indexers: toArray(indexers[0])});
     }
 
-    function test_delegate_repeat_success() public {
+    function test_delegate_successRepeatDelegate() public {
         address indexer = indexers[0];
         uint256 totalDelegatedAmount = delegationAmount * 2;
         uint256 totalDelegationFeeAmount = delegationFeeAmount * 2;
@@ -289,7 +289,7 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
         );
     }
 
-    function test_delegate_multiple_indexers_success() public {
+    function test_delegate_successMultipleIndexers() public {
         __test_delegate({_indexers: indexers});
     }
 
@@ -438,19 +438,19 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
         }
     }
 
-    function test_withdraw_full_success() public {
+    function test_withdraw_successFull() public {
         __test_withdraw({_redelegate: false, _withdrawAll: true});
     }
 
-    function test_withdraw_partial_success() public {
+    function test_withdraw_successPartial() public {
         __test_withdraw({_redelegate: false, _withdrawAll: false});
     }
 
-    function test_redelegate_full_success() public {
+    function test_redelegate_successFull() public {
         __test_withdraw({_redelegate: true, _withdrawAll: true});
     }
 
-    function test_redelegate_partial_success() public {
+    function test_redelegate_successPartial() public {
         __test_withdraw({_redelegate: true, _withdrawAll: false});
     }
 }

@@ -57,7 +57,7 @@ abstract contract YearnVaultV2PriceFeedTestBase is IntegrationTest {
 
     // TESTS
 
-    function test_calcUnderlyingValues18Decimals_success() public {
+    function test_calcUnderlyingValues_success18Decimals() public {
         __reinitialize(ETHEREUM_BLOCK_TIME_SENSITIVE);
 
         __prankFundDeployerOwner();
@@ -82,7 +82,7 @@ abstract contract YearnVaultV2PriceFeedTestBase is IntegrationTest {
         });
     }
 
-    function test_calcUnderlyingValuesNon18Decimals_success() public {
+    function test_calcUnderlyingValues_successNon18Decimals() public {
         __reinitialize(ETHEREUM_BLOCK_TIME_SENSITIVE);
 
         __prankFundDeployerOwner();
@@ -107,7 +107,7 @@ abstract contract YearnVaultV2PriceFeedTestBase is IntegrationTest {
         });
     }
 
-    function test_calcUnderlyingValuesInvariant_success() public {
+    function test_calcUnderlyingValues_successInvariant() public {
         __prankFundDeployerOwner();
         priceFeed.addDerivatives({
             _derivatives: toArray(ETHEREUM_YEARN_VAULT_V2_USDT_VAULT),
@@ -141,7 +141,7 @@ abstract contract YearnVaultV2PriceFeedTestBase is IntegrationTest {
         );
     }
 
-    function test_calcUnderlyingValues_failUnsupportedDerivative() public {
+    function test_calcUnderlyingValues_failsUnsupportedDerivative() public {
         vm.expectRevert("calcUnderlyingValues: Unsupported derivative");
         priceFeed.calcUnderlyingValues({_derivative: makeAddr("fake token"), _derivativeAmount: 1});
     }
@@ -162,7 +162,7 @@ abstract contract YearnVaultV2PriceFeedTestBase is IntegrationTest {
         assertTrue(priceFeed.isSupportedAsset({_asset: ETHEREUM_YEARN_VAULT_V2_USDT_VAULT}), "Unsupported token");
     }
 
-    function test_addDerivates_failInvalidYVaultForUnderlying() public {
+    function test_addDerivatives_failsInvalidYVaultForUnderlying() public {
         __prankFundDeployerOwner();
         vm.expectRevert("__validateDerivative: Invalid yVault for underlying");
         priceFeed.addDerivatives({
@@ -171,7 +171,7 @@ abstract contract YearnVaultV2PriceFeedTestBase is IntegrationTest {
         });
     }
 
-    function test_addDerivates_failIncongruentDecimals() public {
+    function test_addDerivatives_failsIncongruentDecimals() public {
         __prankFundDeployerOwner();
         vm.mockCall({
             callee: ETHEREUM_YEARN_VAULT_V2_USDT_VAULT,

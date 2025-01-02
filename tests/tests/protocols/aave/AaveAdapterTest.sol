@@ -107,7 +107,7 @@ abstract contract AaveAdapterLendTest is AaveAdapterTestBase {
         );
     }
 
-    function test_lend_failInvalidAToken() public {
+    function test_lend_failsInvalidAToken() public {
         // create fake aToken and underlying
         address fakeAToken = address(createTestToken("Fake AToken"));
         address fakeUnderlying = address(createTestToken("Fake Underlying"));
@@ -184,7 +184,7 @@ abstract contract AaveAdapterRedeemTest is AaveAdapterTestBase {
         );
     }
 
-    function test_redeem_failInvalidAToken() public {
+    function test_redeem_failsInvalidAToken() public {
         // create fake aToken and underlying
         address fakeAToken = address(createTestToken("Fake AToken"));
         address fakeUnderlying = address(createTestToken("Fake Underlying"));

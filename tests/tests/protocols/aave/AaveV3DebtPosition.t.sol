@@ -326,7 +326,7 @@ abstract contract AddCollateralTest is TestBase {
         }
     }
 
-    function test_addCollateral_failNotSupportedAssetAddCollateral() public {
+    function test_addCollateral_failsNotSupportedAssetAddCollateral() public {
         // error will have no message as unsupported asset has no UNDERLYING_ASSET_ADDRESS method
         vm.expectRevert();
 
@@ -411,7 +411,7 @@ abstract contract RemoveCollateralTest is TestBase {
         }
     }
 
-    function test_removeCollateral_failInvalidCollateralAsset() public {
+    function test_removeCollateral_failsInvalidCollateralAsset() public {
         vm.expectRevert(formatError("__removeCollateralAssets: Invalid collateral asset"));
 
         __removeCollateral({
@@ -551,7 +551,7 @@ abstract contract RepayBorrowTest is TestBase {
         }
     }
 
-    function test_repayBorrow_failRepayTokenNotBorrowed() public {
+    function test_repayBorrow_failsRepayTokenNotBorrowed() public {
         IERC20 invalidAsset = createTestToken();
 
         vm.expectRevert(formatError("__repayBorrowedAssets: Invalid borrowed asset"));

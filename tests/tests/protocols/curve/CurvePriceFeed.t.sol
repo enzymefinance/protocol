@@ -125,7 +125,7 @@ abstract contract CurvePriceFeedTestBase is CurveUtils, IntegrationTest {
         );
     }
 
-    function test_calcUnderlyingValuesUnsupportedDerivative_failure() public {
+    function test_calcUnderlyingValues_failsUnsupportedDerivative() public {
         vm.expectRevert("calcUnderlyingValues: _derivative is not supported");
         priceFeed.calcUnderlyingValues({_derivative: makeAddr("fake token"), _derivativeAmount: 1});
     }
@@ -199,7 +199,7 @@ abstract contract CurvePriceFeedTestBase is CurveUtils, IntegrationTest {
         }
     }
 
-    function test_addPoolsUnequalArrays_failure() public {
+    function test_addPools_failsUnequalArrays() public {
         __prankFundDeployerOwner();
         vm.expectRevert("__addPools: Unequal arrays");
         priceFeed.addPoolsWithoutValidation({
@@ -211,7 +211,7 @@ abstract contract CurvePriceFeedTestBase is CurveUtils, IntegrationTest {
         });
     }
 
-    function test_addPoolsEmptyLpToken_failure() public {
+    function test_addPools_failsEmptyLpToken() public {
         __prankFundDeployerOwner();
         vm.expectRevert("__addPools: Empty lpToken");
         priceFeed.addPoolsWithoutValidation({
@@ -223,7 +223,7 @@ abstract contract CurvePriceFeedTestBase is CurveUtils, IntegrationTest {
         });
     }
 
-    function test_addPoolsAlreadyRegistered_failure() public {
+    function test_addPools_failsAlreadyRegistered() public {
         address fakePool = makeAddr("fake pool");
 
         vm.mockCall({
@@ -255,7 +255,7 @@ abstract contract CurvePriceFeedTestBase is CurveUtils, IntegrationTest {
         });
     }
 
-    function test_addDerivativeNot18Decimal_failure() public {
+    function test_addDerivative_failsNot18Decimal() public {
         address fakePool = makeAddr("fake pool");
 
         vm.mockCall({
@@ -477,7 +477,7 @@ abstract contract CurvePriceFeedTestEthereumBase is CurvePriceFeedTestBase {
         });
     }
 
-    function test_calcUnderlyingValuesStEthPool_success() public {
+    function test_calcUnderlyingValues_successStEthPool() public {
         __test_calcUnderlyingValues_success({
             _pool: ETHEREUM_STETH_NG_POOL_ADDRESS,
             _invariantProxyAsset: address(wethToken),
@@ -488,7 +488,7 @@ abstract contract CurvePriceFeedTestEthereumBase is CurvePriceFeedTestBase {
         });
     }
 
-    function test_calcUnderlyingValuesAaveUSDPool_success() public {
+    function test_calcUnderlyingValues_successAaveUSDPool() public {
         __test_calcUnderlyingValues_success({
             _pool: ETHEREUM_AAVE_POOL_ADDRESS,
             _invariantProxyAsset: getUsdEthSimulatedAggregatorForVersion(version),
@@ -616,7 +616,7 @@ abstract contract CurvePriceFeedTestPolygonBase is CurvePriceFeedTestBase {
         });
     }
 
-    function test_calcUnderlyingValuesAaveUSDPool_success() public {
+    function test_calcUnderlyingValues_successAaveUSDPool() public {
         __test_calcUnderlyingValues_success({
             _pool: POLYGON_AAVE_POOL_ADDRESS,
             _invariantProxyAsset: getUsdEthSimulatedAggregatorForVersion(version),

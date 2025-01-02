@@ -101,7 +101,7 @@ abstract contract TestBase is IntegrationTest {
         assertGe(postIncomingAssetBalance, preIncomingAssetBalance, "Incorrect incomingAsset balance");
     }
 
-    function test_tooShortPathAddresses_failure() public {
+    function test_takeOrder_failsTooShortPathAddresses() public {
         vm.expectRevert("parseAssetsForAction: pathAddresses must be >= 2");
 
         __takeOrder({
@@ -112,7 +112,7 @@ abstract contract TestBase is IntegrationTest {
         });
     }
 
-    function test_incorrectPathAddressesAndPathFeesLength_failure() public {
+    function test_takeOrder_failsIncorrectPathAddressesAndPathFeesLength() public {
         vm.expectRevert("parseAssetsForAction: incorrect pathAddresses or pathFees length");
 
         __takeOrder({
@@ -140,7 +140,7 @@ abstract contract TestBaseEthereum is TestBase {
         });
     }
 
-    function test_takeOrder_multiplePaths_success() public {
+    function test_takeOrder_successMultiplePaths() public {
         uint24[] memory pathFees = new uint24[](2);
         pathFees[0] = 3000;
         pathFees[1] = 100;
@@ -169,7 +169,7 @@ abstract contract TestBasePolygon is TestBase {
         });
     }
 
-    function test_takeOrder_multiplePaths_success() public {
+    function test_takeOrder_successMultiplePaths() public {
         uint24[] memory pathFees = new uint24[](2);
         pathFees[0] = 100;
         pathFees[1] = 3000;
@@ -198,7 +198,7 @@ abstract contract TestBaseArbitrum is TestBase {
         });
     }
 
-    function test_takeOrder_multiplePaths_success() public {
+    function test_takeOrder_successMultiplePaths() public {
         uint24[] memory pathFees = new uint24[](2);
         pathFees[0] = 100;
         pathFees[1] = 3000;

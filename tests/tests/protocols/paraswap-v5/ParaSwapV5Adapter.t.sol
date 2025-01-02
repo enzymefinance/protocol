@@ -259,7 +259,7 @@ abstract contract ParaSwapV5AdapterBaseTest is IntegrationTest {
 
     // TESTS
 
-    function test_takeOrder_simpleSwap_success() public {
+    function test_takeOrder_successSimpleSwap() public {
         uint256 preOrderOutgoingAssetBalance = outgoingAsset1.balanceOf(vaultProxyAddress);
         uint256 preOrderIncomingAssetBalance = incomingAsset1.balanceOf(vaultProxyAddress);
         uint256 outgoingAssetAmount = preOrderOutgoingAssetBalance / 333;
@@ -306,7 +306,7 @@ abstract contract ParaSwapV5AdapterBaseTest is IntegrationTest {
         assertGt(postOrderIncomingAssetBalance, preOrderIncomingAssetBalance, "Incorrect incoming asset balance");
     }
 
-    function test_takeOrder_multiSwap_success() public {
+    function test_takeOrder_successMultiSwap() public {
         uint256 preOrderOutgoingAssetBalance = outgoingAsset1.balanceOf(vaultProxyAddress);
         uint256 preOrderIncomingAssetBalance = incomingAsset1.balanceOf(vaultProxyAddress);
 
@@ -360,7 +360,7 @@ abstract contract ParaSwapV5AdapterBaseTest is IntegrationTest {
         assertGt(postOrderIncomingAssetBalance, preOrderIncomingAssetBalance, "Incorrect incoming asset balance");
     }
 
-    function test_takeOrder_megaSwap_success() public {
+    function test_takeOrder_successMegaSwap() public {
         uint256 preOrderOutgoingAssetBalance = outgoingAsset1.balanceOf(vaultProxyAddress);
         uint256 preOrderIncomingAssetBalance = incomingAsset1.balanceOf(vaultProxyAddress);
 
@@ -579,11 +579,11 @@ abstract contract ParaSwapV5AdapterBaseTest is IntegrationTest {
         }
     }
 
-    function test_takeMultipleOrders_oneOrderFails_success() public {
+    function test_takeMultipleOrders_successOneOrderFails() public {
         __test_takeMultipleOrders_oneOrderFails({_allowOrdersToFail: true});
     }
 
-    function test_takeMultipleOrders_oneOrderFails_failure() public {
+    function test_takeMultipleOrders_failsOneOrderFails() public {
         __test_takeMultipleOrders_oneOrderFails({_allowOrdersToFail: false});
     }
 }

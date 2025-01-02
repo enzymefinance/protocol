@@ -345,7 +345,7 @@ abstract contract CancelRedeemTest is TestBase {
 
 // doesn't matter which action we will test, since all of them use the same validation
 abstract contract ValidatePoolTest is TestBase {
-    function test_validatePoolV2_failInvalidPoolManagerRelation() public {
+    function test_validatePoolV2_failsInvalidPoolManagerRelation() public {
         address fakePool = makeAddr("Fake pool");
         address fakePoolManager = makeAddr("Fake pool manager");
         // mock fakePool to return fakePoolManager as its manager
@@ -365,7 +365,7 @@ abstract contract ValidatePoolTest is TestBase {
         __lendV2({_poolAddress: fakePool, _liquidityAssetAmount: 1});
     }
 
-    function test_validatePoolV2_failInvalidPoolManagerFactoryRelation() public {
+    function test_validatePoolV2_failsInvalidPoolManagerFactoryRelation() public {
         address fakePool = makeAddr("Fake pool");
         address fakePoolManager = makeAddr("Fake pool manager");
         address fakePoolManagerFactory = makeAddr("Fake pool manager factory");
@@ -398,7 +398,7 @@ abstract contract ValidatePoolTest is TestBase {
         __lendV2({_poolAddress: fakePool, _liquidityAssetAmount: 1});
     }
 
-    function test_validatePoolV2_failInvalidGlobalsRelation() public {
+    function test_validatePoolV2_failsInvalidGlobalsRelation() public {
         address fakePool = makeAddr("Fake pool");
         address fakePoolManager = makeAddr("Fake pool manager");
         address fakePoolManagerFactory = makeAddr("Fake pool manager factory");

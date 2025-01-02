@@ -131,7 +131,7 @@ abstract contract ExchangeErc20AndBuySharesTest is TestBase {
         vm.stopPrank();
     }
 
-    function test_failWithExchangeMinNotReceived() public {
+    function test_failsWithExchangeMinNotReceived() public {
         uint256 denominationAssetValue = core.release.valueInterpreter.calcCanonicalAssetValue({
             _baseAsset: address(inputAsset),
             _amount: inputAssetAmount,
@@ -168,7 +168,7 @@ abstract contract ExchangeErc20AndBuySharesTest is TestBase {
         });
     }
 
-    function test_failWithUnallowedExchange() public {
+    function test_failsWithUnallowedExchange() public {
         address badExchange = makeAddr("BadExchange");
 
         // Should fail with a disallowed selector

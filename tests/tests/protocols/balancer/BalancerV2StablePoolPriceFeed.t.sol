@@ -82,7 +82,7 @@ abstract contract ValueTest is TestBase {
         assertTrue(bptIPAPrice < oneIPAUnit + oneIPAUnit / 10, "bpt >= 1.10 unit");
     }
 
-    function test_calcCanonicalAssetValue_failWithReentrancy() public {
+    function test_calcCanonicalAssetValue_failsWithReentrancy() public {
         // Register the bpt on the price feed
         vm.startPrank(priceFeedOwner);
         priceFeed.addPoolFactories(toArray(poolFactoryAddress));
@@ -136,7 +136,7 @@ abstract contract RegistryTest is TestBase {
 
     // POOL FACTORIES
 
-    function test_addPoolFactories_failWithUnauthorized() public {
+    function test_addPoolFactories_failsWithUnauthorized() public {
         vm.expectRevert("onlyFundDeployerOwner: Only the FundDeployer owner can call this function");
         vm.prank(randomCallerAddress);
         priceFeed.addPoolFactories(fakePoolFactoryAddresses);
@@ -164,7 +164,7 @@ abstract contract RegistryTest is TestBase {
         assertEq(priceFeed.getPoolFactories(), fakePoolFactoryAddresses, "pool factories not registered");
     }
 
-    function test_removePoolFactories_failWithUnauthorized() public {
+    function test_removePoolFactories_failsWithUnauthorized() public {
         vm.expectRevert("onlyFundDeployerOwner: Only the FundDeployer owner can call this function");
         vm.prank(randomCallerAddress);
         priceFeed.removePoolFactories(toArray(poolFactoryAddress));
@@ -190,20 +190,20 @@ abstract contract RegistryTest is TestBase {
     }
 
     // POOLS
-    function test_addPools_failWithUnauthorized() public {
+    function test_addPools_failsWithUnauthorized() public {
         vm.expectRevert("onlyFundDeployerOwner: Only the FundDeployer owner can call this function");
         vm.prank(randomCallerAddress);
         priceFeed.addPools(toArray(address(poolBpt)), toArray(address(poolInvariantProxyAsset)));
     }
 
-    function test_addPools_failWithInvalidFactory() public {
+    function test_addPools_failsWithInvalidFactory() public {
         // Attempting to add the pool without the factory registered should fail
         vm.expectRevert("addPools: Invalid factory");
         vm.prank(priceFeedOwner);
         priceFeed.addPools(toArray(address(poolBpt)), toArray(address(poolInvariantProxyAsset)));
     }
 
-    function test_addPools_failWithDuplicate() public {
+    function test_addPools_failsWithDuplicate() public {
         vm.startPrank(priceFeedOwner);
 
         // Add the pool's factory to the price feed

@@ -76,7 +76,7 @@ abstract contract ValueTest is TestBase {
         assertEq(bptUsdIntegerPrice, poolBptExpectedUsdIntegerPrice, "Wrong bpt price");
     }
 
-    function test_calcCanonicalAssetValue_failWithReentrancy() public {
+    function test_calcCanonicalAssetValue_failsWithReentrancy() public {
         // Register the bpt factory on the price feed
         vm.prank(priceFeedOwner);
         priceFeed.addPoolFactories(toArray(poolFactoryAddress));
@@ -122,7 +122,7 @@ abstract contract RegistryTest is TestBase {
 
     // POOL FACTORIES
 
-    function test_addPoolFactories_failWithUnauthorized() public {
+    function test_addPoolFactories_failsWithUnauthorized() public {
         vm.expectRevert("onlyFundDeployerOwner: Only the FundDeployer owner can call this function");
         vm.prank(randomCallerAddress);
         priceFeed.addPoolFactories(fakePoolFactoryAddresses);
@@ -162,7 +162,7 @@ abstract contract RegistryTest is TestBase {
         assertTrue(priceFeed.isSupportedAsset(address(poolBpt)), "bpt not supported after adding its factory");
     }
 
-    function test_removePoolFactories_failWithUnauthorized() public {
+    function test_removePoolFactories_failsWithUnauthorized() public {
         vm.expectRevert("onlyFundDeployerOwner: Only the FundDeployer owner can call this function");
         vm.prank(randomCallerAddress);
         priceFeed.removePoolFactories(toArray(poolFactoryAddress));

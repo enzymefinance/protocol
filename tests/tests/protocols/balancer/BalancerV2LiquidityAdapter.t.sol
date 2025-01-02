@@ -546,7 +546,7 @@ abstract contract BalancerPoolTest is PoolTestBase {
         assertEq(poolBpt.balanceOf(address(adapter)), 0, "adapter still has bpt");
     }
 
-    function test_takeOrderBPTMismatch_failure() public {
+    function test_takeOrder_failsBPTMismatch() public {
         address outgoingAsset = poolAssetAddresses[0];
         address incomingAsset = poolAssetAddresses[1];
 
@@ -577,7 +577,7 @@ abstract contract BalancerPoolTest is PoolTestBase {
         });
     }
 
-    function test_takeOrderLeftover_failure() public {
+    function test_takeOrder_failsLeftover() public {
         address outgoingAsset = poolAssetAddresses[0];
         address incomingAsset = poolAssetAddresses[1];
 
@@ -609,7 +609,7 @@ abstract contract BalancerPoolTest is PoolTestBase {
         });
     }
 
-    function test_takeOrderOneSwap_success() public {
+    function test_takeOrder_successOneSwap() public {
         address outgoingAsset = poolAssetAddresses[0];
         address incomingAsset = poolAssetAddresses[1];
 
@@ -668,7 +668,7 @@ abstract contract BalancerPoolTest is PoolTestBase {
         );
     }
 
-    function test_takeOrderMultiStepSwap_success() public {
+    function test_takeOrder_successMultiStepSwap() public {
         address outgoingAsset = poolAssetAddresses[0];
         address intermediaryAsset = poolAssetAddresses[1];
         address incomingAsset = poolAssetAddresses[2];

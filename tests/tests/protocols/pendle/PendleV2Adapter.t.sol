@@ -276,12 +276,12 @@ abstract contract TestBase is IntegrationTest {
         assertApproxEqRel(postPtBalance, expectedPtReceived, WEI_ONE_PERCENT / 2, "Incorrect PT balance");
     }
 
-    function test_buyPrincipalToken_underlyingAsset_success() public {
+    function test_buyPrincipalToken_successUnderlyingAsset() public {
         __test_buyPrincipalToken_success({_depositTokenAddressInput: address(underlyingAsset)});
     }
 
     // Test that a principal token can be bought through the native asset
-    function test_buyPrincipalToken_nativeAsset_success() public {
+    function test_buyPrincipalToken_successNativeAsset() public {
         // Run the test conditionally if the token supports depositing in the the native asset
         if (syToken.isValidTokenIn(PENDLE_NATIVE_ASSET_ADDRESS)) {
             __test_buyPrincipalToken_success({_depositTokenAddressInput: NATIVE_ASSET_ADDRESS});
@@ -353,21 +353,21 @@ abstract contract TestBase is IntegrationTest {
         );
     }
 
-    function test_sellPrincipalToken_expiredPrincipalToken_success() public {
+    function test_sellPrincipalToken_successExpiredPrincipalToken() public {
         __test_sellPrincipalToken_success({
             _withdrawalTokenAddressInput: address(underlyingAsset),
             _expiredPrincipalToken: true
         });
     }
 
-    function test_sellPrincipalToken_nonExpiredPrincipalToken_success() public {
+    function test_sellPrincipalToken_successNonExpiredPrincipalToken() public {
         __test_sellPrincipalToken_success({
             _withdrawalTokenAddressInput: address(underlyingAsset),
             _expiredPrincipalToken: false
         });
     }
 
-    function test_sellPrincipalToken_nativeAsset_success() public {
+    function test_sellPrincipalToken_successNativeAsset() public {
         // If the native asset is a valid withdrawal token, run the test
         if (syToken.isValidTokenOut(PENDLE_NATIVE_ASSET_ADDRESS)) {
             __test_sellPrincipalToken_success({
@@ -419,11 +419,11 @@ abstract contract TestBase is IntegrationTest {
         assertApproxEqRel(postLpTokenBalance, expectedLpReceived, WEI_ONE_PERCENT / 2, "Incorrect LP token balance");
     }
 
-    function test_addLiquidityFromUnderlying_underlyingAsset_success() public {
+    function test_addLiquidityFromUnderlying_successUnderlyingAsset() public {
         __test_addLiquidityFromUnderlying_success({_depositTokenAddressInput: address(underlyingAsset)});
     }
 
-    function test_addLiquidityFromUnderlying_nativeAsset_success() public {
+    function test_addLiquidityFromUnderlying_successNativeAsset() public {
         // Run the test conditionally if the token supports depositing in the the native asset
         if (syToken.isValidTokenIn(PENDLE_NATIVE_ASSET_ADDRESS)) {
             __test_addLiquidityFromUnderlying_success({_depositTokenAddressInput: NATIVE_ASSET_ADDRESS});
@@ -480,11 +480,11 @@ abstract contract TestBase is IntegrationTest {
         );
     }
 
-    function test_removeLiquidityToUnderlying_nonExpiredPrincipalToken_success() public {
+    function test_removeLiquidityToUnderlying_successNonExpiredPrincipalToken() public {
         __test_removeLiquidityToUnderlying_success({_withdrawalTokenAddressInput: address(underlyingAsset)});
     }
 
-    function test_removeLiquidityToUnderlying_nativeAsset_success() public {
+    function test_removeLiquidityToUnderlying_successNativeAsset() public {
         // If the native asset is a valid withdrawal token, run the test
         if (syToken.isValidTokenOut(PENDLE_NATIVE_ASSET_ADDRESS)) {
             __test_removeLiquidityToUnderlying_success({_withdrawalTokenAddressInput: NATIVE_ASSET_ADDRESS});

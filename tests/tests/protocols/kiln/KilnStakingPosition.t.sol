@@ -271,7 +271,7 @@ abstract contract PostStakeTestBase is TestBase {
 /////////////
 
 contract StakeTest is TestBase {
-    function test_stake_failWithInvalidStakingContract() public {
+    function test_stake_failsWithInvalidStakingContract() public {
         __delistStakingContract();
 
         vm.expectRevert("__validateStakingContract: Invalid staking contract");
@@ -341,7 +341,7 @@ contract SweepEthTest is TestBase {
 }
 
 contract PausePositionValueTest is TestBase {
-    function test_pausePositionValue_failWithAlreadyPaused() public {
+    function test_pausePositionValue_failsWithAlreadyPaused() public {
         __pausePositionValue();
 
         // This doesn't match the error correctly without formatError()
@@ -371,7 +371,7 @@ contract PausePositionValueTest is TestBase {
 }
 
 contract UnpausePositionValueTest is TestBase {
-    function test_unpausePositionValue_failWithNotPaused() public {
+    function test_unpausePositionValue_failsWithNotPaused() public {
         // This doesn't match the error correctly without formatError()
         vm.expectRevert(formatError("__unpausePositionValue: Not paused"));
         __unpausePositionValue();
@@ -425,7 +425,7 @@ contract ClaimFeesTest is PostStakeTestBase {
         preClaimVaultWethBal = wethToken.balanceOf(vaultProxyAddress);
     }
 
-    function test_claimFees_failWithInvalidStakingContract() public {
+    function test_claimFees_failsWithInvalidStakingContract() public {
         __delistStakingContract();
 
         vm.expectRevert("__validateStakingContract: Invalid staking contract");
@@ -538,7 +538,7 @@ contract UnstakeTest is PostStakeTestBase {
         validatorKeysToUnstake.push(validatorKeys[2]);
     }
 
-    function test_unstake_failWithInvalidStakingContract() public {
+    function test_unstake_failsWithInvalidStakingContract() public {
         __delistStakingContract();
 
         vm.expectRevert("__validateStakingContract: Invalid staking contract");
@@ -570,7 +570,7 @@ contract UnstakeTest is PostStakeTestBase {
 ////////////////////
 
 contract GetManagedAssetsTest is TestBase {
-    function test_getManagedAssets_failWithPausedPositionValue() public {
+    function test_getManagedAssets_failsWithPausedPositionValue() public {
         __pausePositionValue();
 
         vm.expectRevert("getManagedAssets: Valuation paused");

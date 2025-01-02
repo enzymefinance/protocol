@@ -371,7 +371,7 @@ abstract contract TestBase is IntegrationTest {
         );
     }
 
-    function test_claimRewardsExtraRewards_success() public {
+    function test_claimRewards_successExtraRewards() public {
         __lockAmount(400);
 
         uint256 preExtraRewardTokenBalance = wethToken.balanceOf(vaultProxyAddress);
@@ -415,7 +415,7 @@ abstract contract TestBase is IntegrationTest {
         );
     }
 
-    function test_claimRewardsLockerRewards_success() public {
+    function test_claimRewards_successLockerRewards() public {
         __lockAmount(450);
 
         // get all reward tokens from the locker
@@ -473,7 +473,7 @@ abstract contract TestBase is IntegrationTest {
         }
     }
 
-    function test_claimRewardsUnstakeCvxCrv_success() public {
+    function test_claimRewards_successUnstakeCvxCrv() public {
         // stake some cvxCrv for the external position
         uint256 stakedCvxCrvAmount = 500 * assetUnit(IERC20(ETHEREUM_CVX_CRV));
         increaseTokenBalance({_token: IERC20(ETHEREUM_CVX_CRV), _to: address(this), _amount: stakedCvxCrvAmount});

@@ -44,7 +44,7 @@ abstract contract StaderSDPriceFeedTestBase is IntegrationTest {
 
     // TESTS
 
-    function test_calcUnderlyingValuesForSpecificBlock_success() public {
+    function test_calcUnderlyingValues_successForSpecificBlock() public {
         __addDerivative();
 
         // SD/USD price on June 21st 2024. https://www.coingecko.com/en/coins/stader/historical_data
@@ -60,7 +60,7 @@ abstract contract StaderSDPriceFeedTestBase is IntegrationTest {
         assertTrue(priceFeed.isSupportedAsset({_asset: SD_TOKEN_ADDRESS}), "Unsupported asset");
     }
 
-    function test_isSupportedAsset_failWithUnsupportedAsset() public {
+    function test_isSupportedAsset_failsWithUnsupportedAsset() public {
         assertFalse(priceFeed.isSupportedAsset({_asset: makeAddr("RandomToken")}), "Incorrectly supported asset");
     }
 }

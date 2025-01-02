@@ -408,7 +408,7 @@ abstract contract AddReplaceAndRemoveOffersTest is TestBase {
         }
     }
 
-    function test_addEmptyOffersArray_failure() public {
+    function test_addOrUpdateOffers_failsAddEmptyOffersArray() public {
         vm.expectRevert(formatError("__addOrUpdateOffers: Empty submittedOfferIds"));
 
         // Call AddOrUpdate action with an empty offers array
@@ -420,7 +420,7 @@ abstract contract AddReplaceAndRemoveOffersTest is TestBase {
         });
     }
 
-    function test_addAndUpdateSameOffer_failure() public {
+    function test_addOrUpdateOffers_failsAddAndUpdateSameOffer() public {
         __setUpOffers();
 
         vm.expectRevert(formatError("__addOrUpdateOffers: Duplicate offerIds"));
@@ -434,7 +434,7 @@ abstract contract AddReplaceAndRemoveOffersTest is TestBase {
         });
     }
 
-    function test_addAndUpdateUnequalLength_failure() public {
+    function test_addOrUpdateOffers_failsUnequalLength() public {
         __setUpOffers();
 
         vm.expectRevert("parseAssetsForAction: Unequal arrays");
@@ -792,7 +792,7 @@ abstract contract RedeemTest is TestBase {
 abstract contract SweepTest is TestBase {
     using AddressArrayLib for address[];
 
-    function test_success_unexpectedPurchaseToken() public {
+    function test_sweep_successUnexpectedPurchaseToken() public {
         // Add an offer for each termAuction
         for (uint256 i; i < termFinanceAuctions.length; i++) {
             // Warp time to auction start time
@@ -856,7 +856,7 @@ abstract contract SweepTest is TestBase {
         assertEq(termAuctionsPreSweep, termAuctionsPostSweep, "Incorrect term auctions in storage");
     }
 
-    function test_success_auctionRemoval() public {
+    function test_sweep_successAuctionRemoval() public {
         uint256[] memory initialVaultBalances = new uint256[](purchaseTokens.length);
         for (uint256 i; i < purchaseTokens.length; i++) {
             initialVaultBalances[i] = IERC20(purchaseTokens[i]).balanceOf(vaultProxyAddress);
@@ -962,7 +962,7 @@ abstract contract SweepTest is TestBase {
 ////////////////////
 
 abstract contract GetManagedAssetsTest is TestBase {
-    function test_success_noPosition() public {
+    function test_getManagedAssets_successNoPosition() public {
         (address[] memory managedAssets, uint256[] memory managedAssetAmounts) =
             termFinanceLendingPosition.getManagedAssets();
 

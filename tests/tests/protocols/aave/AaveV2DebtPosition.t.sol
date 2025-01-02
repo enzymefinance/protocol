@@ -250,7 +250,7 @@ abstract contract AddCollateralTest is TestBase {
         }
     }
 
-    function test_addCollateral_failNotSupportedAssetAddCollateral() public {
+    function test_addCollateral_failsNotSupportedAssetAddCollateral() public {
         vm.expectRevert("__validateSupportedAssets: Unsupported asset");
 
         __addCollateral({_aTokens: toArray(makeAddr("UnsupportedAsset")), _amounts: toArray(1)});
@@ -304,7 +304,7 @@ abstract contract RemoveCollateralTest is TestBase {
         }
     }
 
-    function test_removeCollateral_failInvalidCollateralAsset() public {
+    function test_removeCollateral_failsInvalidCollateralAsset() public {
         vm.expectRevert(formatError("__removeCollateralAssets: Invalid collateral asset"));
 
         __removeCollateral({_aTokens: toArray(makeAddr("InvalidCollateralAsset")), _amounts: toArray(1)});
@@ -360,7 +360,7 @@ abstract contract BorrowTest is TestBase {
         }
     }
 
-    function test_borrow_failNotSupportedAssetBorrow() public {
+    function test_borrow_failsNotSupportedAssetBorrow() public {
         vm.expectRevert("__validateSupportedAssets: Unsupported asset");
 
         __borrowAssets({_underlyings: toArray(makeAddr("UnsupportedAsset")), _amounts: toArray(1)});
@@ -429,7 +429,7 @@ abstract contract RepayBorrowTest is TestBase {
         }
     }
 
-    function test_repayBorrow_failRepayTokenNotBorrowed() public {
+    function test_repayBorrow_failsRepayTokenNotBorrowed() public {
         IERC20 invalidAsset = createTestToken();
 
         vm.expectRevert(formatError("__repayBorrowedAssets: Invalid borrowed asset"));

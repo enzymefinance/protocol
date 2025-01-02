@@ -61,14 +61,14 @@ abstract contract CompoundV2PriceFeedTestBase is IntegrationTest {
 
     // TESTS
 
-    function test_calcUnderlyingValuesCETH_success() public {
+    function test_calcUnderlyingValues_successCETH() public {
         __test_calcUnderlyingValues_success({
             _derivative: ETHEREUM_COMPOUND_V2_CETH,
             _derivativeAmount: 12 * assetUnit(IERC20(ETHEREUM_COMPOUND_V2_CETH))
         });
     }
 
-    function test_calcUnderlyingValuesRegularAsset_success() public {
+    function test_calcUnderlyingValues_successRegularAsset() public {
         vm.prank(IFundDeployer(getFundDeployerAddressForVersion({_version: version})).getOwner());
         priceFeed.addCTokens(toArray(ETHEREUM_COMPOUND_V2_CUSDC));
 
@@ -78,16 +78,16 @@ abstract contract CompoundV2PriceFeedTestBase is IntegrationTest {
         });
     }
 
-    function test_calcUnderlyingValues_failUnsupportedDerivative() public {
+    function test_calcUnderlyingValues_failsUnsupportedDerivative() public {
         vm.expectRevert("calcUnderlyingValues: Unsupported derivative");
         priceFeed.calcUnderlyingValues({_derivative: makeAddr("fake token"), _derivativeAmount: 1});
     }
 
-    function test_isSupportedAssetCETH_success() public {
+    function test_isSupportedAsset_successCETH() public {
         assertTrue(priceFeed.isSupportedAsset({_asset: ETHEREUM_COMPOUND_V2_CETH}), "Unsupported cETH token");
     }
 
-    function test_isSupportedAssetRegularAsset_success() public {
+    function test_isSupportedAsset_successRegularAssets() public {
         assertFalse(priceFeed.isSupportedAsset({_asset: ETHEREUM_COMPOUND_V2_CUSDC}), "Supported token");
 
         vm.prank(IFundDeployer(getFundDeployerAddressForVersion({_version: version})).getOwner());
@@ -100,14 +100,14 @@ abstract contract CompoundV2PriceFeedTestBase is IntegrationTest {
         assertTrue(priceFeed.isSupportedAsset({_asset: ETHEREUM_COMPOUND_V2_CUSDC}), "Unsupported token");
     }
 
-    function test_addCTokens_failEmptyArray() public {
+    function test_addCTokens_failsEmptyArray() public {
         vm.prank(IFundDeployer(getFundDeployerAddressForVersion({_version: version})).getOwner());
 
         vm.expectRevert("addCTokens: Empty _cTokens");
         priceFeed.addCTokens(new address[](0));
     }
 
-    function test_addCTokens_failValueAlreadySet() public {
+    function test_addCTokens_failsValueAlreadySet() public {
         vm.prank(IFundDeployer(getFundDeployerAddressForVersion({_version: version})).getOwner());
 
         vm.expectRevert("addCTokens: Value already set");

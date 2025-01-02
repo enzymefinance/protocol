@@ -170,7 +170,7 @@ abstract contract YearnVaultV2AdapterTestBase is IntegrationTest {
         );
     }
 
-    function test_lend_failUnsupportedYVault() public {
+    function test_lend_failsUnsupportedYVault() public {
         vm.expectRevert("__parseAssetsForLend: Unsupported yVault");
 
         __lend({
@@ -233,7 +233,7 @@ abstract contract YearnVaultV2AdapterTestBase is IntegrationTest {
         );
     }
 
-    function test_redeem_failUnsupportedYVault() public {
+    function test_redeem_failsUnsupportedYVault() public {
         vm.expectRevert("__parseAssetsForRedeem: Unsupported yVault");
 
         __redeem({

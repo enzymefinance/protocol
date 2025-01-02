@@ -364,12 +364,12 @@ abstract contract PendleTestBase is IntegrationTest, PendleV2Utils {
         assertEq(0, IERC20(address(syToken)).balanceOf(address(pendleV2ExternalPosition)));
     }
 
-    function test_buyPrincipalToken_underlyingAsset_success() public {
+    function test_buyPrincipalToken_successUnderlyingAsset() public {
         __test_buyPrincipalToken_success({_depositTokenAddress: address(underlyingAsset)});
     }
 
     // Test that a principal token can be bought through the native asset.
-    function test_buyPrincipalToken_nativeAsset_success() public {
+    function test_buyPrincipalToken_successNativeAsset() public {
         // Run the test conditionally if the token supports depositing in the the native asset.
         if (syToken.isValidTokenIn(PENDLE_NATIVE_ASSET_ADDRESS)) {
             __test_buyPrincipalToken_success({_depositTokenAddress: NATIVE_ASSET_ADDRESS});
@@ -450,23 +450,23 @@ abstract contract PendleTestBase is IntegrationTest, PendleV2Utils {
         );
     }
 
-    function test_sellPrincipalToken_fullRedemption_nonExpiredPrincipalToken_success() public {
+    function test_sellPrincipalToken_successFullRedemptionNonExpiredPrincipalToken() public {
         __test_sellPrincipalToken({_sellAll: true, _expiredPrincipalToken: false});
     }
 
-    function test_sellPrincipalToken_partialRedemption_nonExpiredPrincipalToken_success() public {
+    function test_sellPrincipalToken_successPartialRedemptionNonExpiredPrincipalToken() public {
         __test_sellPrincipalToken({_sellAll: false, _expiredPrincipalToken: false});
     }
 
-    function test_sellPrincipalToken_fullRedemption_expiredPrincipalToken_success() public {
+    function test_sellPrincipalToken_successFullRedemptionExpiredPrincipalToken() public {
         __test_sellPrincipalToken({_sellAll: true, _expiredPrincipalToken: true});
     }
 
-    function test_sellPrincipalToken_partialRedemption_expiredPrincipalToken_success() public {
+    function test_sellPrincipalToken_successPartialRedemptionExpiredPrincipalToken() public {
         __test_sellPrincipalToken({_sellAll: false, _expiredPrincipalToken: true});
     }
 
-    function test_sellPrincipalToken_nativeAsset_success() public {
+    function test_sellPrincipalToken_successNativeAsset() public {
         // If the native asset is a valid withdrawal token, run the test
         if (syToken.isValidTokenOut(PENDLE_NATIVE_ASSET_ADDRESS)) {
             __buyPrincipalToken({_depositTokenAddress: address(underlyingAsset)});
@@ -611,11 +611,11 @@ abstract contract PendleTestBase is IntegrationTest, PendleV2Utils {
         );
     }
 
-    function test_removeLiquidity_removeAll_success() public {
+    function test_removeLiquidity_successRemoveAll() public {
         __test_removeLiquidity({_removeAll: true});
     }
 
-    function test_removeLiquidity_removePartial_success() public {
+    function test_removeLiquidity_successRemovePartial() public {
         __test_removeLiquidity({_removeAll: false});
     }
 

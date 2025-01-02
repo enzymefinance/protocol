@@ -77,7 +77,7 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
 
     // TESTS
 
-    function test_addFundSettings_failWithDeviationToleranceOfZero() public {
+    function test_addFundSettings_failsWithDeviationToleranceOfZero() public {
         INoDepegPolicy.AssetConfig[] memory assetConfigs = new INoDepegPolicy.AssetConfig[](1);
         assetConfigs[0] = INoDepegPolicy.AssetConfig({
             asset: address(ethPeggedAsset),
@@ -92,7 +92,7 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
         policy.addFundSettings({_comptrollerProxy: comptrollerProxyAddress, _encodedSettings: encodedSettings});
     }
 
-    function test_addFundSettings_failWithDeviationToleranceMax() public {
+    function test_addFundSettings_failsWithDeviationToleranceMax() public {
         INoDepegPolicy.AssetConfig[] memory assetConfigs = new INoDepegPolicy.AssetConfig[](1);
         assetConfigs[0] = INoDepegPolicy.AssetConfig({
             asset: address(ethPeggedAsset),
@@ -107,7 +107,7 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
         policy.addFundSettings({_comptrollerProxy: comptrollerProxyAddress, _encodedSettings: encodedSettings});
     }
 
-    function test_addFundSettings_failWithOnlyPolicyManager() public {
+    function test_addFundSettings_failsWithOnlyPolicyManager() public {
         vm.expectRevert(ERROR_MESSAGE_ONLY_POLICY_MANAGER);
         policy.addFundSettings({_comptrollerProxy: comptrollerProxyAddress, _encodedSettings: ""});
     }
@@ -157,7 +157,7 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
         assertTrue(policy.canDisable());
     }
 
-    function test_updateFundSettings_failWithOnlyPolicyManager() public {
+    function test_updateFundSettings_failsWithOnlyPolicyManager() public {
         vm.expectRevert(ERROR_MESSAGE_ONLY_POLICY_MANAGER);
         policy.updateFundSettings({_comptrollerProxy: comptrollerProxyAddress, _encodedSettings: ""});
     }

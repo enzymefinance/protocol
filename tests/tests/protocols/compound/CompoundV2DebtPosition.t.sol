@@ -277,7 +277,7 @@ abstract contract AddCollateralTest is TestBase {
         }
     }
 
-    function test_addCollateral_failNotSupportedAssetAddCollateral() public {
+    function test_addCollateral_failsNotSupportedAssetAddCollateral() public {
         IERC20 fakeCToken = createTestToken("Fake CToken");
 
         uint256 amountToAddCollateral = 100;
@@ -344,7 +344,7 @@ abstract contract RemoveCollateralTest is TestBase {
         }
     }
 
-    function test_removeCollateral_failInvalidCollateralAsset() public {
+    function test_removeCollateral_failsInvalidCollateralAsset() public {
         vm.expectRevert(formatError("__removeCollateralAssets: Asset is not collateral"));
 
         __removeCollateral({_cTokens: toArray(makeAddr("InvalidCollateralAsset")), _amounts: toArray(1)});
@@ -417,7 +417,7 @@ abstract contract BorrowTest is TestBase {
         }
     }
 
-    function test_borrow_failNotSupportedAssetBorrow() public {
+    function test_borrow_failsNotSupportedAssetBorrow() public {
         vm.expectRevert("parseAssetsForAction: Unsupported asset");
 
         __borrowAssets({
@@ -427,13 +427,13 @@ abstract contract BorrowTest is TestBase {
         });
     }
 
-    function __test_borrow_failBadTokenCTokenPair(address _cToken) public {
+    function __test_borrow_failsBadTokenCTokenPair(address _cToken) public {
         vm.expectRevert("parseAssetsForAction: Bad token cToken pair");
 
         __borrowAssets({_underlyings: toArray(address(wethToken)), _amounts: toArray(1), _cTokens: toArray(_cToken)});
     }
 
-    function test_borrow_failProblemWhileBorrowingFromCompound() public {
+    function test_borrow_failsProblemWhileBorrowingFromCompound() public {
         __dealCTokenAndAddCollateral({
             _cTokens: toArray(address(cETH)),
             _amounts: toArray(10 * assetUnit(IERC20(address(cETH))))
@@ -536,7 +536,7 @@ abstract contract RepayBorrowTest is TestBase {
         }
     }
 
-    function __test_repayBorrow_failToRepay(address _cToken) public {
+    function __test_repayBorrow_failsToRepay(address _cToken) public {
         // Add collateral
         __dealCTokenAndAddCollateral({
             _cTokens: toArray(_cToken),
@@ -739,8 +739,8 @@ contract CompoundV2DebtPositionTestEthereum is CompoundV2DebtPositionTest {
         });
     }
 
-    function test_borrow_failBadTokenCTokenPair() public {
-        __test_borrow_failBadTokenCTokenPair(ETHEREUM_COMPOUND_V2_CUSDC);
+    function test_borrow_failsBadTokenCTokenPair() public {
+        __test_borrow_failsBadTokenCTokenPair(ETHEREUM_COMPOUND_V2_CUSDC);
     }
 
     function test_repayBorrow_success() public {
@@ -784,8 +784,8 @@ contract CompoundV2DebtPositionTestEthereum is CompoundV2DebtPositionTest {
         });
     }
 
-    function test_repayBorrow_failToRepay() public {
-        __test_repayBorrow_failToRepay(ETHEREUM_COMPOUND_V2_CUSDC);
+    function test_repayBorrow_failsToRepay() public {
+        __test_repayBorrow_failsToRepay(ETHEREUM_COMPOUND_V2_CUSDC);
     }
 
     function test_claimComp_success() public {

@@ -198,7 +198,7 @@ abstract contract CompoundV2AdapterLendTest is CompoundV2TestBase {
         assertEq(vaultCTokenBalance, expectedCTokenAmount, "Not enough cToken received");
     }
 
-    function test_lend_failInvalidCToken() public {
+    function test_lend_failsInvalidCToken() public {
         // create fake cToken
         IERC20 fakeCToken = createTestToken("Fake CToken");
 
@@ -247,7 +247,7 @@ abstract contract CompoundV2AdapterRedeemTest is CompoundV2TestBase {
         );
     }
 
-    function test_redeem_failInvalidCToken() public {
+    function test_redeem_failsInvalidCToken() public {
         // create fake cToken
         IERC20 fakeCToken = createTestToken("Fake CToken");
 

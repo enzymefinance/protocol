@@ -689,7 +689,7 @@ abstract contract TestBase is IntegrationTest {
         );
     }
 
-    function __test_createMarketIncreaseOrder_success(
+    function __test_createOrder_successMarketIncrease(
         address _market,
         address _initialCollateralToken,
         uint256 _initialCollateralDeltaAmount,
@@ -833,7 +833,7 @@ abstract contract TestBase is IntegrationTest {
         });
     }
 
-    function __test_createStopLossOrder_success(
+    function __test_createOrder_successStopLoss(
         address _market,
         address _initialCollateralToken,
         uint256 _decreaseInitialCollateralDeltaAmount,
@@ -852,7 +852,7 @@ abstract contract TestBase is IntegrationTest {
         });
     }
 
-    function __test_createLimitDecreaseOrder_success(
+    function __test_createOrder_successLimitDecrease(
         address _market,
         address _initialCollateralToken,
         uint256 _decreaseInitialCollateralDeltaAmount,
@@ -948,7 +948,7 @@ abstract contract TestBase is IntegrationTest {
         assertEq(order.numbers.executionFee, executionFee + executionFee, "Incorrect executionFee post update order");
     }
 
-    function __test_cancelDecreaseOrder_success(
+    function __test_cancelOrder_successDecreaseOrder(
         address _market,
         address _initialCollateralToken,
         uint256 _decreaseInitialCollateralDeltaAmount,
@@ -1017,7 +1017,7 @@ abstract contract TestBase is IntegrationTest {
         );
     }
 
-    function __test_cancelMarketIncreaseOrder_success(
+    function __test_cancelOrder_successMarketIncrease(
         address _market,
         address _initialCollateralToken,
         uint256 _initialCollateralDeltaAmount,
@@ -1276,7 +1276,7 @@ abstract contract TestBase is IntegrationTest {
         }
     }
 
-    function __test_afterOrderExecutionIsCalledOnLiquidation_success(
+    function __test_afterOrderExecution_successAfterOrderExecutionIsCalledOnLiquidation(
         address _market,
         address _initialCollateralToken,
         uint256 _increaseInitialCollateralDeltaAmount,
@@ -1551,7 +1551,7 @@ abstract contract TestBase is IntegrationTest {
 
     // TESTS
 
-    function test_invalidActionId_failure() public {
+    function test_receiveCallFromVault_failsInvalidActionId() public {
         vm.expectRevert(IGMXV2LeverageTradingPositionLib.InvalidActionId.selector);
 
         vm.prank(fundOwner);
@@ -1564,7 +1564,7 @@ abstract contract TestBase is IntegrationTest {
         });
     }
 
-    function test_createOrderInvalidOrderType_failure() public {
+    function test_createOrder_failsInvalidOrderType() public {
         IGMXV2OrderProd.OrderType notSupportedOrderType = IGMXV2OrderProd.OrderType.Liquidation;
 
         vm.expectRevert(
@@ -1681,7 +1681,7 @@ abstract contract TestBase is IntegrationTest {
         );
     }
 
-    function test_invalidHandlerForCallback_failure() public {
+    function test_afterOrderExecution_failsInvalidHandlerForCallback() public {
         vm.expectRevert(abi.encodeWithSelector(IGMXV2LeverageTradingPositionLib.InvalidHandler.selector));
 
         externalPosition.afterOrderExecution(
@@ -1750,7 +1750,7 @@ abstract contract TestBase is IntegrationTest {
         );
     }
 
-    function test_invalidCallbackAccount_failure() public {
+    function test_afterOrderExecution_failsInvalidCallbackAccount() public {
         vm.expectRevert(abi.encodeWithSelector(IGMXV2LeverageTradingPositionLib.InvalidCallbackAccount.selector));
 
         vm.prank(address(exchangeRouter));
@@ -1839,8 +1839,8 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
 
     // market increase
 
-    function test_createMarketIncreaseOrderETH_USD_WETH_USDC_USDCCollateralLong_success() public {
-        __test_createMarketIncreaseOrder_success({
+    function test_createOrder_successMarketIncreaseETH_USD_WETH_USDC_USDCCollateralLong() public {
+        __test_createOrder_successMarketIncrease({
             _initialCollateralToken: ARBITRUM_USDC,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
             _initialCollateralDeltaAmount: 100 * assetUnit(IERC20(ARBITRUM_USDC)),
@@ -1849,8 +1849,8 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
         });
     }
 
-    function test_createMarketIncreaseOrderETH_USD_WETH_USDC_USDCCollateralShort_success() public {
-        __test_createMarketIncreaseOrder_success({
+    function test_createOrder_successMarketIncreaseETH_USD_WETH_USDC_USDCCollateralShort() public {
+        __test_createOrder_successMarketIncrease({
             _initialCollateralToken: ARBITRUM_USDC,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
             _initialCollateralDeltaAmount: 100 * assetUnit(IERC20(ARBITRUM_USDC)),
@@ -1859,8 +1859,8 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
         });
     }
 
-    function test_createMarketIncreaseOrderETH_USD_WETH_USDC_WETHCollateralLong_success() public {
-        __test_createMarketIncreaseOrder_success({
+    function test_createOrder_successMarketIncreaseETH_USD_WETH_USDC_WETHCollateralLong() public {
+        __test_createOrder_successMarketIncrease({
             _initialCollateralToken: ARBITRUM_WETH,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
             _initialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WETH)),
@@ -1869,8 +1869,8 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
         });
     }
 
-    function test_createMarketIncreaseOrderETH_USD_WETH_WETH_WETHCollateralLong_success() public {
-        __test_createMarketIncreaseOrder_success({
+    function test_createOrder_successMarketIncreaseETH_USD_WETH_WETH_WETHCollateralLong() public {
+        __test_createOrder_successMarketIncrease({
             _initialCollateralToken: ARBITRUM_WETH,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_WETH,
             _initialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WETH)),
@@ -1879,8 +1879,8 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
         });
     }
 
-    function test_createMarketIncreaseOrderBTC_USD_WBTC_WBTC_WBTC_CollateralShort_success() public {
-        __test_createMarketIncreaseOrder_success({
+    function test_createOrder_successMarketIncreaseBTC_USD_WBTC_WBTC_WBTC_CollateralShort() public {
+        __test_createOrder_successMarketIncrease({
             _initialCollateralToken: ARBITRUM_WBTC,
             _market: ARBITRUM_GMXV2_MARKET_BTC_USD_WBTC_WBTC,
             _initialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WBTC)),
@@ -1891,7 +1891,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
 
     // market decrease
 
-    function test_createMarketDecreaseOrderETH_USD_WETH_USDC_USDCCollateralLong_success() public {
+    function test_createOrder_successMarketDecreaseETH_USD_WETH_USDC_USDCCollateralLong() public {
         __test_createMarketDecreaseOrder_success({
             _initialCollateralToken: ARBITRUM_USDC,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
@@ -1901,7 +1901,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
         });
     }
 
-    function test_createMarketDecreaseOrderBTC_USD_WBTC_WBTC_WBTC_CollateralShort_success() public {
+    function test_createOrder_successMarketDecreaseBTC_USD_WBTC_WBTC_WBTC_CollateralShort() public {
         __test_createMarketDecreaseOrder_success({
             _initialCollateralToken: ARBITRUM_WBTC,
             _market: ARBITRUM_GMXV2_MARKET_BTC_USD_WBTC_WBTC,
@@ -1913,8 +1913,8 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
 
     // stop loss
 
-    function test_createStopLossOrderETH_USD_WETH_USDC_USDCCollateralLong_success() public {
-        __test_createStopLossOrder_success({
+    function test_createOrder_successStopLossETH_USD_WETH_USDC_USDCCollateralLong() public {
+        __test_createOrder_successStopLoss({
             _initialCollateralToken: ARBITRUM_USDC,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
             _decreaseInitialCollateralDeltaAmount: 100 * assetUnit(IERC20(ARBITRUM_USDC)),
@@ -1923,8 +1923,8 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
         });
     }
 
-    function test_createStopLossOrderETH_USD_WETH_USDC_WETHCollateralShort_success() public {
-        __test_createStopLossOrder_success({
+    function test_createOrder_successStopLossETH_USD_WETH_USDC_WETHCollateralShort() public {
+        __test_createOrder_successStopLoss({
             _initialCollateralToken: ARBITRUM_WETH,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
             _decreaseInitialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WETH)),
@@ -1935,8 +1935,8 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
 
     // limit decrease
 
-    function test_createLimitDecreaseOrderBTC_USD_WBTC_WBTC_WBTC_CollateralLong_success() public {
-        __test_createLimitDecreaseOrder_success({
+    function test_createOrder_successLimitDecreaseBTC_USD_WBTC_WBTC_WBTC_CollateralLong() public {
+        __test_createOrder_successLimitDecrease({
             _initialCollateralToken: ARBITRUM_WBTC,
             _market: ARBITRUM_GMXV2_MARKET_BTC_USD_WBTC_WBTC,
             _decreaseInitialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WBTC)),
@@ -1946,7 +1946,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
     }
 
     function test_createLimitDecreaseOrderETH_USD_WETH_USDC_WETHCollateralShort_success() public {
-        __test_createLimitDecreaseOrder_success({
+        __test_createOrder_successLimitDecrease({
             _initialCollateralToken: ARBITRUM_WETH,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
             _decreaseInitialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WETH)),
@@ -1957,7 +1957,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
 
     // update order
 
-    function test_updateOrderBTC_USD_WBTC_WBTC_WBTC_CollateralShort_success() public {
+    function test_updateOrder_successBTC_USD_WBTC_WBTC_WBTC_CollateralShort() public {
         __test_updateOrder_success({
             _initialCollateralToken: ARBITRUM_WETH,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
@@ -1969,8 +1969,8 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
 
     // cancel order
 
-    function test_cancelDecreaseOrderETH_USD_WETH_USDC_WETHCollateral_success() public {
-        __test_cancelDecreaseOrder_success({
+    function test_cancelOrder_successDecreaseOrderETH_USD_WETH_USDC_WETHCollateral() public {
+        __test_cancelOrder_successDecreaseOrder({
             _initialCollateralToken: ARBITRUM_WETH,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
             _decreaseInitialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WETH)),
@@ -1978,8 +1978,8 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
         });
     }
 
-    function test_cancelMarketIncreaseOrderETH_USD_WETH_WETH_WETHCollateral_success() public {
-        __test_cancelMarketIncreaseOrder_success({
+    function test_cancelOrder_successMarketIncreaseETH_USD_WETH_WETH_WETHCollateral() public {
+        __test_cancelOrder_successMarketIncrease({
             _initialCollateralToken: ARBITRUM_WETH,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_WETH,
             _initialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WETH)),
@@ -1988,7 +1988,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
     }
 
     function test_cancelMarketIncreaseOrderBTC_USD_WBTC_WBTC_WBTC_Collateral_success() public {
-        __test_cancelMarketIncreaseOrder_success({
+        __test_cancelOrder_successMarketIncrease({
             _initialCollateralToken: ARBITRUM_WBTC,
             _market: ARBITRUM_GMXV2_MARKET_BTC_USD_WBTC_WBTC,
             _initialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WBTC)),
@@ -1998,7 +1998,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
 
     // claim funding fees
 
-    function test_claimFundingFeesUniqueMarkets_success() public {
+    function test_claimFundingFees_successUniqueMarkets() public {
         __test_claimFundingFees_success({
             _tokens: toArray(ARBITRUM_USDC, ARBITRUM_WETH, ARBITRUM_WBTC),
             _markets: toArray(
@@ -2015,7 +2015,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
         });
     }
 
-    function test_claimFundingFeesNotUniqueMarkets_success() public {
+    function test_claimFundingFees_successNotUniqueMarkets() public {
         __test_claimFundingFees_success({
             _tokens: toArray(ARBITRUM_USDC, ARBITRUM_WETH, ARBITRUM_WETH, ARBITRUM_WBTC),
             _markets: toArray(
@@ -2248,8 +2248,8 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
 
     // liquidation
 
-    function test_afterOrderExecutionIsCalledOnLiquidation_success() public {
-        __test_afterOrderExecutionIsCalledOnLiquidation_success({
+    function test_afterOrderExecution_successAfterOrderExecutionIsCalledOnLiquidation() public {
+        __test_afterOrderExecution_successAfterOrderExecutionIsCalledOnLiquidation({
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
             _initialCollateralToken: ARBITRUM_USDC,
             _increaseInitialCollateralDeltaAmount: 100 * assetUnit(IERC20(ARBITRUM_USDC)),

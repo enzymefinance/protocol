@@ -53,7 +53,7 @@ contract FundDeployerTest is IntegrationTest {
     }
 
     // TODO: use newFundDeployer instead of core.release.fundDeployer
-    // function test_createNewFund_failWithNonLiveRelease() public {
+    // function test_createNewFund_failsWithNonLiveRelease() public {
     //     vm.expectRevert("Release is not yet live");
 
     //     core.release.fundDeployer.createNewFund({
