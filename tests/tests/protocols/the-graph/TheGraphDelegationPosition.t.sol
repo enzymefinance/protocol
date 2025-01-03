@@ -56,12 +56,13 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
     function __initialize(
         EnzymeVersion _version,
         uint256 _chainId,
+        uint256 _forkBlock,
         address _theGraphControllerAddress,
         address[] memory _indexerAddresses
     ) internal {
         version = _version;
 
-        setUpNetworkEnvironment({_chainId: _chainId});
+        setUpNetworkEnvironment({_chainId: _chainId, _forkBlock: _forkBlock});
 
         theGraphController = ITheGraphController(_theGraphControllerAddress);
 
@@ -459,6 +460,7 @@ abstract contract TheGraphDelegationTestEthereumBase is TheGraphDelegationTestBa
     function __initialize(EnzymeVersion _version) internal {
         __initialize({
             _chainId: ETHEREUM_CHAIN_ID,
+            _forkBlock: ETHEREUM_BLOCK_TIME_SENSITIVE_THE_GRAPH,
             _version: _version,
             _theGraphControllerAddress: ETHEREUM_THE_GRAPH_CONTROLLER,
             _indexerAddresses: toArray(ETHEREUM_THE_GRAPH_INDEXER_1, ETHEREUM_THE_GRAPH_INDEXER_2)
@@ -482,6 +484,7 @@ abstract contract TheGraphDelegationTestArbitrumBase is TheGraphDelegationTestBa
     function __initialize(EnzymeVersion _version) internal {
         __initialize({
             _chainId: ARBITRUM_CHAIN_ID,
+            _forkBlock: ARBITRUM_BLOCK_LATEST,
             _version: _version,
             _theGraphControllerAddress: ARBITRUM_THE_GRAPH_CONTROLLER,
             _indexerAddresses: toArray(ARBITRUM_THE_GRAPH_INDEXER_1, ARBITRUM_THE_GRAPH_INDEXER_2)

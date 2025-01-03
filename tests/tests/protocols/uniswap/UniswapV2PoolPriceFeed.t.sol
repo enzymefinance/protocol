@@ -122,7 +122,7 @@ contract EthereumWethUsdcTest is UniswapV2PoolPriceFeedTestBase {
             _chainId: ETHEREUM_CHAIN_ID,
             _uniswapV2FactoryAddress: ETHEREUM_UNISWAP_V2_FACTORY,
             _uniswapV2PoolAddress: ETHEREUM_UNISWAP_V2_POOL_WETH_USDC,
-            _forkBlock: ETHEREUM_BLOCK_LATEST
+            _forkBlock: ETHEREUM_BLOCK_TIME_SENSITIVE
         });
     }
 }
@@ -134,7 +134,7 @@ contract EthereumWethUsdcTestV4 is UniswapV2PoolPriceFeedTestBase {
             _chainId: ETHEREUM_CHAIN_ID,
             _uniswapV2FactoryAddress: ETHEREUM_UNISWAP_V2_FACTORY,
             _uniswapV2PoolAddress: ETHEREUM_UNISWAP_V2_POOL_WETH_USDC,
-            _forkBlock: ETHEREUM_BLOCK_LATEST
+            _forkBlock: ETHEREUM_BLOCK_TIME_SENSITIVE
         });
     }
 }

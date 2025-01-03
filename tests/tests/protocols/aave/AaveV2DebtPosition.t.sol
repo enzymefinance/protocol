@@ -574,7 +574,7 @@ contract AaveV2DebtPositionTestEthereum is AaveV2DebtPositionTest {
 
         uint256[] memory underlyingsVaultAmounts = new uint256[](3);
         underlyingsVaultAmounts[0] = 500 * assetUnit(IERC20(underlyingsToBorrowAndRepay[0]));
-        underlyingsVaultAmounts[1] = 2_000 * assetUnit(IERC20(underlyingsToBorrowAndRepay[1]));
+        underlyingsVaultAmounts[1] = 2_500 * assetUnit(IERC20(underlyingsToBorrowAndRepay[1]));
         underlyingsVaultAmounts[2] = 1 * assetUnit(IERC20(underlyingsToBorrowAndRepay[2]));
 
         uint256[] memory underlyingsToRepayAmounts = new uint256[](3);

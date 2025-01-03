@@ -13,12 +13,7 @@ import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IERC4626PriceFeed} from "tests/interfaces/internal/IERC4626PriceFeed.sol";
 import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
 
-import {
-    ETHEREUM_MORPHO_MAWETH_VAULT_ADDRESS,
-    ETHEREUM_MORPHO_MA3WETH_VAULT_ADDRESS,
-    ETHEREUM_MORPHO_MCWETH_VAULT_ADDRESS,
-    ETHEREUM_SPARK_SDAI_VAULT_ADDRESS
-} from "./ERC4626Utils.sol";
+import {ETHEREUM_MORPHO_RE7_USDC_VAULT_ADDRESS, ETHEREUM_SPARK_SDAI_VAULT_ADDRESS} from "./ERC4626Utils.sol";
 
 abstract contract ERC4626PriceFeedTestBase is IntegrationTest {
     IERC4626PriceFeed internal priceFeed;
@@ -91,27 +86,11 @@ abstract contract ERC4626PriceFeedTestEthereumBase is ERC4626PriceFeedTestBase {
         __initialize({_version: _version, _chainId: ETHEREUM_CHAIN_ID});
     }
 
-    function test_calcUnderlyingValues_successMorphoAaveV2() public {
+    function test_calcUnderlyingValues_successMetaMorpho() public {
         __test_calcUnderlyingValues_success({
-            _erc4626VaultAddress: ETHEREUM_MORPHO_MAWETH_VAULT_ADDRESS,
+            _erc4626VaultAddress: ETHEREUM_MORPHO_RE7_USDC_VAULT_ADDRESS,
             _allowedDeviationPer365DaysInBps: 3 * BPS_ONE_PERCENT,
-            _poolCreationTimestamp: 1665076991
-        });
-    }
-
-    function test_calcUnderlyingValues_successMorphoAaveV3() public {
-        __test_calcUnderlyingValues_success({
-            _erc4626VaultAddress: ETHEREUM_MORPHO_MA3WETH_VAULT_ADDRESS,
-            _allowedDeviationPer365DaysInBps: 3 * BPS_ONE_PERCENT,
-            _poolCreationTimestamp: 1686751511
-        });
-    }
-
-    function test_calcUnderlyingValues_successMorphoCompound() public {
-        __test_calcUnderlyingValues_success({
-            _erc4626VaultAddress: ETHEREUM_MORPHO_MCWETH_VAULT_ADDRESS,
-            _allowedDeviationPer365DaysInBps: BPS_ONE_PERCENT,
-            _poolCreationTimestamp: 1665585731
+            _poolCreationTimestamp: 1705697315
         });
     }
 

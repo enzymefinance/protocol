@@ -16,12 +16,7 @@ import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IERC4626Adapter} from "tests/interfaces/internal/IERC4626Adapter.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
-import {
-    ETHEREUM_MORPHO_MAWETH_VAULT_ADDRESS,
-    ETHEREUM_MORPHO_MA3WETH_VAULT_ADDRESS,
-    ETHEREUM_MORPHO_MCWETH_VAULT_ADDRESS,
-    ETHEREUM_SPARK_SDAI_VAULT_ADDRESS
-} from "./ERC4626Utils.sol";
+import {ETHEREUM_MORPHO_RE7_USDC_VAULT_ADDRESS, ETHEREUM_SPARK_SDAI_VAULT_ADDRESS} from "./ERC4626Utils.sol";
 
 abstract contract ERC4626AdapterTestBase is IntegrationTest {
     address internal fundOwner;
@@ -63,16 +58,6 @@ abstract contract ERC4626AdapterTestBase is IntegrationTest {
         bytes memory args = abi.encode(getIntegrationManagerAddressForVersion(version));
         address addr = deployCode("ERC4626Adapter.sol", args);
         return IERC4626Adapter(addr);
-    }
-
-    // MISC HELPERS
-
-    function __unpauseMorphoSupply(address _morphoSupplyVault) internal {
-        IMorphoMorpho morpho = IMorphoSupplyVault(_morphoSupplyVault).morpho();
-        address poolToken = IMorphoSupplyVault(_morphoSupplyVault).poolToken();
-
-        vm.prank(morpho.owner());
-        morpho.setIsSupplyPaused({_poolToken: poolToken, _isPaused: false});
     }
 
     // ACTION HELPERS
@@ -173,49 +158,21 @@ abstract contract ERC4626AdapterTestBase is IntegrationTest {
     }
 }
 
-contract MorphoAaveV2Test is ERC4626AdapterTestBase {
+contract MorphoRe7USDCTest is ERC4626AdapterTestBase {
     function setUp() public override {
-        __initialize({_version: EnzymeVersion.Current, _erc4626VaultAddress: ETHEREUM_MORPHO_MAWETH_VAULT_ADDRESS});
+        __initialize({_version: EnzymeVersion.Current, _erc4626VaultAddress: ETHEREUM_MORPHO_RE7_USDC_VAULT_ADDRESS});
     }
 }
 
-contract MorphoAaveV3Test is ERC4626AdapterTestBase {
+contract MorphoRe7USDCTestV4 is ERC4626AdapterTestBase {
     function setUp() public override {
-        __initialize({_version: EnzymeVersion.Current, _erc4626VaultAddress: ETHEREUM_MORPHO_MA3WETH_VAULT_ADDRESS});
-    }
-}
-
-contract MorphoCompoundTest is ERC4626AdapterTestBase {
-    function setUp() public override {
-        __initialize({_version: EnzymeVersion.Current, _erc4626VaultAddress: ETHEREUM_MORPHO_MCWETH_VAULT_ADDRESS});
-
-        __unpauseMorphoSupply(ETHEREUM_MORPHO_MCWETH_VAULT_ADDRESS);
+        __initialize({_version: EnzymeVersion.Current, _erc4626VaultAddress: ETHEREUM_MORPHO_RE7_USDC_VAULT_ADDRESS});
     }
 }
 
 contract SparkTest is ERC4626AdapterTestBase {
     function setUp() public override {
         __initialize({_version: EnzymeVersion.Current, _erc4626VaultAddress: ETHEREUM_SPARK_SDAI_VAULT_ADDRESS});
-    }
-}
-
-contract MorphoAaveV2TestV4 is ERC4626AdapterTestBase {
-    function setUp() public override {
-        __initialize({_version: EnzymeVersion.V4, _erc4626VaultAddress: ETHEREUM_MORPHO_MAWETH_VAULT_ADDRESS});
-    }
-}
-
-contract MorphoAaveV3TestV4 is ERC4626AdapterTestBase {
-    function setUp() public override {
-        __initialize({_version: EnzymeVersion.V4, _erc4626VaultAddress: ETHEREUM_MORPHO_MA3WETH_VAULT_ADDRESS});
-    }
-}
-
-contract MorphoCompoundTestV4 is ERC4626AdapterTestBase {
-    function setUp() public override {
-        __initialize({_version: EnzymeVersion.V4, _erc4626VaultAddress: ETHEREUM_MORPHO_MCWETH_VAULT_ADDRESS});
-
-        __unpauseMorphoSupply(ETHEREUM_MORPHO_MCWETH_VAULT_ADDRESS);
     }
 }
 

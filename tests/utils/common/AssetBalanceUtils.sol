@@ -14,6 +14,10 @@ import {
     ARBITRUM_POOL_ADDRESS as ARBITRUM_AAVE_V3_POOL_ADDRESS,
     BASE_POOL_ADDRESS as BASE_AAVE_V3_POOL_ADDRESS
 } from "tests/tests/protocols/aave/AaveV3Constants.sol";
+import {
+    ETHEREUM_ZERO_LEND_RWA_STABLECOINS_AAVE_V3_POOL,
+    ETHEREUM_ZERO_LEND_LRT_BTC_AAVE_V3_POOL
+} from "tests/tests/protocols/zero-lend/ZeroLendConstants.sol";
 
 import {
     ETHEREUM_COMPOUND_V3_CONFIGURATOR,
@@ -46,8 +50,17 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
             increaseStethBalance(_to, _amount);
         } else if (isAaveV2Token(_token)) {
             increaseAaveV2TokenBalance(_token, _to, _amount);
-        } else if (isAaveV3Token(_token)) {
-            increaseAaveV3TokenBalance(_token, _to, _amount);
+        } else if (isAaveV3Token(_token, getAaveV3PoolAddressForChain())) {
+            increaseAaveV3TokenBalance(_token, _to, _amount, getAaveV3PoolAddressForChain());
+        } else if (isAaveV3Token(_token, getZeroLendAaveV3PoolAddressForChainAndMarket(ZeroLendMarket.RWA_STABLECOINS)))
+        {
+            increaseAaveV3TokenBalance(
+                _token, _to, _amount, getZeroLendAaveV3PoolAddressForChainAndMarket(ZeroLendMarket.RWA_STABLECOINS)
+            );
+        } else if (isAaveV3Token(_token, getZeroLendAaveV3PoolAddressForChainAndMarket(ZeroLendMarket.LRT_BTC))) {
+            increaseAaveV3TokenBalance(
+                _token, _to, _amount, getZeroLendAaveV3PoolAddressForChainAndMarket(ZeroLendMarket.LRT_BTC)
+            );
         } else if (isCompoundV3Token(_token)) {
             increaseCompoundV3TokenBalance(_token, _to, _amount);
         } else if (isEeth(_token)) {
@@ -131,9 +144,34 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
         }
     }
 
-    function increaseAaveV3TokenBalance(IERC20 _aToken, address _to, uint256 _amount) internal {
-        address lendingPoolAddress = getAaveV3PoolAddressForChain();
+    // Zero Lend
 
+    enum ZeroLendMarket {
+        RWA_STABLECOINS,
+        LRT_BTC
+    }
+
+    function getZeroLendAaveV3PoolAddressForChainAndMarket(ZeroLendMarket _market)
+        internal
+        view
+        returns (address lendingPoolAddress_)
+    {
+        if (_market == ZeroLendMarket.RWA_STABLECOINS) {
+            if (block.chainid == ETHEREUM_CHAIN_ID) {
+                return ETHEREUM_ZERO_LEND_RWA_STABLECOINS_AAVE_V3_POOL;
+            }
+        }
+
+        if (_market == ZeroLendMarket.LRT_BTC) {
+            if (block.chainid == ETHEREUM_CHAIN_ID) {
+                return ETHEREUM_ZERO_LEND_LRT_BTC_AAVE_V3_POOL;
+            }
+        }
+    }
+
+    function increaseAaveV3TokenBalance(IERC20 _aToken, address _to, uint256 _amount, address _lendingPoolAddress)
+        internal
+    {
         IERC20 underlying = IERC20(IAaveAToken(address(_aToken)).UNDERLYING_ASSET_ADDRESS());
 
         // Increase underlying balance (allowing recursion as necessary, e.g., for stETH)
@@ -142,8 +180,8 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
         // Deposit underlying into Aave
         vm.startPrank(_to);
         // safeApprove() required for USDT
-        underlying.safeApprove(lendingPoolAddress, _amount);
-        IAaveV3Pool(lendingPoolAddress).supply({
+        underlying.safeApprove(_lendingPoolAddress, _amount);
+        IAaveV3Pool(_lendingPoolAddress).supply({
             _asset: address(underlying),
             _amount: _amount,
             _onBehalfOf: _to,
@@ -152,12 +190,10 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
         vm.stopPrank();
     }
 
-    function isAaveV3Token(IERC20 _token) internal returns (bool isAToken_) {
-        address poolAddress = getAaveV3PoolAddressForChain();
-        if (poolAddress == address(0)) {
+    function isAaveV3Token(IERC20 _token, address _poolAddress) internal returns (bool isAToken_) {
+        if (_poolAddress == address(0)) {
             return false;
         }
-
         // Sniff out aTokens by interface
         // Must not do a staticcall in case there is a fallback function with state modification
         (bool success, bytes memory returnData) =
@@ -172,7 +208,7 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
         // Must do this to distinguish Aave v2 from v3 tokens.
         IERC20 underlying = IERC20(abi.decode(returnData, (address)));
 
-        IAaveV3Pool.ReserveData memory reserveData = IAaveV3Pool(poolAddress).getReserveData(address(underlying));
+        IAaveV3Pool.ReserveData memory reserveData = IAaveV3Pool(_poolAddress).getReserveData(address(underlying));
 
         return address(_token) == reserveData.aTokenAddress;
     }
