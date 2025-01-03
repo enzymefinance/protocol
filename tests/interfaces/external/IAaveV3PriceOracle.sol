@@ -11,12 +11,8 @@
 
 pragma solidity >=0.6.0 <0.9.0;
 
-import {IAaveV3Pool} from "./IAaveV3Pool.sol";
-/// @title IAaveV3PoolAddressProvider interface
+/// @title IAaveV3PriceOracle interface
 /// @author Enzyme Foundation <security@enzyme.finance>
-
-interface IAaveV3PoolAddressProvider {
-    function getPool() external view returns (IAaveV3Pool pool_);
-
-    function getPriceOracle() external view returns (address priceOracleAddress_);
+interface IAaveV3PriceOracle {
+    function getAssetPrice(address _asset) external view returns (uint256 price_);
 }
