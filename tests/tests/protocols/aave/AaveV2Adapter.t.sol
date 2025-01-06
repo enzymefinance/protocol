@@ -4,9 +4,8 @@ pragma solidity 0.8.19;
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IAaveV2Adapter} from "tests/interfaces/internal/IAaveV2Adapter.sol";
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
-import {IIntegrationManager} from "tests/interfaces/internal/IIntegrationManager.sol";
 import {IAaveV2ATokenListOwner} from "tests/interfaces/internal/IAaveV2ATokenListOwner.sol";
-import {AaveAdapterTest} from "./AaveAdapterTest.sol";
+import {AaveAdapterTestBase} from "./AaveAdapterTest.sol";
 import {
     ETHEREUM_LENDING_POOL_ADDRESS,
     ETHEREUM_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS,
@@ -15,18 +14,32 @@ import {
 } from "./AaveV2Constants.sol";
 import {AaveV2Utils} from "./AaveV2Utils.sol";
 
-abstract contract AaveV2AdapterTest is AaveAdapterTest, AaveV2Utils {
-    function setUp() public virtual override {
+abstract contract AaveV2AdapterTest is AaveAdapterTestBase, AaveV2Utils {
+    function __initializeAaveV2AdapterTest(
+        EnzymeVersion _version,
+        uint256 _chainId,
+        address _lendingPool,
+        address _lendingPoolAddressProvider,
+        IERC20 _regular18DecimalUnderlying,
+        IERC20 _non18DecimalUnderlying
+    ) internal {
+        setUpNetworkEnvironment({_chainId: _chainId});
+
         (IAaveV2Adapter aaveV2Adapter,) = __deployATokenListOwnerAndAdapter({
             _addressListRegistry: core.persistent.addressListRegistry,
-            _integrationManagerAddress: getIntegrationManagerAddressForVersion(version),
-            _lendingPool: lendingPool,
-            _lendingPoolAddressProvider: lendingPoolAddressProvider
+            _integrationManagerAddress: getIntegrationManagerAddressForVersion(_version),
+            _lendingPool: _lendingPool,
+            _lendingPoolAddressProvider: _lendingPoolAddressProvider
         });
 
-        adapter = address(aaveV2Adapter);
-
-        super.setUp();
+        __initializeAaveAdapterTestBase({
+            _version: _version,
+            _adapterAddress: address(aaveV2Adapter),
+            _lendingPool: _lendingPool,
+            _lendingPoolAddressProvider: _lendingPoolAddressProvider,
+            _regular18DecimalUnderlying: _regular18DecimalUnderlying,
+            _non18DecimalUnderlying: _non18DecimalUnderlying
+        });
     }
 
     // DEPLOYMENT HELPERS
@@ -69,50 +82,56 @@ abstract contract AaveV2AdapterTest is AaveAdapterTest, AaveV2Utils {
     // MISC HELPERS
 
     function __getATokenAddress(address _underlying) internal view override returns (address) {
-        return getATokenAddress({_lendingPool: lendingPool, _underlying: _underlying});
+        return getATokenAddress({_lendingPool: __getLendingPool(), _underlying: _underlying});
     }
 }
 
-contract AaveV2AdapterTestEthereum is AaveV2AdapterTest {
-    function setUp() public virtual override {
-        lendingPool = ETHEREUM_LENDING_POOL_ADDRESS;
-        lendingPoolAddressProvider = ETHEREUM_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS;
-
-        setUpMainnetEnvironment();
-
-        regular18DecimalUnderlying = IERC20(ETHEREUM_WETH);
-        non18DecimalUnderlying = IERC20(ETHEREUM_USDC);
-
-        super.setUp();
+abstract contract AaveV2AdapterTestEthereumBase is AaveV2AdapterTest {
+    function __initialize(EnzymeVersion _version) internal {
+        __initializeAaveV2AdapterTest({
+            _version: _version,
+            _chainId: ETHEREUM_CHAIN_ID,
+            _lendingPool: ETHEREUM_LENDING_POOL_ADDRESS,
+            _lendingPoolAddressProvider: ETHEREUM_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS,
+            _regular18DecimalUnderlying: IERC20(ETHEREUM_WETH),
+            _non18DecimalUnderlying: IERC20(ETHEREUM_USDC)
+        });
     }
 }
 
-contract AaveV2AdapterTestPolygon is AaveV2AdapterTest {
-    function setUp() public virtual override {
-        lendingPool = POLYGON_LENDING_POOL_ADDRESS;
-        lendingPoolAddressProvider = POLYGON_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS;
-
-        setUpPolygonEnvironment();
-
-        regular18DecimalUnderlying = IERC20(POLYGON_WETH);
-        non18DecimalUnderlying = IERC20(POLYGON_USDC);
-
-        super.setUp();
+abstract contract AaveV2AdapterTestPolygonBase is AaveV2AdapterTest {
+    function __initialize(EnzymeVersion _version) internal {
+        __initializeAaveV2AdapterTest({
+            _version: _version,
+            _chainId: POLYGON_CHAIN_ID,
+            _lendingPool: POLYGON_LENDING_POOL_ADDRESS,
+            _lendingPoolAddressProvider: POLYGON_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS,
+            _regular18DecimalUnderlying: IERC20(POLYGON_WETH),
+            _non18DecimalUnderlying: IERC20(POLYGON_USDC)
+        });
     }
 }
 
-contract AaveV2AdapterTestEthereumV4 is AaveV2AdapterTestEthereum {
+contract AaveV2AdapterTestEthereum is AaveV2AdapterTestEthereumBase {
     function setUp() public override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
+        __initialize(EnzymeVersion.Current);
     }
 }
 
-contract AaveV2AdapterTestPolygonV4 is AaveV2AdapterTestPolygon {
+contract AaveV2AdapterTestEthereumV4 is AaveV2AdapterTestEthereumBase {
     function setUp() public override {
-        version = EnzymeVersion.V4;
+        __initialize(EnzymeVersion.V4);
+    }
+}
 
-        super.setUp();
+contract AaveV2AdapterTestPolygon is AaveV2AdapterTestPolygonBase {
+    function setUp() public override {
+        __initialize(EnzymeVersion.Current);
+    }
+}
+
+contract AaveV2AdapterTestPolygonV4 is AaveV2AdapterTestPolygonBase {
+    function setUp() public override {
+        __initialize(EnzymeVersion.V4);
     }
 }

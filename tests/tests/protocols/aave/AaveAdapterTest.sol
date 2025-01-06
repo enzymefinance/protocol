@@ -14,23 +14,37 @@ import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 abstract contract AaveAdapterTestBase is IntegrationTest {
-    uint256 internal constant ROUNDING_BUFFER = 2;
+    uint256 private constant ROUNDING_BUFFER = 2;
 
-    address internal vaultOwner;
-    address internal vaultProxyAddress;
-    address internal comptrollerProxyAddress;
+    address private vaultOwner;
+    address private vaultProxyAddress;
+    address private comptrollerProxyAddress;
 
-    address internal adapter;
-    address internal lendingPool;
-    address internal lendingPoolAddressProvider;
+    address private adapter;
+    address private lendingPool;
+    address private lendingPoolAddressProvider;
 
-    IERC20 internal regular18DecimalUnderlying;
-    IERC20 internal non18DecimalUnderlying;
+    IERC20 private regular18DecimalUnderlying;
+    IERC20 private non18DecimalUnderlying;
 
-    // Set by child contract
-    EnzymeVersion internal version;
+    EnzymeVersion private version;
 
-    function setUp() public virtual override {
+    function __initializeAaveAdapterTestBase(
+        EnzymeVersion _version,
+        address _adapterAddress,
+        address _lendingPool,
+        address _lendingPoolAddressProvider,
+        IERC20 _regular18DecimalUnderlying,
+        IERC20 _non18DecimalUnderlying
+    ) internal {
+        version = _version;
+
+        adapter = _adapterAddress;
+        lendingPool = _lendingPool;
+        lendingPoolAddressProvider = _lendingPoolAddressProvider;
+        regular18DecimalUnderlying = _regular18DecimalUnderlying;
+        non18DecimalUnderlying = _non18DecimalUnderlying;
+
         (comptrollerProxyAddress, vaultProxyAddress, vaultOwner) = createTradingFundForVersion(version);
     }
 
@@ -64,9 +78,12 @@ abstract contract AaveAdapterTestBase is IntegrationTest {
 
     // MISC HELPERS
     function __getATokenAddress(address _underlying) internal view virtual returns (address);
-}
 
-abstract contract AaveAdapterLendTest is AaveAdapterTestBase {
+    function __getLendingPool() internal view returns (address lendingPool_) {
+        return lendingPool;
+    }
+
+    // LEND TESTS
     function test_lend_success() public {
         __test_lend_success({
             _aToken: __getATokenAddress(address(regular18DecimalUnderlying)),
@@ -134,9 +151,7 @@ abstract contract AaveAdapterLendTest is AaveAdapterTestBase {
         // try to lend
         __lend({_aToken: fakeAToken, _amount: amountToLend});
     }
-}
 
-abstract contract AaveAdapterRedeemTest is AaveAdapterTestBase {
     function test_redeem_success() public {
         __test_redeem_success({
             _aToken: __getATokenAddress(address(regular18DecimalUnderlying)),
@@ -149,6 +164,8 @@ abstract contract AaveAdapterRedeemTest is AaveAdapterTestBase {
             _amount: 18 * assetUnit(non18DecimalUnderlying)
         });
     }
+
+    // REDEEM TESTS
 
     function __test_redeem_success(address _aToken, uint256 _amount) internal {
         address underlying = IAaveAToken(_aToken).UNDERLYING_ASSET_ADDRESS();
@@ -212,5 +229,3 @@ abstract contract AaveAdapterRedeemTest is AaveAdapterTestBase {
         __redeem({_aToken: fakeAToken, _amount: amountToRedeem});
     }
 }
-
-abstract contract AaveAdapterTest is AaveAdapterLendTest, AaveAdapterRedeemTest {}
