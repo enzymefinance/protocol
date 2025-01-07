@@ -11,10 +11,12 @@
 
 pragma solidity 0.8.19;
 
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {IPendleV2PrincipalToken} from "../../../../../external-interfaces/IPendleV2PrincipalToken.sol";
 import {IPendleV2Router} from "../../../../../external-interfaces/IPendleV2Router.sol";
 import {IPendleV2StandardizedYield} from "../../../../../external-interfaces/IPendleV2StandardizedYield.sol";
 import {IWETH} from "../../../../../external-interfaces/IWETH.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../../../../utils/0.8.19/open-zeppelin/WrappedSafeERC20.sol";
 import {IIntegrationManager} from "../../IIntegrationManager.sol";
 import {AdapterBase} from "../utils/0.8.19/AdapterBase.sol";
 import {IPendleV2Adapter} from "./interfaces/IPendleV2Adapter.sol";
@@ -23,6 +25,8 @@ import {IPendleV2Adapter} from "./interfaces/IPendleV2Adapter.sol";
 /// @author Enzyme Foundation <security@enzyme.finance>
 /// @notice Adapter for interacting with Pendle v2
 contract PendleV2Adapter is IPendleV2Adapter, AdapterBase {
+    using SafeERC20 for IERC20;
+
     address private constant NATIVE_ASSET_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address private constant PENDLE_NATIVE_ASSET_ADDRESS = address(0);
 
@@ -73,6 +77,11 @@ contract PendleV2Adapter is IPendleV2Adapter, AdapterBase {
             __removeLiquidityToUnderlying({
                 _vaultProxyAddress: _vaultProxyAddress,
                 _actionArgs: abi.decode(encodedActionArgs, (RemoveLiquidityToUnderlyingActionArgs))
+            });
+        } else if (actionId == Action.RemoveLiquidityToPtAndUnderlying) {
+            __removeLiquidityToPtAndUnderlying({
+                _vaultProxyAddress: _vaultProxyAddress,
+                _actionArgs: abi.decode(encodedActionArgs, (RemoveLiquidityToPtAndUnderlyingActionArgs))
             });
         } else {
             revert PendleV2Adapter__InvalidAction();
@@ -150,6 +159,43 @@ contract PendleV2Adapter is IPendleV2Adapter, AdapterBase {
             _guessPtOut: _actionArgs.guessPtOut,
             _limit: limit
         });
+    }
+
+    /// @dev Helper to redeem Pendle LP tokens in-kind for the PT and underlying token (unwrapped from SY)
+    function __removeLiquidityToPtAndUnderlying(
+        address _vaultProxyAddress,
+        RemoveLiquidityToPtAndUnderlyingActionArgs memory _actionArgs
+    ) private {
+        // Grant max LP token allowance to the Router
+        __approveAssetMaxAsNeeded({
+            _asset: address(_actionArgs.market),
+            _target: address(PENDLE_ROUTER),
+            _neededAmount: _actionArgs.lpAmount
+        });
+
+        // Remove liquidity, receive SY and PT
+        // _minSyOut and _minPtOut are validated in IntegrationManager via minIncomingAssetAmounts
+        (uint256 syTokenAmount, uint256 ptAmount) = PENDLE_ROUTER.removeLiquidityDualSyAndPt({
+            _receiver: address(this),
+            _market: address(_actionArgs.market),
+            _netLpToRemove: _actionArgs.lpAmount,
+            _minSyOut: 1,
+            _minPtOut: 1
+        });
+
+        (IPendleV2StandardizedYield syToken, IPendleV2PrincipalToken pt,) = _actionArgs.market.readTokens();
+
+        // Redeem SY into underlying, transfer to vault
+        __redeemSYToken({
+            _syToken: syToken,
+            _syTokenAmount: syTokenAmount,
+            _withdrawalTokenAddressInput: _actionArgs.withdrawalTokenAddress,
+            _minWithdrawalTokenAmount: _actionArgs.minWithdrawalTokenAmount,
+            _receiver: _vaultProxyAddress
+        });
+
+        // Transfer PT to vault
+        IERC20(address(pt)).safeTransfer(_vaultProxyAddress, ptAmount);
     }
 
     /// @dev Helper to redeem Pendle LP tokens for the underlying token of the SY
@@ -262,18 +308,17 @@ contract PendleV2Adapter is IPendleV2Adapter, AdapterBase {
     {
         if (_selector != ACTION_SELECTOR) revert PendleV2Adapter__InvalidAction();
 
-        // All actions have 1 incoming and 1 outgoing asset
-        spendAssets_ = new address[](1);
-        spendAssetAmounts_ = new uint256[](1);
-        incomingAssets_ = new address[](1);
-        minIncomingAssetAmounts_ = new uint256[](1);
-
         (IPendleV2Adapter.Action actionId, bytes memory encodedActionArgs) = abi.decode(_actionData, (Action, bytes));
 
         if (actionId == Action.BuyPrincipalToken) {
             BuyPrincipalTokenActionArgs memory actionArgs = abi.decode(encodedActionArgs, (BuyPrincipalTokenActionArgs));
 
             (, IPendleV2PrincipalToken principalToken,) = actionArgs.market.readTokens();
+
+            spendAssets_ = new address[](1);
+            spendAssetAmounts_ = new uint256[](1);
+            incomingAssets_ = new address[](1);
+            minIncomingAssetAmounts_ = new uint256[](1);
 
             spendAssets_[0] = __parseAssetInputForEnzyme(actionArgs.depositTokenAddress);
             spendAssetAmounts_[0] = actionArgs.depositTokenAmount;
@@ -285,6 +330,11 @@ contract PendleV2Adapter is IPendleV2Adapter, AdapterBase {
 
             (, IPendleV2PrincipalToken principalToken,) = actionArgs.market.readTokens();
 
+            spendAssets_ = new address[](1);
+            spendAssetAmounts_ = new uint256[](1);
+            incomingAssets_ = new address[](1);
+            minIncomingAssetAmounts_ = new uint256[](1);
+
             spendAssets_[0] = address(principalToken);
             spendAssetAmounts_[0] = actionArgs.ptAmount;
             incomingAssets_[0] = __parseAssetInputForEnzyme(actionArgs.withdrawalTokenAddress);
@@ -292,6 +342,11 @@ contract PendleV2Adapter is IPendleV2Adapter, AdapterBase {
         } else if (actionId == Action.AddLiquidityFromUnderlying) {
             AddLiquidityFromUnderlyingActionArgs memory actionArgs =
                 abi.decode(encodedActionArgs, (AddLiquidityFromUnderlyingActionArgs));
+
+            spendAssets_ = new address[](1);
+            spendAssetAmounts_ = new uint256[](1);
+            incomingAssets_ = new address[](1);
+            minIncomingAssetAmounts_ = new uint256[](1);
 
             spendAssets_[0] = __parseAssetInputForEnzyme(actionArgs.depositTokenAddress);
             spendAssetAmounts_[0] = actionArgs.depositTokenAmount;
@@ -301,10 +356,35 @@ contract PendleV2Adapter is IPendleV2Adapter, AdapterBase {
             RemoveLiquidityToUnderlyingActionArgs memory actionArgs =
                 abi.decode(encodedActionArgs, (RemoveLiquidityToUnderlyingActionArgs));
 
+            spendAssets_ = new address[](1);
+            spendAssetAmounts_ = new uint256[](1);
+            incomingAssets_ = new address[](1);
+            minIncomingAssetAmounts_ = new uint256[](1);
+
             spendAssets_[0] = address(actionArgs.market);
             spendAssetAmounts_[0] = actionArgs.lpAmount;
             incomingAssets_[0] = __parseAssetInputForEnzyme(actionArgs.withdrawalTokenAddress);
             minIncomingAssetAmounts_[0] = actionArgs.minWithdrawalTokenAmount;
+        } else if (actionId == Action.RemoveLiquidityToPtAndUnderlying) {
+            RemoveLiquidityToPtAndUnderlyingActionArgs memory actionArgs =
+                abi.decode(encodedActionArgs, (RemoveLiquidityToPtAndUnderlyingActionArgs));
+
+            spendAssets_ = new address[](1);
+            spendAssetAmounts_ = new uint256[](1);
+            incomingAssets_ = new address[](2);
+            minIncomingAssetAmounts_ = new uint256[](2);
+
+            spendAssets_[0] = address(actionArgs.market);
+            spendAssetAmounts_[0] = actionArgs.lpAmount;
+
+            // Incoming asset: underlying
+            incomingAssets_[0] = __parseAssetInputForEnzyme(actionArgs.withdrawalTokenAddress);
+            minIncomingAssetAmounts_[0] = actionArgs.minWithdrawalTokenAmount;
+
+            // Incoming asset: PT
+            (, IPendleV2PrincipalToken principalToken,) = actionArgs.market.readTokens();
+            incomingAssets_[1] = address(principalToken);
+            minIncomingAssetAmounts_[1] = actionArgs.minPtAmount;
         }
 
         return (

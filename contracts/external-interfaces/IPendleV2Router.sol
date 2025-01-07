@@ -67,6 +67,14 @@ interface IPendleV2Router {
         LimitOrderData calldata _limit
     ) external returns (uint256 netLpOut_, uint256 netSyFee_);
 
+    function removeLiquidityDualSyAndPt(
+        address _receiver,
+        address _market,
+        uint256 _netLpToRemove,
+        uint256 _minSyOut,
+        uint256 _minPtOut
+    ) external returns (uint256 netSyOut_, uint256 netPtOut_);
+
     function removeLiquiditySingleSy(
         address _receiver,
         address _market,

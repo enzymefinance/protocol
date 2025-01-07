@@ -21,7 +21,8 @@ interface IPendleV2Adapter {
         BuyPrincipalToken,
         SellPrincipalToken,
         AddLiquidityFromUnderlying,
-        RemoveLiquidityToUnderlying
+        RemoveLiquidityToUnderlying,
+        RemoveLiquidityToPtAndUnderlying
     }
 
     struct AddLiquidityFromUnderlyingActionArgs {
@@ -37,6 +38,14 @@ interface IPendleV2Adapter {
         address depositTokenAddress;
         uint256 depositTokenAmount;
         IPendleV2Router.ApproxParams guessPtOut;
+        uint256 minPtAmount;
+    }
+
+    struct RemoveLiquidityToPtAndUnderlyingActionArgs {
+        IPendleV2Market market;
+        uint256 lpAmount;
+        address withdrawalTokenAddress;
+        uint256 minWithdrawalTokenAmount;
         uint256 minPtAmount;
     }
 

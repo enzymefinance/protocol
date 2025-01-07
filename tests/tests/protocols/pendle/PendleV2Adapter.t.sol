@@ -185,6 +185,26 @@ abstract contract TestBase is IntegrationTest {
         });
     }
 
+    function __removeLiquidityToPtAndUnderlying(
+        uint256 _lpAmount,
+        address _withdrawalTokenAddressInput,
+        uint256 _minWithdrawalTokenAmount,
+        uint256 _minPtAmount
+    ) internal {
+        __action({
+            _actionId: IPendleV2AdapterProd.Action.RemoveLiquidityToPtAndUnderlying,
+            _encodedActionArgs: abi.encode(
+                IPendleV2AdapterProd.RemoveLiquidityToPtAndUnderlyingActionArgs({
+                    market: IPendleV2MarketProd(address(market)),
+                    lpAmount: _lpAmount,
+                    withdrawalTokenAddress: _withdrawalTokenAddressInput,
+                    minWithdrawalTokenAmount: _minWithdrawalTokenAmount,
+                    minPtAmount: _minPtAmount
+                })
+            )
+        });
+    }
+
     function __removeLiquidityToUnderlying(
         uint256 _lpAmount,
         address _withdrawalTokenAddressInput,
@@ -434,11 +454,15 @@ abstract contract TestBase is IntegrationTest {
         IERC20 withdrawalToken = IERC20(__parseAssetInputForEnzyme(_withdrawalTokenAddressInput));
         address pendleWithdrawalAssetAddress = __parseAssetInputForPendle(_withdrawalTokenAddressInput);
 
-        // Give the vault a balance of the LP token
-        uint256 preWithdrawalLpBalance = assetUnit(IERC20(address(principalToken))) * 7;
-        increaseTokenBalance({_token: IERC20(address(market)), _to: vaultProxyAddress, _amount: preWithdrawalLpBalance});
+        // Acquire a balance of the LP token
+        __addLiquidityFromUnderlying({
+            _depositTokenAddressInput: address(underlyingAsset),
+            _depositTokenAmount: underlyingAsset.balanceOf(vaultProxyAddress) / 7,
+            _minLpAmount: 1
+        });
+        uint256 preLpBalance = IERC20(address(market)).balanceOf(vaultProxyAddress);
 
-        uint256 lpAmountToRedeem = preWithdrawalLpBalance / 3;
+        uint256 lpAmountToRedeem = preLpBalance / 3;
         uint256 minWithdrawalTokenAmount = 123;
 
         uint256 expectedWithdrawalTokenDelta = syToken.previewRedeem({
@@ -466,11 +490,11 @@ abstract contract TestBase is IntegrationTest {
             _minIncomingAssetAmounts: toArray(minWithdrawalTokenAmount)
         });
 
-        uint256 postWithdrawalLpBalance = IERC20(address(market)).balanceOf(vaultProxyAddress);
+        uint256 postLpBalance = IERC20(address(market)).balanceOf(vaultProxyAddress);
         uint256 postWithdrawalTokenBalance = withdrawalToken.balanceOf(vaultProxyAddress);
 
         // Assert outflow and inflow
-        assertEq(postWithdrawalLpBalance, preWithdrawalLpBalance - lpAmountToRedeem, "Incorrect LP balance");
+        assertEq(postLpBalance, preLpBalance - lpAmountToRedeem, "Incorrect LP balance");
         // Tolerate 0.5% difference
         assertApproxEqRel(
             postWithdrawalTokenBalance,
@@ -488,6 +512,64 @@ abstract contract TestBase is IntegrationTest {
         // If the native asset is a valid withdrawal token, run the test
         if (syToken.isValidTokenOut(PENDLE_NATIVE_ASSET_ADDRESS)) {
             __test_removeLiquidityToUnderlying_success({_withdrawalTokenAddressInput: NATIVE_ASSET_ADDRESS});
+        }
+    }
+
+    function __test_removeLiquidityToPtAndUnderlying_success(address _withdrawalTokenAddressInput) private {
+        IERC20 withdrawalToken = IERC20(__parseAssetInputForEnzyme(_withdrawalTokenAddressInput));
+
+        // Acquire a balance of the LP token
+        __addLiquidityFromUnderlying({
+            _depositTokenAddressInput: address(underlyingAsset),
+            _depositTokenAmount: underlyingAsset.balanceOf(vaultProxyAddress) / 7,
+            _minLpAmount: 1
+        });
+        uint256 preLpBalance = IERC20(address(market)).balanceOf(vaultProxyAddress);
+
+        uint256 lpAmountToRedeem = preLpBalance / 3;
+        uint256 minWithdrawalTokenAmount = 123;
+        uint256 minPtAmount = 456;
+
+        uint256 prePtBalance = IERC20(address(principalToken)).balanceOf(vaultProxyAddress);
+        uint256 preWithdrawalTokenBalance = withdrawalToken.balanceOf(vaultProxyAddress);
+
+        vm.recordLogs();
+
+        __removeLiquidityToPtAndUnderlying({
+            _lpAmount: lpAmountToRedeem,
+            _withdrawalTokenAddressInput: _withdrawalTokenAddressInput,
+            _minWithdrawalTokenAmount: minWithdrawalTokenAmount,
+            _minPtAmount: minPtAmount
+        });
+
+        assertAdapterAssetsForAction({
+            _logs: vm.getRecordedLogs(),
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
+            _spendAssets: toArray(address(market)),
+            _maxSpendAssetAmounts: toArray(lpAmountToRedeem),
+            _incomingAssets: toArray(address(withdrawalToken), address(principalToken)),
+            _minIncomingAssetAmounts: toArray(minWithdrawalTokenAmount, minPtAmount)
+        });
+
+        uint256 postLpBalance = IERC20(address(market)).balanceOf(vaultProxyAddress);
+        uint256 postPtBalance = IERC20(address(principalToken)).balanceOf(vaultProxyAddress);
+        uint256 postWithdrawalTokenBalance = withdrawalToken.balanceOf(vaultProxyAddress);
+
+        // Assert outflow and inflow
+        assertEq(postLpBalance, preLpBalance - lpAmountToRedeem, "Incorrect LP balance");
+        // TODO: could estimate actual inflow value or amounts
+        assertGt(postWithdrawalTokenBalance, preWithdrawalTokenBalance, "Withdrawal token balance did not increase");
+        assertGt(postPtBalance, prePtBalance, "Pt balance did not increase");
+    }
+
+    function test_removeLiquidityToPtAndUnderlying_success() public {
+        __test_removeLiquidityToPtAndUnderlying_success({_withdrawalTokenAddressInput: address(underlyingAsset)});
+    }
+
+    function test_removeLiquidityToPtAndUnderlying_successNativeAsset() public {
+        // If the native asset is a valid withdrawal token, run the test
+        if (syToken.isValidTokenOut(PENDLE_NATIVE_ASSET_ADDRESS)) {
+            __test_removeLiquidityToPtAndUnderlying_success({_withdrawalTokenAddressInput: NATIVE_ASSET_ADDRESS});
         }
     }
 }
