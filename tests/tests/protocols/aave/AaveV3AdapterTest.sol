@@ -7,6 +7,7 @@ import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IAaveV3Adapter} from "tests/interfaces/internal/IAaveV3Adapter.sol";
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
 import {IAaveV3ATokenListOwner} from "tests/interfaces/internal/IAaveV3ATokenListOwner.sol";
+import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
 import {AaveAdapterTestBase} from "./AaveAdapterTest.sol";
 import {AaveV3Utils} from "./AaveV3Utils.sol";
 
@@ -35,6 +36,11 @@ abstract contract AaveV3AdapterTest is AaveAdapterTestBase, AaveV3Utils {
             _lendingPoolAddressProvider: _lendingPoolAddressProvider,
             _regular18DecimalUnderlying: _regular18DecimalUnderlying,
             _non18DecimalUnderlying: _non18DecimalUnderlying
+        });
+
+        __registerTokensAndATokensForThem({
+            _version: _version,
+            _underlyingAddresses: toArray(address(_regular18DecimalUnderlying), address(_non18DecimalUnderlying))
         });
     }
 
@@ -79,5 +85,15 @@ abstract contract AaveV3AdapterTest is AaveAdapterTestBase, AaveV3Utils {
 
     function __getATokenAddress(address _underlying) internal view override returns (address) {
         return getATokenAddress({_lendingPool: __getLendingPool(), _underlying: _underlying});
+    }
+
+    function __registerTokensAndATokensForThem(EnzymeVersion _version, address[] memory _underlyingAddresses)
+        internal
+    {
+        registerUnderlyingsAndATokensForThem({
+            _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion(_version)),
+            _underlyings: _underlyingAddresses,
+            _lendingPool: __getLendingPool()
+        });
     }
 }
