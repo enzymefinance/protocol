@@ -45,6 +45,8 @@ address constant PENDLE_NATIVE_ASSET_ADDRESS = address(0);
 abstract contract PendleTestBase is IntegrationTest, PendleV2Utils {
     using AddressArrayLib for address[];
 
+    event MigratedToVault();
+
     event PrincipalTokenAdded(address indexed principalToken);
 
     event PrincipalTokenRemoved(address indexed principalToken);
@@ -310,6 +312,18 @@ abstract contract PendleTestBase is IntegrationTest, PendleV2Utils {
             _externalPositionAddress: address(pendleV2ExternalPosition),
             _actionId: uint256(IPendleV2PositionProd.Actions.ClaimRewards),
             _actionArgs: actionArgs
+        });
+    }
+
+    function __migrateToVault() private {
+        vm.prank(fundOwner);
+
+        callOnExternalPositionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _externalPositionAddress: address(pendleV2ExternalPosition),
+            _actionId: uint256(IPendleV2PositionProd.Actions.MigrateToVault),
+            _actionArgs: ""
         });
     }
 
@@ -709,6 +723,47 @@ abstract contract PendleTestBase is IntegrationTest, PendleV2Utils {
         // Assert that the PT and LP tokens have not been sent to the vault
         assertEq(IERC20(address(principalToken)).balanceOf(vaultProxyAddress), 0);
         assertEq(IERC20(address(market)).balanceOf(vaultProxyAddress), 0);
+    }
+
+    function test_migrateToVault_success() public {
+        // Acquire PT and LP
+        __buyPrincipalToken({_depositTokenAddress: address(underlyingAsset)});
+        __addLiquidity();
+
+        uint256 ptBalance = IERC20(address(principalToken)).balanceOf(address(pendleV2ExternalPosition));
+        uint256 lpBalance = IERC20(address(market)).balanceOf(address(pendleV2ExternalPosition));
+        assertGt(ptBalance, 0, "No starting principalToken balance");
+        assertGt(lpBalance, 0, "No starting LP balance");
+
+        vm.recordLogs();
+
+        // Pre-assert event
+        expectEmit(address(pendleV2ExternalPosition));
+        emit MigratedToVault();
+
+        // Migrate the external position to the vault
+        __migrateToVault();
+
+        assertExternalPositionAssetsToReceive({
+            _logs: vm.getRecordedLogs(),
+            _externalPositionManager: externalPositionManager,
+            _assets: toArray(address(principalToken), address(market))
+        });
+
+        // Assert that the PT and LP tokens have been sent to the vault
+        assertEq(
+            IERC20(address(principalToken)).balanceOf(vaultProxyAddress), ptBalance, "Incorrect principalToken balance"
+        );
+        assertEq(IERC20(address(market)).balanceOf(vaultProxyAddress), lpBalance, "Incorrect LP balance");
+
+        // Assert that storage is cleared in the EP
+        assertEq(pendleV2ExternalPosition.getPrincipalTokens().length, 0, "Incorrect principalTokens length");
+        assertEq(pendleV2ExternalPosition.getLPTokens().length, 0, "Incorrect lpTokens length");
+
+        // Assert that position value is 0
+        (address[] memory assets, uint256[] memory amounts) = pendleV2ExternalPosition.getManagedAssets();
+        assertEq(assets.length, 0, "Incorrect managed assets");
+        assertEq(amounts.length, 0, "Incorrect managed asset amounts");
     }
 
     function test_multiplePositions_success() public {

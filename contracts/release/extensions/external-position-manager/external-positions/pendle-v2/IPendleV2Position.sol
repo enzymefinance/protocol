@@ -19,7 +19,8 @@ interface IPendleV2Position is IExternalPosition {
         SellPrincipalToken,
         AddLiquidity,
         RemoveLiquidity,
-        ClaimRewards
+        ClaimRewards,
+        MigrateToVault
     }
 
     function getLPTokens() external view returns (address[] memory lpTokenAddresses_);

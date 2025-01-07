@@ -27,12 +27,13 @@ contract PendleV2PositionParser is PendleV2PositionDataDecoder, IExternalPositio
     }
 
     /// @notice Parses the assets to send and receive for the callOnExternalPosition
+    /// @param _externalPosition The _externalPosition to be called
     /// @param _actionId The _actionId for the callOnExternalPosition
     /// @param _encodedActionArgs The encoded parameters for the callOnExternalPosition
     /// @return assetsToTransfer_ The assets to be transferred from the Vault
     /// @return amountsToTransfer_ The amounts to be transferred from the Vault
     /// @return assetsToReceive_ The assets to be received at the Vault
-    function parseAssetsForAction(address, uint256 _actionId, bytes memory _encodedActionArgs)
+    function parseAssetsForAction(address _externalPosition, uint256 _actionId, bytes memory _encodedActionArgs)
         external
         view
         override
@@ -70,6 +71,19 @@ contract PendleV2PositionParser is PendleV2PositionDataDecoder, IExternalPositio
             assetsToReceive_[0] = __parseTokenAddressInput(withdrawalTokenAddress);
         } else if (_actionId == uint256(IPendleV2Position.Actions.ClaimRewards)) {
             // No validations or transferred assets passed for Actions.ClaimRewards
+        } else if (_actionId == uint256(IPendleV2Position.Actions.MigrateToVault)) {
+            address[] memory ptAddresses = IPendleV2Position(_externalPosition).getPrincipalTokens();
+            address[] memory lpTokenAddresses = IPendleV2Position(_externalPosition).getLPTokens();
+            uint256 ptCount = ptAddresses.length;
+            uint256 lpTokenCount = lpTokenAddresses.length;
+
+            assetsToReceive_ = new address[](ptCount + lpTokenCount);
+            for (uint256 i; i < ptCount; i++) {
+                assetsToReceive_[i] = ptAddresses[i];
+            }
+            for (uint256 i; i < lpTokenCount; i++) {
+                assetsToReceive_[ptCount + i] = lpTokenAddresses[i];
+            }
         } else {
             revert("parseAssetsForAction: Unrecognized action");
         }

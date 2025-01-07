@@ -15,10 +15,9 @@ pragma solidity 0.8.19;
 /// @author Enzyme Foundation <security@enzyme.finance>
 /// @notice A persistent contract containing all required storage variables and
 /// required functions for a PendleV2PositionLib implementation
-/// @dev DO NOT EDIT CONTRACT. If new events or storage are necessary, they should be added to
-/// a numbered PendleV2PositionLibBaseXXX that inherits the previous base.
-/// e.g., `PendleV2PositionLibBase2 is PendleV2PositionLibBase1`
 abstract contract PendleV2PositionLibBase1 {
+    event MigratedToVault();
+
     event PrincipalTokenAdded(address indexed principalToken);
 
     event PrincipalTokenRemoved(address indexed principalToken);

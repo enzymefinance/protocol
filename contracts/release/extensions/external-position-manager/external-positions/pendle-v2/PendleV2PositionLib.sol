@@ -92,6 +92,8 @@ contract PendleV2PositionLib is
             __removeLiquidity(actionArgs);
         } else if (actionId == uint256(Actions.ClaimRewards)) {
             __claimRewards(actionArgs);
+        } else if (actionId == uint256(Actions.MigrateToVault)) {
+            __migrateToVault();
         }
     }
 
@@ -337,6 +339,20 @@ contract PendleV2PositionLib is
 
             rewardToken.safeTransfer(msg.sender, rewardTokenBalance);
         }
+    }
+
+    /// @dev Helper to migrate all PTs and LPs to the vault (i.e., shut down this external position)
+    function __migrateToVault() private {
+        address[] memory ptsToTransfer = getPrincipalTokens();
+        address[] memory lpTokensToTransfer = getLPTokens();
+
+        delete principalTokens;
+        delete lpTokens;
+
+        __pushFullAssetBalances({_target: msg.sender, _assets: ptsToTransfer});
+        __pushFullAssetBalances({_target: msg.sender, _assets: lpTokensToTransfer});
+
+        emit MigratedToVault();
     }
 
     /// @dev Helper to mint a Pendle SY token from a depositToken
