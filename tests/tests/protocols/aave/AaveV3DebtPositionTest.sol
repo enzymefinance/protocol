@@ -246,6 +246,19 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         });
     }
 
+    function __sweep(address[] memory _assets) internal {
+        bytes memory actionArgs = abi.encode(_assets);
+
+        vm.prank(fundOwner);
+        callOnExternalPositionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _externalPositionAddress: address(aaveV3DebtPosition),
+            _actionArgs: actionArgs,
+            _actionId: uint256(IAaveV3DebtPositionProd.Actions.Sweep)
+        });
+    }
+
     // MISC HELPERS
 
     function __calcCollateralValueOfBorrowedAssets(
@@ -835,6 +848,57 @@ abstract contract ClaimRewardsTest is TestBase {
     }
 }
 
+abstract contract SweepTest is TestBase {
+    function test_sweep_success() public {
+        address[] memory assetToSweep = toArray(address(createTestToken("Asset1")), address(createTestToken("Asset2")));
+        uint256[] memory amountsToSweep = new uint256[](assetToSweep.length);
+
+        // deal some assets to sweep to the external position
+        for (uint256 i = 0; i < assetToSweep.length; i++) {
+            amountsToSweep[i] = (i + 1) * assetUnit(IERC20(assetToSweep[i]));
+            increaseTokenBalance({
+                _token: IERC20(assetToSweep[i]),
+                _to: address(aaveV3DebtPosition),
+                _amount: amountsToSweep[i]
+            });
+        }
+
+        vm.recordLogs();
+
+        __sweep(assetToSweep);
+
+        assertExternalPositionAssetsToReceive({
+            _logs: vm.getRecordedLogs(),
+            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _assets: new address[](0)
+        });
+
+        for (uint256 i = 0; i < assetToSweep.length; i++) {
+            assertEq(IERC20(assetToSweep[i]).balanceOf(address(aaveV3DebtPosition)), 0, "Asset was not swept");
+        }
+
+        for (uint256 i = 0; i < assetToSweep.length; i++) {
+            assertEq(
+                IERC20(assetToSweep[i]).balanceOf(vaultProxyAddress),
+                amountsToSweep[i],
+                "Asset was not swept to the vault"
+            );
+        }
+    }
+
+    function test_sweep_failsWithCollateralAsset() public {
+        address collateralATokenAddress = __getATokenAddress(rewardedCollateralUnderlyingAddress);
+
+        __dealATokenAndAddCollateral({
+            _aTokens: toArray(collateralATokenAddress),
+            _amounts: toArray(1 * assetUnit(IERC20(collateralATokenAddress)))
+        });
+
+        vm.expectRevert(formatError("__sweep: Invalid asset, is collateral"));
+        __sweep(toArray(collateralATokenAddress));
+    }
+}
+
 // Normally in this place there would be tests for getManagedAssets, and getDebtAssets, but in Aave's case it is very straightforward, i.e., there is only one kind of managed asset with one way of calculating it, and same for debt assets.
 // Therefore, we don't need to test it.
 
@@ -845,5 +909,6 @@ abstract contract AaveV3DebtPositionTestBase is
     BorrowTest,
     AddCollateralTest,
     RemoveCollateralTest,
-    ClaimRewardsTest
+    ClaimRewardsTest,
+    SweepTest
 {}

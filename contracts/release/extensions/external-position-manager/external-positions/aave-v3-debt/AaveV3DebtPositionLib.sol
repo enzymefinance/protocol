@@ -76,6 +76,8 @@ contract AaveV3DebtPositionLib is
             __setUseReserveAsCollateral(actionArgs);
         } else if (actionId == uint256(Actions.ClaimRewards)) {
             __claimRewards(actionArgs);
+        } else if (actionId == uint256(Actions.Sweep)) {
+            __sweep(actionArgs);
         } else {
             revert("receiveCallFromVault: Invalid actionId");
         }
@@ -223,6 +225,19 @@ contract AaveV3DebtPositionLib is
         (address[] memory assets, uint256 amount, address rewardToken) = __decodeClaimRewardsActionArgs(actionArgs);
 
         REWARDS_CONTROLLER.claimRewards({_assets: assets, _amount: amount, _rewardToken: rewardToken, _to: msg.sender});
+    }
+
+    /// @dev Transfers full asset balances of specified tokens to the Vault.
+    /// Used to reconcile claimed rewards outside of the IncentiveController system.
+    /// Does not allow transferring aTokens used as collateral.
+    function __sweep(bytes memory actionArgs) private {
+        address[] memory assets = __decodeSweepActionArgs(actionArgs);
+
+        for (uint256 i; i < assets.length; i++) {
+            require(!assetIsCollateral(assets[i]), "__sweep: Invalid asset, is collateral");
+        }
+
+        __pushFullAssetBalances(msg.sender, assets);
     }
 
     ////////////////////

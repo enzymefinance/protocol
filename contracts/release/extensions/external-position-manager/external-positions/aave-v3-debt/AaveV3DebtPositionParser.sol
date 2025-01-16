@@ -95,7 +95,7 @@ contract AaveV3DebtPositionParser is
             assetsToReceive_[0] = rewardToken;
         }
 
-        // No validations or transferred assets passed for Actions.SetEMode, and Actions.SetUseReserveAsCollateral
+        // No validations or transferred assets passed for Actions.SetEMode, Actions.SetUseReserveAsCollateral, and Actions.Sweep
         return (assetsToTransfer_, amountsToTransfer_, assetsToReceive_);
     }
 
