@@ -61,8 +61,11 @@ ISharePriceThrottledAssetManagerLib.sol: SharePriceThrottledAssetManagerLib.abi.
 ISharePriceThrottledAssetManagerFactory.sol: SharePriceThrottledAssetManagerFactory.abi.json
 
 # Utils
+IAggregatorRateDeviationMixinHarness.sol: AggregatorRateDeviationMixinHarness.abi.json
 IDispatcherOwnedBeaconFactory.sol: DispatcherOwnedBeaconFactory.abi.json
 IGSNRecipientMixinHarness.sol: GSNRecipientMixinHarness.abi.json
+IPriceFeedHelpersLibHarness.sol: PriceFeedHelpersLibHarness.abi.json
+IRateAggregatorBaseHarness.sol: RateAggregatorBaseHarness.abi.json
 
 #######################################################################################################################
 # RELEASE
