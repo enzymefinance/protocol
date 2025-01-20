@@ -189,6 +189,7 @@ IEtherFiEthPriceFeed.sol: EtherFiEthPriceFeed.abi.json
 IUsdEthSimulatedAggregator.sol: UsdEthSimulatedAggregator.abi.json
 IPeggedDerivativesPriceFeed.sol: PeggedDerivativesPriceFeed.abi.json
 IStaderSDPriceFeed.sol: StaderSDPriceFeed.abi.json
+IConvertedQuoteAggregator.sol: ConvertedQuoteAggregator.abi.json
 
 # Protocol fee
 IProtocolFeeTracker.sol: ProtocolFeeTracker.abi.json
