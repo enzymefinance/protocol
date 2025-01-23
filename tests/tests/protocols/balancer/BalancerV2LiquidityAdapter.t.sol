@@ -581,7 +581,7 @@ abstract contract BalancerPoolTest is PoolTestBase {
         address outgoingAsset = poolAssetAddresses[0];
         address incomingAsset = poolAssetAddresses[1];
 
-        uint256 outgoingAssetAmount = assetUnit(IERC20(outgoingAsset)) * 2;
+        uint256 outgoingAssetAmount = assetUnit(IERC20(outgoingAsset));
         increaseTokenBalance({_token: IERC20(outgoingAsset), _to: vaultProxyAddress, _amount: outgoingAssetAmount});
 
         address[] memory assets = toArray(outgoingAsset, incomingAsset);
