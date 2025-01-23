@@ -12,11 +12,12 @@
 pragma solidity 0.8.19;
 
 import {PriceFeedHelpersLib} from "../../utils/PriceFeedHelpersLib.sol";
+import {RateAggregatorBase} from "./RateAggregatorBase.sol";
 
-/// @title AggregatorRateDeviationMixin Contract
+/// @title AggregatorRateDeviationBase Contract
 /// @author Enzyme Foundation <security@enzyme.finance>
-/// @notice Mixin contract to select between an ideal rate and an aggregator rate according to deviation
-abstract contract AggregatorRateDeviationMixin {
+/// @notice Aggregator base contract to select an ideal rate or an aggregator source rate according to deviation
+abstract contract AggregatorRateDeviationBase is RateAggregatorBase {
     // Immutables: deployer-input
     /// @dev `MARKET_AGGREGATOR_ADDRESS`: the aggregator used as the "market rate"
     address public immutable MARKET_AGGREGATOR_ADDRESS;
@@ -27,7 +28,15 @@ abstract contract AggregatorRateDeviationMixin {
     /// @dev `MARKET_AGGREGATOR_PRECISION`: the precision of `MARKET_AGGREGATOR_ADDRESS`
     uint256 private immutable MARKET_AGGREGATOR_PRECISION;
 
-    constructor(address _marketAggregatorAddress, uint256 _deviationToleranceBps) {
+    constructor(
+        uint8 _thisAggregatorDecimals,
+        address _quoteConversionAggregatorAddress,
+        bool _quoteConversionAggregatorInverted,
+        address _marketAggregatorAddress,
+        uint256 _deviationToleranceBps
+    )
+        RateAggregatorBase(_thisAggregatorDecimals, _quoteConversionAggregatorAddress, _quoteConversionAggregatorInverted)
+    {
         DEVIATION_TOLERANCE_BPS = _deviationToleranceBps;
         MARKET_AGGREGATOR_ADDRESS = _marketAggregatorAddress;
 
@@ -35,12 +44,38 @@ abstract contract AggregatorRateDeviationMixin {
             PriceFeedHelpersLib.parsePrecisionFromChainlinkAggregator(_marketAggregatorAddress);
     }
 
+    //==================================================================================================================
+    // Required virtual function declarations
+    //==================================================================================================================
+
+    /// @notice Returns the ideal rate that will be compared with the market aggregator rate
+    /// @return rate_ The ideal rate
+    /// @return ratePrecision_ The ideal rate's precision
+    /// @return timestamp_ The ideal rate's timestamp
+    function idealRate() public view virtual returns (uint256 rate_, uint256 ratePrecision_, uint256 timestamp_);
+
+    //==================================================================================================================
+    // Required overrides: RateAggregatorBase
+    //==================================================================================================================
+
+    /// @inheritdoc RateAggregatorBase
+    function baseRate() public view override returns (uint256 rate_, uint256 ratePrecision_, uint256 timestamp_) {
+        (rate_, ratePrecision_, timestamp_) = idealRate();
+
+        return
+            __rateByDeviation({_idealRate: rate_, _idealRatePrecision: ratePrecision_, _idealRateTimestamp: timestamp_});
+    }
+
+    //==================================================================================================================
+    // Helpers
+    //==================================================================================================================
+
     /// @dev Selects between ideal and aggregator rates.
     /// - rate: The ideal rate is selected unless the aggregator rate deviates from it by more than the relative tolerance,
     /// in which case the aggregator rate will be selected.
     /// - timestamp: The oldest timestamp of the two rates is always selected.
     function __rateByDeviation(uint256 _idealRate, uint256 _idealRatePrecision, uint256 _idealRateTimestamp)
-        internal
+        private
         view
         returns (uint256 rate_, uint256 ratePrecision_, uint256 timestamp_)
     {
