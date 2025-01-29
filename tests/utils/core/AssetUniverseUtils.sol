@@ -28,6 +28,17 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
         return IChainlinkAggregator(deployCode("UsdEthSimulatedAggregator.sol", abi.encode(_ethUsdAggregatorAddress)));
     }
 
+    function parseRateFromChainlinkAggregator(address _aggregatorAddress)
+        internal
+        view
+        returns (uint256 rate_, uint256 timestamp_)
+    {
+        int256 answer;
+        (, answer,, timestamp_,) = IChainlinkAggregator(_aggregatorAddress).latestRoundData();
+
+        rate_ = uint256(answer);
+    }
+
     // ASSET REGISTRATION
 
     function addDerivative(
