@@ -44,8 +44,9 @@ IGMXV2RoleStore constant ARBITRUM_GMXV2_ROLE_STORE = IGMXV2RoleStore(0x3c3d99FD2
 address constant ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC = 0x70d95587d40A2caf56bd97485aB3Eec10Bee6336; // ETH/USD market, with WETH (Long) and USDC (Short) as collateral
 address constant ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_WETH = 0x450bb6774Dd8a756274E0ab4107953259d2ac541; // ETH/USD market, with WETH (Long) and WETH (Short) as collateral
 address constant ARBITRUM_GMXV2_MARKET_BTC_USD_WBTC_WBTC = 0x7C11F78Ce78768518D743E81Fdfa2F860C6b9A77; // BTC/USD market, with WBTC (Long) and WBTC (Short) as collateral
+address constant ARBITRUM_GMXV2_MARKET_BTC_USD_WBTC_USDC = 0x47c031236e19d024b42f8AE6780E44A573170703; // BTC/USD market, with WBTC (Long) and USDC (Short) as collateral
 
-uint256 constant GMX_ONE_UNIT = 10 ** 30;
+uint256 constant GMX_ONE_USD_UNIT = 10 ** 30;
 
 abstract contract TestBase is IntegrationTest {
     using AddressArrayLib for address[];
@@ -799,9 +800,9 @@ abstract contract TestBase is IntegrationTest {
         assertApproxEqRel(
             postExecuteOrderManagedAssetAmounts[0],
             _initialCollateralDeltaAmount,
-            WEI_ONE_PERCENT, // 1%
+            WEI_ONE_PERCENT * 12 / 10, // 1.2%
             "Incorrect managedAssetAmount post execute order"
-        ); // slight tollerance is acceptable due to the fees taken by the protocol
+        ); // slight tolerance is acceptable due to the fees taken by the protocol
         if (!isCollateralWrappedNativeToken) {
             assertEq(
                 postExecuteOrderManagedAssetAmounts[1],
@@ -1482,7 +1483,7 @@ abstract contract TestBase is IntegrationTest {
                 _token: _args.initialCollateralLongToken,
                 _timeKey: timeKey
             }),
-            GMX_ONE_UNIT
+            GMX_ONE_USD_UNIT
         );
         vm.stopPrank();
 
@@ -1819,6 +1820,86 @@ abstract contract TestBase is IntegrationTest {
             })
         );
     }
+
+    function __test_getManagedAssets_successValuationOfOpenPosition(
+        address _nonWethAgainstStablecoinMarket // choose non-weth market, so the test results won't be affected by the execution fee returns. Example market WBTC-USDC
+    ) internal {
+        // initial conditions
+        uint256 shortTokenInitialCollateralDeltaAmount = 1000; // this will be some stablecoin, like USDC
+        uint256 leverage = 100; // 100 is maximum leverage, so the the conditions are the most extreme as possible
+        IGMXV2Market.Props memory marketInfo = __getMarketInfo(_nonWethAgainstStablecoinMarket);
+
+        IGMXV2ChainlinkPriceFeedProvider.ValidatedPrice memory shortTokenPrice =
+            chainlinkPriceFeedProvider.getOraclePrice(marketInfo.shortToken, "");
+        IGMXV2ChainlinkPriceFeedProvider.ValidatedPrice memory longTokenPrice =
+            chainlinkPriceFeedProvider.getOraclePrice(marketInfo.longToken, "");
+
+        uint256 initialCollateralDeltaAmount =
+            shortTokenInitialCollateralDeltaAmount * assetUnit(IERC20(marketInfo.shortToken));
+
+        // 1. Create long position of short token
+        __createAndExecuteMarketIncreaseOrder({
+            _market: _nonWethAgainstStablecoinMarket,
+            _initialCollateralToken: marketInfo.shortToken,
+            _initialCollateralDeltaAmount: initialCollateralDeltaAmount,
+            _sizeDeltaUsd: shortTokenInitialCollateralDeltaAmount * leverage * GMX_ONE_USD_UNIT,
+            _isLong: true
+        });
+
+        // 2. Sweep just to clean up the position from WETH (left from executionFee), or any leftover of the Stablecoin that could be there, so we are sure that the external position doesn't hold any Stablecoin besides the hold position
+        __sweep();
+
+        // 3. Check the managed assets value of shortToken before closing the position
+        (address[] memory prePositionCloseManagedAssets, uint256[] memory prePositionCloseManagedAssetAmounts) =
+            externalPosition.getManagedAssets();
+        assertEq(prePositionCloseManagedAssets, toArray(marketInfo.shortToken), "Incorrect pre close managed assets");
+
+        // 4. Close the position from step 1
+        __createOrder(
+            IGMXV2LeverageTradingPositionProd.CreateOrderActionArgs({
+                addresses: IGMXV2LeverageTradingPositionProd.CreateOrderParamsAddresses({
+                    market: _nonWethAgainstStablecoinMarket,
+                    initialCollateralToken: marketInfo.shortToken
+                }),
+                numbers: IGMXV2LeverageTradingPositionProd.CreateOrderParamsNumbers({
+                    sizeDeltaUsd: shortTokenInitialCollateralDeltaAmount * leverage * GMX_ONE_USD_UNIT,
+                    initialCollateralDeltaAmount: type(uint256).max,
+                    triggerPrice: 0,
+                    acceptablePrice: 0,
+                    executionFee: executionFee,
+                    minOutputAmount: 0,
+                    validFromTime: 0
+                }),
+                orderType: IGMXV2OrderProd.OrderType.MarketDecrease,
+                decreasePositionSwapType: IGMXV2OrderProd.DecreasePositionSwapType.NoSwap,
+                isLong: true,
+                autoCancel: false,
+                exchangeRouter: address(exchangeRouter)
+            })
+        );
+
+        __executeOrder({_orderKey: __getLastOrderKey(), _marketInfo: __getMarketInfo(_nonWethAgainstStablecoinMarket)});
+
+        (address[] memory postClosePositionsManagedAssets,) = externalPosition.getManagedAssets();
+
+        assertEq(
+            postClosePositionsManagedAssets,
+            toArray(marketInfo.longToken, marketInfo.shortToken, address(wethToken)),
+            "Incorrect post close managed assets"
+        );
+
+        // 5. Sweep to get the short market token, long market token, and WETH back to the vault
+        __sweep();
+
+        // 6. Compare Vault balances value after closing the position with the short token value that got transferred to the vault
+        assertApproxEqRel(
+            IERC20(marketInfo.shortToken).balanceOf(vaultProxyAddress) * shortTokenPrice.min
+                + IERC20(marketInfo.longToken).balanceOf(vaultProxyAddress) * longTokenPrice.min,
+            prePositionCloseManagedAssetAmounts[0] * shortTokenPrice.min,
+            WEI_ONE_PERCENT / 1000, // 0.001 % tolerance
+            "Incorrect vault proxy balances"
+        );
+    }
 }
 
 abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
@@ -1844,7 +1925,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _initialCollateralToken: ARBITRUM_USDC,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
             _initialCollateralDeltaAmount: 100 * assetUnit(IERC20(ARBITRUM_USDC)),
-            _sizeDeltaUsd: 400 * GMX_ONE_UNIT, // 400 USD, 4x leverage
+            _sizeDeltaUsd: 400 * GMX_ONE_USD_UNIT, // 400 USD, 4x leverage
             _isLong: true
         });
     }
@@ -1854,7 +1935,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _initialCollateralToken: ARBITRUM_USDC,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
             _initialCollateralDeltaAmount: 100 * assetUnit(IERC20(ARBITRUM_USDC)),
-            _sizeDeltaUsd: 400 * GMX_ONE_UNIT, // 400 USD, 4x leverage
+            _sizeDeltaUsd: 400 * GMX_ONE_USD_UNIT, // 400 USD, 4x leverage
             _isLong: false
         });
     }
@@ -1864,7 +1945,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _initialCollateralToken: ARBITRUM_WETH,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
             _initialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WETH)),
-            _sizeDeltaUsd: 10_000 * GMX_ONE_UNIT, // 10k USD
+            _sizeDeltaUsd: 10_000 * GMX_ONE_USD_UNIT, // 10k USD
             _isLong: true
         });
     }
@@ -1874,7 +1955,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _initialCollateralToken: ARBITRUM_WETH,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_WETH,
             _initialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WETH)),
-            _sizeDeltaUsd: 10_000 * GMX_ONE_UNIT, // 10k USD
+            _sizeDeltaUsd: 10_000 * GMX_ONE_USD_UNIT, // 10k USD
             _isLong: true
         });
     }
@@ -1884,7 +1965,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _initialCollateralToken: ARBITRUM_WBTC,
             _market: ARBITRUM_GMXV2_MARKET_BTC_USD_WBTC_WBTC,
             _initialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WBTC)),
-            _sizeDeltaUsd: 60_000 * GMX_ONE_UNIT, // 60k USD
+            _sizeDeltaUsd: 60_000 * GMX_ONE_USD_UNIT, // 60k USD
             _isLong: false
         });
     }
@@ -1896,7 +1977,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _initialCollateralToken: ARBITRUM_USDC,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
             _decreaseInitialCollateralDeltaAmount: 100 * assetUnit(IERC20(ARBITRUM_USDC)),
-            _increaseOrderSizeDeltaUsd: 400 * GMX_ONE_UNIT, // 400 USD
+            _increaseOrderSizeDeltaUsd: 400 * GMX_ONE_USD_UNIT, // 400 USD
             _isLong: true
         });
     }
@@ -1906,7 +1987,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _initialCollateralToken: ARBITRUM_WBTC,
             _market: ARBITRUM_GMXV2_MARKET_BTC_USD_WBTC_WBTC,
             _decreaseInitialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WBTC)),
-            _increaseOrderSizeDeltaUsd: 300_000 * GMX_ONE_UNIT, // 300k USD
+            _increaseOrderSizeDeltaUsd: 300_000 * GMX_ONE_USD_UNIT, // 300k USD
             _isLong: false
         });
     }
@@ -1918,7 +1999,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _initialCollateralToken: ARBITRUM_USDC,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
             _decreaseInitialCollateralDeltaAmount: 100 * assetUnit(IERC20(ARBITRUM_USDC)),
-            _increaseOrderSizeDeltaUsd: 400 * GMX_ONE_UNIT, // 400 USD
+            _increaseOrderSizeDeltaUsd: 400 * GMX_ONE_USD_UNIT, // 400 USD
             _isLong: true
         });
     }
@@ -1928,7 +2009,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _initialCollateralToken: ARBITRUM_WETH,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
             _decreaseInitialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WETH)),
-            _increaseOrderSizeDeltaUsd: 10_000 * GMX_ONE_UNIT, // 10k USD
+            _increaseOrderSizeDeltaUsd: 10_000 * GMX_ONE_USD_UNIT, // 10k USD
             _isLong: false
         });
     }
@@ -1940,7 +2021,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _initialCollateralToken: ARBITRUM_WBTC,
             _market: ARBITRUM_GMXV2_MARKET_BTC_USD_WBTC_WBTC,
             _decreaseInitialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WBTC)),
-            _increaseOrderSizeDeltaUsd: 300_000 * GMX_ONE_UNIT, // 300k USD
+            _increaseOrderSizeDeltaUsd: 300_000 * GMX_ONE_USD_UNIT, // 300k USD
             _isLong: true
         });
     }
@@ -1950,7 +2031,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _initialCollateralToken: ARBITRUM_WETH,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
             _decreaseInitialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WETH)),
-            _increaseOrderSizeDeltaUsd: 10_000 * GMX_ONE_UNIT, // 10k USD
+            _increaseOrderSizeDeltaUsd: 10_000 * GMX_ONE_USD_UNIT, // 10k USD
             _isLong: false
         });
     }
@@ -1962,7 +2043,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _initialCollateralToken: ARBITRUM_WETH,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
             _decreaseInitialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WETH)),
-            _increaseOrderSizeDeltaUsd: 10_000 * GMX_ONE_UNIT, // 10k USD
+            _increaseOrderSizeDeltaUsd: 10_000 * GMX_ONE_USD_UNIT, // 10k USD
             _isLong: false
         });
     }
@@ -1974,7 +2055,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _initialCollateralToken: ARBITRUM_WETH,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
             _decreaseInitialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WETH)),
-            _increaseOrderSizeDeltaUsd: 10_000 * GMX_ONE_UNIT // 10k USD
+            _increaseOrderSizeDeltaUsd: 10_000 * GMX_ONE_USD_UNIT // 10k USD
         });
     }
 
@@ -1983,7 +2064,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _initialCollateralToken: ARBITRUM_WETH,
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_WETH,
             _initialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WETH)),
-            _increaseOrderSizeDeltaUsd: 10_000 * GMX_ONE_UNIT // 10k USD
+            _increaseOrderSizeDeltaUsd: 10_000 * GMX_ONE_USD_UNIT // 10k USD
         });
     }
 
@@ -1992,7 +2073,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _initialCollateralToken: ARBITRUM_WBTC,
             _market: ARBITRUM_GMXV2_MARKET_BTC_USD_WBTC_WBTC,
             _initialCollateralDeltaAmount: assetUnit(IERC20(ARBITRUM_WBTC)),
-            _increaseOrderSizeDeltaUsd: 60_000 * GMX_ONE_UNIT // 60k USD
+            _increaseOrderSizeDeltaUsd: 60_000 * GMX_ONE_USD_UNIT // 60k USD
         });
     }
 
@@ -2011,7 +2092,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
                 2 * assetUnit(IERC20(ARBITRUM_WETH)),
                 assetUnit(IERC20(ARBITRUM_WBTC))
             ),
-            _sizeDeltasUsd: toArray(200 * GMX_ONE_UNIT, 20_000 * GMX_ONE_UNIT, 60_000 * GMX_ONE_UNIT)
+            _sizeDeltasUsd: toArray(200 * GMX_ONE_USD_UNIT, 20_000 * GMX_ONE_USD_UNIT, 60_000 * GMX_ONE_USD_UNIT)
         });
     }
 
@@ -2031,7 +2112,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
                 assetUnit(IERC20(ARBITRUM_WBTC))
             ),
             _sizeDeltasUsd: toArray(
-                10_000 * GMX_ONE_UNIT, 20_000 * GMX_ONE_UNIT, 40_000 * GMX_ONE_UNIT, 60_000 * GMX_ONE_UNIT
+                10_000 * GMX_ONE_USD_UNIT, 20_000 * GMX_ONE_USD_UNIT, 40_000 * GMX_ONE_USD_UNIT, 60_000 * GMX_ONE_USD_UNIT
             )
         });
     }
@@ -2053,7 +2134,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _market: ARBITRUM_GMXV2_MARKET_BTC_USD_WBTC_WBTC,
             _initialCollateralToken: ARBITRUM_WBTC,
             _initialCollateralDeltaAmount: wbtcAssetIncrease,
-            _sizeDeltaUsd: 120_000 * GMX_ONE_UNIT, // 120k USD
+            _sizeDeltaUsd: 120_000 * GMX_ONE_USD_UNIT, // 120k USD
             _isLong: true
         });
 
@@ -2110,7 +2191,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
                     initialCollateralToken: ARBITRUM_WETH
                 }),
                 numbers: IGMXV2LeverageTradingPositionProd.CreateOrderParamsNumbers({
-                    sizeDeltaUsd: 30_000 * GMX_ONE_UNIT, // 30k USD,
+                    sizeDeltaUsd: 30_000 * GMX_ONE_USD_UNIT, // 30k USD,
                     initialCollateralDeltaAmount: pendingIncreaseOrderInitialCollateralDeltaAmount,
                     triggerPrice: 0,
                     acceptablePrice: type(uint256).max,
@@ -2145,7 +2226,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
                     initialCollateralToken: ARBITRUM_USDC
                 }),
                 numbers: IGMXV2LeverageTradingPositionProd.CreateOrderParamsNumbers({
-                    sizeDeltaUsd: 1_000 * GMX_ONE_UNIT, // 1k USD,
+                    sizeDeltaUsd: 1_000 * GMX_ONE_USD_UNIT, // 1k USD,
                     initialCollateralDeltaAmount: cancelledOrderInitialCollateralDeltaAmount,
                     triggerPrice: 0,
                     acceptablePrice: type(uint256).max,
@@ -2253,7 +2334,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
             _initialCollateralToken: ARBITRUM_USDC,
             _increaseInitialCollateralDeltaAmount: 100 * assetUnit(IERC20(ARBITRUM_USDC)),
-            _increaseOrderSizeDeltaUsd: 400 * GMX_ONE_UNIT, // 400 USD
+            _increaseOrderSizeDeltaUsd: 400 * GMX_ONE_USD_UNIT, // 400 USD
             _liquidationHandler: ARBITRUM_GMXV2_LIQUIDATION_HANDLER
         });
     }
@@ -2266,12 +2347,18 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
                 market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
                 initialCollateralLongToken: ARBITRUM_WETH,
                 increaseInitialCollateralDeltaAmount: 1 * assetUnit(IERC20(ARBITRUM_WETH)),
-                increaseOrderSizeDeltaUsd: 8_000 * GMX_ONE_UNIT, // 8k USD
+                increaseOrderSizeDeltaUsd: 8_000 * GMX_ONE_USD_UNIT, // 8k USD
                 userShortToken: ARBITRUM_USDC,
                 userShortTokenDeltaAmount: 8_000_000 * assetUnit(IERC20(ARBITRUM_USDC)), // 8mln USD
-                userShortTokenSizeDeltaUsd: 8_000_000 * GMX_ONE_UNIT
+                userShortTokenSizeDeltaUsd: 8_000_000 * GMX_ONE_USD_UNIT
             })
         );
+    }
+
+    // getManagedAssets
+
+    function test_getManagedAssets_successValuationOfOpenPosition() public {
+        __test_getManagedAssets_successValuationOfOpenPosition(ARBITRUM_GMXV2_MARKET_BTC_USD_WBTC_USDC);
     }
 }
 

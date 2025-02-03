@@ -144,6 +144,13 @@ contract GMXV2LeverageTradingPositionLibManagedAssets is
                 }
             }
 
+            // subtract the fees that the position had to pay if it would be closed at this moment
+            if (positionInfo.fees.totalCostAmount < totalCollateralAmount) {
+                totalCollateralAmount -= positionInfo.fees.totalCostAmount;
+            } else {
+                totalCollateralAmount = 0;
+            }
+
             if (totalCollateralAmount != 0) {
                 amounts_ = amounts_.addItem(totalCollateralAmount);
                 assets_ = assets_.addItem(positionInfo.position.addresses.collateralToken);
