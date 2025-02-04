@@ -24,12 +24,12 @@ contract PriceFeedHelpersLibHarness {
         return PriceFeedHelpersLib.convertRatePrecision(_rate, _fromPrecision, _toPrecision);
     }
 
-    function exposed_covertRateToNewQuoteAsset(uint256 _baseRate, uint256 _baseRatePrecision, uint256 _quoteRate)
+    function exposed_convertRateToNewQuoteAsset(uint256 _baseRate, uint256 _baseRatePrecision, uint256 _quoteRate)
         external
         pure
         returns (uint256 convertedRate_)
     {
-        return PriceFeedHelpersLib.covertRateToNewQuoteAsset(_baseRate, _baseRatePrecision, _quoteRate);
+        return PriceFeedHelpersLib.convertRateToNewQuoteAsset(_baseRate, _baseRatePrecision, _quoteRate);
     }
 
     function exposed_formatRateAsChainlinkAggregator(uint256 _rate, uint256 _timestamp)

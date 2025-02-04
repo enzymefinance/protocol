@@ -98,7 +98,7 @@ abstract contract RateAggregatorBase is IChainlinkAggregator {
                 quoteRatePrecision = QUOTE_CONVERSION_AGGREGATOR_PRECISION;
             }
 
-            rate = PriceFeedHelpersLib.covertRateToNewQuoteAsset({
+            rate = PriceFeedHelpersLib.convertRateToNewQuoteAsset({
                 _baseRate: rate,
                 _baseRatePrecision: ratePrecision,
                 _quoteRate: quoteRate

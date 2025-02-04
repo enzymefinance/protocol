@@ -38,7 +38,7 @@ library PriceFeedHelpersLib {
     }
 
     /// @dev Converts a rate to a new quote asset using rule of three (e.g., ETH/BTC to ETH/USD using BTC/USD as intermediary)
-    function covertRateToNewQuoteAsset(uint256 _baseRate, uint256 _baseRatePrecision, uint256 _quoteRate)
+    function convertRateToNewQuoteAsset(uint256 _baseRate, uint256 _baseRatePrecision, uint256 _quoteRate)
         internal
         pure
         returns (uint256 convertedRate_)

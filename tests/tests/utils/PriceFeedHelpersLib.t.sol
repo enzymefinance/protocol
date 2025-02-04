@@ -47,7 +47,7 @@ contract PriceFeedHelpersLibTest is UnitTest {
         });
     }
 
-    function test_exposed_covertRateToNewQuoteAsset_success() public {
+    function test_exposed_convertRateToNewQuoteAsset_success() public {
         uint256 aToBRate = 123e6;
         uint256 aToBRatePrecision = 1e6;
         uint256 bToCRate = 456e9;
@@ -55,7 +55,7 @@ contract PriceFeedHelpersLibTest is UnitTest {
         // Expected: multiplied rates in the precision of the quote asset
         uint256 expectedAToCRate = 123 * 456 * 1e9;
 
-        uint256 convertedRate = priceFeedHelpers.exposed_covertRateToNewQuoteAsset({
+        uint256 convertedRate = priceFeedHelpers.exposed_convertRateToNewQuoteAsset({
             _baseRate: aToBRate,
             _baseRatePrecision: aToBRatePrecision,
             _quoteRate: bToCRate
