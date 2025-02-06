@@ -51,12 +51,12 @@ abstract contract ChainlinkLikeWstethPriceFeedTest is IntegrationTest {
             _rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH
         });
 
-        // WSTETH/USD price on Sep 9th 2024 https://www.coingecko.com/en/coins/wrapped-steth/historical_data
+        // WSTETH/USD price on Jan 26th 2025 https://www.coingecko.com/en/coins/wrapped-steth/historical_data
         assertValueInUSDForVersion({
             _version: version,
             _asset: ETHEREUM_WSTETH,
             _amount: assetUnit(IERC20(ETHEREUM_WSTETH)),
-            _expected: 2722400155739865283704 // 2722.400155739865283704 USD
+            _expected: 3944813217073595265581 // 3944.813217073595265581 USD
         });
     }
 

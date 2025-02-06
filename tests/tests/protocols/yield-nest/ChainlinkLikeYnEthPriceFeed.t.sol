@@ -53,9 +53,9 @@ contract ChainlinkLikeYnethPriceFeedTest is IntegrationTest {
         assertEq(ynethRoundId, 0, "Non-zero roundId");
         assertEq(ynethAnsweredInRound, 0, "Non-zero roundData");
 
-        // Rate: 0.96 ETH/ynETH, on Aug 28th, 2024
+        // Rate: 1.007 ETH/ynETH, on Jan 26th, 2025
         // https://www.coingecko.com/en/coins/yieldnest-restaked-eth
-        uint256 expectedYnethEthRate = 0.963e18;
+        uint256 expectedYnethEthRate = 1.007e18;
         uint256 halfPercent = WEI_ONE_PERCENT / 2;
         assertApproxEqRel(uint256(ynethAnswer), expectedYnethEthRate, halfPercent, "Incorrect rate");
     }

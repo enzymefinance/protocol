@@ -64,12 +64,12 @@ abstract contract EtherFiEthPriceFeedTestBase is IntegrationTest {
 
         __addDerivativeAndUnderlying();
 
-        // EETH/USD price Sep 9th 2024 https://www.coingecko.com/en/coins/ether-fi-staked-eth/historical_data
+        // EETH/USD price Jan 26th 2025 https://www.coingecko.com/en/coins/ether-fi-staked-eth/historical_data
         assertValueInUSDForVersion({
             _version: version,
             _asset: ETHERFI_ETH_ADDRESS,
             _amount: assetUnit(IERC20(ETHERFI_ETH_ADDRESS)),
-            _expected: 2312439021730963767018 // 2312.439021730963767018 USD
+            _expected: 3311752649257491376322 // 3311.752649257491376322 USD
         });
     }
 

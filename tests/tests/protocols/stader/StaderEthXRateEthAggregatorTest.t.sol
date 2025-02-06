@@ -43,7 +43,7 @@ contract StaderEthXRateEthAggregatorTest is IntegrationTest {
 
         assertEq(updatedAt, timestamp, "Incorrect updatedAt");
 
-        // ETHx/ETH price on Sept 9th 2024
-        assertEq(answer, int256(1039637773504362819), "Incorrect answer");
+        // ETHx/ETH price on Jan 26th 2025
+        assertEq(answer, int256(1050996995049050031), "Incorrect answer");
     }
 }

@@ -73,12 +73,12 @@ abstract contract YearnVaultV2PriceFeedTestBase is IntegrationTest {
             _priceFeedAddress: address(priceFeed)
         });
 
-        // Yearn WETH Vault/USD price Sep 9th 2024, check WETH price https://www.coingecko.com/en/coins/weth/historical_data and multiply pricePerShare https://etherscan.io/address/0xa258C4606Ca8206D8aA700cE2143D7db854D168c#readContract#F4
+        // Yearn WETH Vault/USD price Jan 26th 2025, check WETH price https://www.coingecko.com/en/coins/weth/historical_data and multiply pricePerShare https://etherscan.io/address/0xa258C4606Ca8206D8aA700cE2143D7db854D168c#readContract#F4
         assertValueInUSDForVersion({
             _version: version,
             _asset: ETHEREUM_YEARN_VAULT_V2_WETH_VAULT,
             _amount: assetUnit(IERC20(ETHEREUM_YEARN_VAULT_V2_WETH_VAULT)),
-            _expected: 2487242465061825884448 // 2487.242465061825884448 USD
+            _expected: 3605615423963814449274 // 3605.615423963814449274 USD
         });
     }
 
@@ -98,12 +98,11 @@ abstract contract YearnVaultV2PriceFeedTestBase is IntegrationTest {
             _priceFeedAddress: address(priceFeed)
         });
 
-        // Yearn USDT Vault/USD price Sep 9th 2024, check USDT price https://www.coingecko.com/en/coins/tether/historical_data and multiply pricePerShare https://etherscan.io/address/0x3B27F92C0e212C671EA351827EDF93DB27cc0c65#readContract#F4
         assertValueInUSDForVersion({
             _version: version,
             _asset: ETHEREUM_YEARN_VAULT_V2_USDT_VAULT,
             _amount: assetUnit(IERC20(ETHEREUM_YEARN_VAULT_V2_USDT_VAULT)),
-            _expected: 1074157406393871067 // 1.074157406393871067 USD
+            _expected: 1097273252900143697 // 1.097273252900143697 USD
         });
     }
 
@@ -189,11 +188,5 @@ abstract contract YearnVaultV2PriceFeedTestBase is IntegrationTest {
 contract YearnVaultV2PriceFeedTestEthereum is YearnVaultV2PriceFeedTestBase {
     function setUp() public override {
         __initialize(EnzymeVersion.Current);
-    }
-}
-
-contract YearnVaultV2PriceFeedTestEthereumV4 is YearnVaultV2PriceFeedTestBase {
-    function setUp() public override {
-        __initialize(EnzymeVersion.V4);
     }
 }

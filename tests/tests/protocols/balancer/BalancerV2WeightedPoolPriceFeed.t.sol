@@ -199,9 +199,9 @@ contract EthereumTest is ValueTest, RegistryTest {
         poolFactoryAddress = ETHEREUM_80_BAL_20_WETH_POOL_FACTORY_ADDRESS;
         poolId = ETHEREUM_80_BAL_20_WETH_POOL_ID;
         poolBpt = IERC20(ETHEREUM_80_BAL_20_WETH_POOL_ADDRESS);
-        // $5 on Sep 9th, 2024
+        // $9 on Jan 26th 2025
         // See: https://app.zerion.io/tokens/B-80BAL-20WETH-0x5c6ee304399dbdb9c8ef030ab642b10820db8f56
-        poolBptExpectedUsdIntegerPrice = 5;
+        poolBptExpectedUsdIntegerPrice = 9;
 
         super.setUp();
     }

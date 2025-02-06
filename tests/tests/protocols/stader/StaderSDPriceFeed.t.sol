@@ -47,12 +47,12 @@ abstract contract StaderSDPriceFeedTestBase is IntegrationTest {
     function test_calcUnderlyingValues_successForSpecificBlock() public {
         __addDerivative();
 
-        // SD/USD price on June 21st 2024. https://www.coingecko.com/en/coins/stader/historical_data
+        // SD/USD price on Jan 26th 2025. https://www.coingecko.com/en/coins/stader/historical_data
         assertValueInUSDForVersion({
             _version: version,
             _asset: SD_TOKEN_ADDRESS,
             _amount: assetUnit(IERC20(SD_TOKEN_ADDRESS)),
-            _expected: 470625024033789758 // 0.470625024033789758 USD
+            _expected: 935646379201838789 // 0.935646379201838789 USD
         });
     }
 
