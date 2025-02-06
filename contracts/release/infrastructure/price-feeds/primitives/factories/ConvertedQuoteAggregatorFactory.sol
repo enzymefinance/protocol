@@ -17,17 +17,23 @@ import {ConvertedQuoteAggregator} from "../ConvertedQuoteAggregator.sol";
 /// @author Enzyme Foundation <security@enzyme.finance>
 /// @notice Factory for ConvertedQuoteAggregator
 contract ConvertedQuoteAggregatorFactory {
+    event InstanceDeployed(address instanceAddress);
+
     function deploy(
         uint8 _thisAggregatorDecimals,
         address _quoteConversionAggregatorAddress,
         bool _quoteConversionAggregatorInverted,
         address _sourceAggregatorAddress
     ) external {
-        new ConvertedQuoteAggregator(
-            _thisAggregatorDecimals,
-            _quoteConversionAggregatorAddress,
-            _quoteConversionAggregatorInverted,
-            _sourceAggregatorAddress
+        address instanceAddress = address(
+            new ConvertedQuoteAggregator(
+                _thisAggregatorDecimals,
+                _quoteConversionAggregatorAddress,
+                _quoteConversionAggregatorInverted,
+                _sourceAggregatorAddress
+            )
         );
+
+        emit InstanceDeployed(instanceAddress);
     }
 }
