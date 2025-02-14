@@ -49,6 +49,7 @@ IExternalPositionVault.sol: IExternalPositionVault.abi.json
 
 # Peripheral
 INonStandardPrecisionSimulatedAggregator.sol: NonStandardPrecisionSimulatedAggregator.abi.json
+ISingleAssetDepositQueueLib.sol: SingleAssetDepositQueueLib.abi.json
 ISingleAssetRedemptionQueueFactory.sol: SingleAssetRedemptionQueueFactory.abi.json
 ISingleAssetRedemptionQueueLib.sol: SingleAssetRedemptionQueueLib.abi.json
 
