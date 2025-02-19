@@ -903,6 +903,15 @@ contract SingleAssetDepositQueueTest is IntegrationTest {
         __test_cancelRequest(1);
     }
 
+    function test_cancelRequest_successWithMinRequestTimeNotElapsedAndQueueShutdown() public {
+        __setup_queueAndDepositors({_fillQueue: true, _minRequestTime: 10});
+
+        vm.prank(fundOwner);
+        depositQueue.shutdown();
+
+        __test_cancelRequest(1);
+    }
+
     function __test_cancelRequest(uint88 _id) internal {
         ISingleAssetDepositQueueLib.Request memory preRequest = depositQueue.getRequest(_id);
 
