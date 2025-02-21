@@ -912,6 +912,17 @@ contract SingleAssetDepositQueueTest is IntegrationTest {
         __test_cancelRequest(1);
     }
 
+    function test_cancelRequest_successWithMinRequestTimeNotElapsedAndRequestBypassed() public {
+        __setup_queueAndDepositors({_fillQueue: true, _minRequestTime: 10});
+
+        uint88 requestIdToBypass = 1;
+
+        vm.prank(fundOwner);
+        depositQueue.depositFromQueue({_endId: 2, _idsToBypass: toArray(requestIdToBypass)});
+
+        __test_cancelRequest(requestIdToBypass);
+    }
+
     function __test_cancelRequest(uint88 _id) internal {
         ISingleAssetDepositQueueLib.Request memory preRequest = depositQueue.getRequest(_id);
 

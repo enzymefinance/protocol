@@ -261,8 +261,11 @@ contract SingleAssetDepositQueueLib is ISingleAssetDepositQueue, GSNRecipientMix
             revert SingleAssetDepositQueue__CancelRequest__Unauthorized();
         }
 
-        // if queue is not shutdown and min request time has not elapsed, revert
-        if (!queueIsShutdown() && block.timestamp < request.canCancelTime) {
+        // Only allowed in one of the following conditions:
+        // - min request time has elapsed
+        // - queue is shutdown
+        // - request was bypassed
+        if (!(block.timestamp >= request.canCancelTime || queueIsShutdown() || _id < getNextQueuedId())) {
             revert SingleAssetDepositQueue__CancelRequest__MinRequestTimeNotElapsed();
         }
 
