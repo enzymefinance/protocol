@@ -120,6 +120,7 @@ IUniswapV2ExchangeAdapter.sol: UniswapV2ExchangeAdapter.abi.json
 ICompoundV3Adapter.sol: CompoundV3Adapter.abi.json
 IYearnVaultV2Adapter.sol: YearnVaultV2Adapter.abi.json
 IParaSwapV5Adapter.sol: ParaSwapV5Adapter.abi.json
+IParaSwapV6Adapter.sol: ParaSwapV6Adapter.abi.json
 IAaveV2Adapter.sol: AaveV2Adapter.abi.json
 IBalancerV2LiquidityAdapter.sol: BalancerV2LiquidityAdapter.abi.json
 ICompoundAdapter.sol: CompoundAdapter.abi.json

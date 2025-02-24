@@ -34,6 +34,7 @@ abstract contract Constants {
     // that should generally continue to pass regardless of block.
     uint256 internal constant ETHEREUM_BLOCK_LATEST = 21710000; // Jan 26th, 2025
     uint256 internal constant ETHEREUM_BLOCK_TIME_SENSITIVE = 21710000; // Jan 26th, 2025
+    uint256 internal constant ETHEREUM_BLOCK_TIME_SENSITIVE_PARASWAP_V6 = 21819120; // Feb 10th 2025
     uint256 internal constant ETHEREUM_BLOCK_TIME_SENSITIVE_ONE_INCH_V5 = 19518890; // March 26th, 2024
     uint256 internal constant ETHEREUM_BLOCK_TIME_SENSITIVE_PENDLE = 20100000; // June 15th, 2024
     uint256 internal constant ETHEREUM_BLOCK_TIME_SENSITIVE_STAKEWISE = 18656282; // Nov 26th, 2023
@@ -76,6 +77,7 @@ abstract contract Constants {
     address internal constant ETHEREUM_LUSD = 0x5f98805A4E8be255a32880FDeC7F6728C6568bA0;
     address internal constant ETHEREUM_MBTC = 0x2F913C820ed3bEb3a67391a6eFF64E70c4B20b19;
     address internal constant ETHEREUM_MLN = 0xec67005c4E498Ec7f55E092bd1d35cbC47C91892;
+    address internal constant ETHEREUM_PAXG = 0x45804880De22913dAFE09f4980848ECE6EcbAf78;
     address internal constant ETHEREUM_STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address internal constant ETHEREUM_STKAAVE = 0x4da27a545c0c5B758a6BA100e3a049001de870f5;
     address internal constant ETHEREUM_USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;

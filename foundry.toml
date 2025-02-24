@@ -15,7 +15,7 @@ optimizer=true
 ignored_warnings_from = ["contracts/release/extensions/integration-manager/integrations/utils/0.8.19/bases/GenericWrappingAdapterBase.sol"]
 
 # NOTE: Specifying shanghai as the evm_version seems required for the Goerli tests to pass
-evm_version = "shanghai"
+evm_version = "cancun"
 
 [profile.default.optimizer_details]
 yul = false
