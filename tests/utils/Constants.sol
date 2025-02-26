@@ -150,4 +150,13 @@ abstract contract Constants {
     address internal constant BASE_MLN_ETH_AGGREGATOR = 0x0000000000000000000000000000000000000000; // TODO: add this
     address internal constant BASE_USDC_USD_AGGREGATOR = 0x7e860098F58bBFC8648a4311b374B1D669a2bc6B;
     address internal constant BASE_WSTETH_ETH_AGGREGATOR = 0x43a5C292A453A3bF3606fa856197f09D7B74251a;
+
+    // Network External contracts
+    address internal constant ETHEREUM_MERKL_DISTRIBUTOR = 0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae;
+
+    address internal constant POLYGON_MERKL_DISTRIBUTOR = ETHEREUM_MERKL_DISTRIBUTOR;
+
+    address internal constant ARBITRUM_MERKL_DISTRIBUTOR = ETHEREUM_MERKL_DISTRIBUTOR;
+
+    address internal constant BASE_MERKL_DISTRIBUTOR = ETHEREUM_MERKL_DISTRIBUTOR;
 }

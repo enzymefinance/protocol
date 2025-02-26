@@ -15,6 +15,7 @@ import {IAaveV3PoolAddressProvider} from "../../../../../external-interfaces/IAa
 import {IAaveV3ProtocolDataProvider} from "../../../../../external-interfaces/IAaveV3ProtocolDataProvider.sol";
 import {IAaveV3RewardsController} from "../../../../../external-interfaces/IAaveV3RewardsController.sol";
 import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
+import {IMerklDistributor} from "../../../../../external-interfaces/IMerklDistributor.sol";
 import {AddressArrayLib} from "../../../../../utils/0.8.19/AddressArrayLib.sol";
 import {AssetHelpers} from "../../../../../utils/0.8.19/AssetHelpers.sol";
 import {WrappedSafeERC20 as SafeERC20} from "../../../../../utils/0.8.19/open-zeppelin/WrappedSafeERC20.sol";
@@ -36,19 +37,22 @@ contract AaveV3DebtPositionLib is
 
     uint256 private constant VARIABLE_INTEREST_RATE = 2;
 
-    IAaveV3ProtocolDataProvider private immutable DATA_PROVIDER_CONTRACT;
-    IAaveV3PoolAddressProvider private immutable LENDING_POOL_ADDRESS_PROVIDER_CONTRACT;
-    uint16 private immutable REFERRAL_CODE;
-    IAaveV3RewardsController private immutable REWARDS_CONTROLLER;
+    IAaveV3ProtocolDataProvider public immutable DATA_PROVIDER_CONTRACT;
+    IAaveV3PoolAddressProvider public immutable LENDING_POOL_ADDRESS_PROVIDER_CONTRACT;
+    IMerklDistributor public immutable MERKL_DISTRIBUTOR;
+    uint16 public immutable REFERRAL_CODE;
+    IAaveV3RewardsController public immutable REWARDS_CONTROLLER;
 
     constructor(
         IAaveV3ProtocolDataProvider _dataProvider,
         IAaveV3PoolAddressProvider _lendingPoolAddressProvider,
+        IMerklDistributor _merklDistributor,
         uint16 _referralCode,
         IAaveV3RewardsController _rewardsController
     ) {
         DATA_PROVIDER_CONTRACT = _dataProvider;
         LENDING_POOL_ADDRESS_PROVIDER_CONTRACT = _lendingPoolAddressProvider;
+        MERKL_DISTRIBUTOR = _merklDistributor;
         REFERRAL_CODE = _referralCode;
         REWARDS_CONTROLLER = _rewardsController;
     }
@@ -78,6 +82,8 @@ contract AaveV3DebtPositionLib is
             __claimRewards(actionArgs);
         } else if (actionId == uint256(Actions.Sweep)) {
             __sweep(actionArgs);
+        } else if (actionId == uint256(Actions.ClaimMerklRewards)) {
+            __claimMerklRewards(actionArgs);
         } else {
             revert("receiveCallFromVault: Invalid actionId");
         }
@@ -238,6 +244,24 @@ contract AaveV3DebtPositionLib is
         }
 
         __pushFullAssetBalances(msg.sender, assets);
+    }
+
+    /// @dev Claims Merkl rewards
+    function __claimMerklRewards(bytes memory actionArgs) private {
+        (address[] memory tokens, uint256[] memory amounts, bytes32[][] memory proofs) =
+            __decodeClaimMerklRewardsActionArgs(actionArgs);
+
+        uint256 tokensLength = tokens.length;
+        address[] memory users = new address[](tokensLength);
+        for (uint256 i; i < tokensLength; i++) {
+            users[i] = address(this);
+        }
+
+        MERKL_DISTRIBUTOR.claim({_users: users, _tokens: tokens, _amounts: amounts, _proofs: proofs});
+
+        for (uint256 i; i < tokensLength; i++) {
+            IERC20(tokens[i]).safeTransfer(msg.sender, amounts[i]);
+        }
     }
 
     ////////////////////

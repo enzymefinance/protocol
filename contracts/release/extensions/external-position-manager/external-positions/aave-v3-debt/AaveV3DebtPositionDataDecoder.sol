@@ -76,4 +76,13 @@ abstract contract AaveV3DebtPositionDataDecoder {
     function __decodeSweepActionArgs(bytes memory _actionArgs) internal pure returns (address[] memory assets_) {
         return abi.decode(_actionArgs, (address[]));
     }
+
+    /// @dev Helper to decode args used during the ClaimMerklRewards action
+    function __decodeClaimMerklRewardsActionArgs(bytes memory _actionArgs)
+        internal
+        pure
+        returns (address[] memory tokens_, uint256[] memory amounts_, bytes32[][] memory proofs_)
+    {
+        return abi.decode(_actionArgs, (address[], uint256[], bytes32[][]));
+    }
 }

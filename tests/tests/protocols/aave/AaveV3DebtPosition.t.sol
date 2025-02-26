@@ -8,6 +8,7 @@ import {IAaveV3PoolAddressProvider} from "tests/interfaces/external/IAaveV3PoolA
 import {IAaveV3PriceOracle} from "tests/interfaces/external/IAaveV3PriceOracle.sol";
 import {IAaveV3ProtocolDataProvider} from "tests/interfaces/external/IAaveV3ProtocolDataProvider.sol";
 import {IAaveV3RewardsController} from "tests/interfaces/external/IAaveV3RewardsController.sol";
+import {IMerklDistributor} from "tests/interfaces/external/IMerklDistributor.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
 import {
@@ -31,6 +32,7 @@ abstract contract AaveV3DebtPositionTestBaseEthereum is AaveV3DebtPositionTestBa
         __initialize({
             _version: _version,
             _chainId: ETHEREUM_CHAIN_ID,
+            _merklDistributor: IMerklDistributor(ETHEREUM_MERKL_DISTRIBUTOR),
             _poolAddressProvider: IAaveV3PoolAddressProvider(ETHEREUM_POOL_ADDRESS_PROVIDER),
             _protocolDataProvider: IAaveV3ProtocolDataProvider(ETHEREUM_PROTOCOL_DATA_PROVIDER),
             _rewardsController: IAaveV3RewardsController(ETHEREUM_REWARDS_CONTROLLER),
@@ -48,6 +50,7 @@ abstract contract AaveV3DebtPositionTestBasePolygon is AaveV3DebtPositionTestBas
         __initialize({
             _version: _version,
             _chainId: POLYGON_CHAIN_ID,
+            _merklDistributor: IMerklDistributor(POLYGON_MERKL_DISTRIBUTOR),
             _poolAddressProvider: IAaveV3PoolAddressProvider(POLYGON_POOL_ADDRESS_PROVIDER),
             _protocolDataProvider: IAaveV3ProtocolDataProvider(POLYGON_PROTOCOL_DATA_PROVIDER),
             _rewardsController: IAaveV3RewardsController(POLYGON_REWARDS_CONTROLLER),
@@ -63,6 +66,7 @@ abstract contract AaveV3DebtPositionTestBaseArbitrum is AaveV3DebtPositionTestBa
         __initialize({
             _version: _version,
             _chainId: ARBITRUM_CHAIN_ID,
+            _merklDistributor: IMerklDistributor(ARBITRUM_MERKL_DISTRIBUTOR),
             _poolAddressProvider: IAaveV3PoolAddressProvider(ARBITRUM_POOL_ADDRESS_PROVIDER),
             _protocolDataProvider: IAaveV3ProtocolDataProvider(ARBITRUM_PROTOCOL_DATA_PROVIDER),
             _rewardsController: IAaveV3RewardsController(ARBITRUM_REWARDS_CONTROLLER),
@@ -80,6 +84,7 @@ abstract contract AaveV3DebtPositionTestBaseBaseChain is AaveV3DebtPositionTestB
         __initialize({
             _version: _version,
             _chainId: BASE_CHAIN_ID,
+            _merklDistributor: IMerklDistributor(BASE_MERKL_DISTRIBUTOR),
             _poolAddressProvider: IAaveV3PoolAddressProvider(BASE_POOL_ADDRESS_PROVIDER),
             _protocolDataProvider: IAaveV3ProtocolDataProvider(BASE_PROTOCOL_DATA_PROVIDER),
             _rewardsController: IAaveV3RewardsController(BASE_REWARDS_CONTROLLER),

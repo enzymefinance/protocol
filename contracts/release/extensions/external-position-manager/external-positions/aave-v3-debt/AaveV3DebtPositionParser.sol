@@ -93,6 +93,8 @@ contract AaveV3DebtPositionParser is
             (,, address rewardToken) = __decodeClaimRewardsActionArgs(_encodedActionArgs);
             assetsToReceive_ = new address[](1);
             assetsToReceive_[0] = rewardToken;
+        } else if (_actionId == uint256(IAaveV3DebtPosition.Actions.ClaimMerklRewards)) {
+            (assetsToReceive_,,) = __decodeClaimMerklRewardsActionArgs(_encodedActionArgs);
         }
 
         // No validations or transferred assets passed for Actions.SetEMode, Actions.SetUseReserveAsCollateral, and Actions.Sweep

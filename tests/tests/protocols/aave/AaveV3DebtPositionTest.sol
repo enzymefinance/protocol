@@ -14,6 +14,8 @@ import {IAaveV3PoolAddressProvider} from "tests/interfaces/external/IAaveV3PoolA
 import {IAaveV3PriceOracle} from "tests/interfaces/external/IAaveV3PriceOracle.sol";
 import {IAaveV3ProtocolDataProvider} from "tests/interfaces/external/IAaveV3ProtocolDataProvider.sol";
 import {IAaveV3RewardsController} from "tests/interfaces/external/IAaveV3RewardsController.sol";
+import {IMerklCore} from "tests/interfaces/external/IMerklCore.sol";
+import {IMerklDistributor} from "tests/interfaces/external/IMerklDistributor.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
 import {IAaveV3ATokenListOwner} from "tests/interfaces/internal/IAaveV3ATokenListOwner.sol";
@@ -42,6 +44,7 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
     IAaveV3RewardsController rewardsController;
     IAaveV3Pool lendingPool;
     IAaveV3PriceOracle priceOracle;
+    IMerklDistributor merklDistributor;
 
     address[] collateralUnderlyingAddresses;
     address[] borrowableUnderlyingAddresses;
@@ -50,6 +53,7 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
     function __initialize(
         EnzymeVersion _version,
         uint256 _chainId,
+        IMerklDistributor _merklDistributor,
         IAaveV3PoolAddressProvider _poolAddressProvider,
         IAaveV3ProtocolDataProvider _protocolDataProvider,
         IAaveV3RewardsController _rewardsController,
@@ -60,7 +64,7 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         setUpNetworkEnvironment({_chainId: _chainId});
 
         version = _version;
-
+        merklDistributor = _merklDistributor;
         poolAddressProvider = _poolAddressProvider;
         protocolDataProvider = _protocolDataProvider;
         rewardsController = _rewardsController;
@@ -81,6 +85,7 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         uint256 typeId = __deployPositionType({
             _poolAddressProvider: poolAddressProvider,
             _protocolDataProvider: protocolDataProvider,
+            _merklDistributor: _merklDistributor,
             _rewardsController: rewardsController,
             _addressListRegistry: core.persistent.addressListRegistry
         });
@@ -99,12 +104,15 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
 
     // DEPLOYMENT HELPERS
     function __deployLib(
+        IMerklDistributor _merklDistributor,
         IAaveV3PoolAddressProvider _poolAddressProvider,
         IAaveV3ProtocolDataProvider _protocolDataProvider,
         uint16 _referralCode,
         IAaveV3RewardsController _rewardsController
     ) internal returns (address lib_) {
-        bytes memory args = abi.encode(_protocolDataProvider, _poolAddressProvider, _referralCode, _rewardsController);
+        bytes memory args = abi.encode(
+            _protocolDataProvider, _poolAddressProvider, _merklDistributor, _referralCode, _rewardsController
+        );
 
         return deployCode("AaveV3DebtPositionLib.sol", args);
     }
@@ -119,6 +127,7 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
     }
 
     function __deployPositionType(
+        IMerklDistributor _merklDistributor,
         IAaveV3PoolAddressProvider _poolAddressProvider,
         IAaveV3ProtocolDataProvider _protocolDataProvider,
         IAaveV3RewardsController _rewardsController,
@@ -129,6 +138,7 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
             __deployLib({
                 _poolAddressProvider: _poolAddressProvider,
                 _protocolDataProvider: _protocolDataProvider,
+                _merklDistributor: _merklDistributor,
                 _rewardsController: _rewardsController,
                 _referralCode: 0
             })
@@ -256,6 +266,21 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IAaveV3DebtPositionProd.Actions.Sweep)
+        });
+    }
+
+    function __claimMerklRewards(address[] memory _tokens, uint256[] memory _amounts, bytes32[][] memory _proofs)
+        internal
+    {
+        bytes memory actionArgs = abi.encode(_tokens, _amounts, _proofs);
+
+        vm.prank(fundOwner);
+        callOnExternalPositionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _externalPositionAddress: address(aaveV3DebtPosition),
+            _actionArgs: actionArgs,
+            _actionId: uint256(IAaveV3DebtPositionProd.Actions.ClaimMerklRewards)
         });
     }
 
@@ -899,6 +924,57 @@ abstract contract SweepTest is TestBase {
     }
 }
 
+abstract contract ClaimMerklRewardsTest is TestBase {
+    function test_claimMerklRewards_success() public {
+        address tokenToClaim = address(createTestToken("Asset1"));
+        uint256 amountToClaim = 333;
+
+        bytes32[] memory nodes = new bytes32[](2);
+        nodes[0] = keccak256(abi.encode(address(aaveV3DebtPosition), tokenToClaim, amountToClaim));
+        nodes[1] = keccak256(abi.encode(makeAddr("random user 1"), makeAddr("random token 1"), 100));
+
+        // set up reward token distribution
+        // ordering of nodes matters, it should be from the smallest to the largest
+        bytes32 merkleRoot =
+            keccak256(nodes[0] < nodes[1] ? abi.encode(nodes[0], nodes[1]) : abi.encode(nodes[1], nodes[0]));
+
+        // mock call is used to bypass governor check instead of vm.prank, because there is no easy way to get the governor address, as it is stored in the mapping
+        vm.mockCall({
+            callee: merklDistributor.core(),
+            data: abi.encodeWithSelector(IMerklCore.isGovernor.selector),
+            returnData: abi.encode(true)
+        });
+        // call updateTree twice so we don't have to worry about the dispute period
+        // normally two merkleRoots are stored, old one is used until dispute period elapsed
+        // alternatively, we could use the governor to skip the dispute period, but it is not necessary for this test
+        merklDistributor.updateTree(IMerklDistributor.MerkleTree({merkleRoot: merkleRoot, ipfsHash: ""}));
+        merklDistributor.updateTree(IMerklDistributor.MerkleTree({merkleRoot: merkleRoot, ipfsHash: ""}));
+        // clear mocks so we are sure it won't interfere with the test
+        vm.clearMockedCalls();
+
+        increaseTokenBalance({_token: IERC20(tokenToClaim), _to: address(merklDistributor), _amount: amountToClaim});
+
+        // get merkle proof
+        bytes32[] memory merkleProof = new bytes32[](1);
+        merkleProof[0] = nodes[1];
+
+        bytes32[][] memory merkleProofs = new bytes32[][](1);
+        merkleProofs[0] = merkleProof;
+
+        vm.recordLogs();
+
+        __claimMerklRewards({_tokens: toArray(tokenToClaim), _amounts: toArray(amountToClaim), _proofs: merkleProofs});
+
+        assertExternalPositionAssetsToReceive({
+            _logs: vm.getRecordedLogs(),
+            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _assets: toArray(tokenToClaim)
+        });
+
+        assertEq(IERC20(tokenToClaim).balanceOf(vaultProxyAddress), amountToClaim, "Asset was not claimed");
+    }
+}
+
 // Normally in this place there would be tests for getManagedAssets, and getDebtAssets, but in Aave's case it is very straightforward, i.e., there is only one kind of managed asset with one way of calculating it, and same for debt assets.
 // Therefore, we don't need to test it.
 
@@ -910,5 +986,6 @@ abstract contract AaveV3DebtPositionTestBase is
     AddCollateralTest,
     RemoveCollateralTest,
     ClaimRewardsTest,
-    SweepTest
+    SweepTest,
+    ClaimMerklRewardsTest
 {}
