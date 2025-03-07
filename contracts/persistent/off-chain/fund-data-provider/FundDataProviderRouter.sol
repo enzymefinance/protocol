@@ -30,8 +30,10 @@ contract FundDataProviderRouter {
     /// @param _vaultProxy The VaultProxy of the fund
     /// @return timestamp_ The current block timestamp
     /// @return sharesSupply_ The total supply of shares
+    /// @return gavInDenominationAsset_ The GAV quoted in the denomination asset
     /// @return gavInEth_ The GAV quoted in ETH
     /// @return gavIsValid_ True if the GAV calc succeeded
+    /// @return navInDenominationAsset_ The NAV quoted in the denomination asset
     /// @return navInEth_ The NAV quoted in ETH
     /// @return navIsValid_ True if the NAV calc succeeded
     function getFundValueMetrics(address _vaultProxy)
@@ -39,8 +41,10 @@ contract FundDataProviderRouter {
         returns (
             uint256 timestamp_,
             uint256 sharesSupply_,
+            uint256 gavInDenominationAsset_,
             uint256 gavInEth_,
             bool gavIsValid_,
+            uint256 navInDenominationAsset_,
             uint256 navInEth_,
             bool navIsValid_
         )
@@ -48,10 +52,22 @@ contract FundDataProviderRouter {
         timestamp_ = block.timestamp;
         sharesSupply_ = IERC20(_vaultProxy).totalSupply();
 
+        try FundValueCalculatorRouter(getFundValueCalculatorRouter()).calcGav(_vaultProxy) returns (
+            address, uint256 gav
+        ) {
+            gavInDenominationAsset_ = gav;
+        } catch {}
+
         try FundValueCalculatorRouter(getFundValueCalculatorRouter()).calcGavInAsset(_vaultProxy, getWethToken())
         returns (uint256 gav) {
             gavInEth_ = gav;
             gavIsValid_ = true;
+        } catch {}
+
+        try FundValueCalculatorRouter(getFundValueCalculatorRouter()).calcNav(_vaultProxy) returns (
+            address, uint256 nav
+        ) {
+            navInDenominationAsset_ = nav;
         } catch {}
 
         try FundValueCalculatorRouter(getFundValueCalculatorRouter()).calcNavInAsset(_vaultProxy, getWethToken())
@@ -60,7 +76,16 @@ contract FundDataProviderRouter {
             navIsValid_ = true;
         } catch {}
 
-        return (timestamp_, sharesSupply_, gavInEth_, gavIsValid_, navInEth_, navIsValid_);
+        return (
+            timestamp_,
+            sharesSupply_,
+            gavInDenominationAsset_,
+            gavInEth_,
+            gavIsValid_,
+            navInDenominationAsset_,
+            navInEth_,
+            navIsValid_
+        );
     }
 
     ///////////////////
