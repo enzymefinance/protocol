@@ -151,8 +151,6 @@ IGMXV2LeverageTradingPositionParser.sol: GMXV2LeverageTradingPositionParser.abi.
 IKilnStakingPositionLib.sol: KilnStakingPositionLib.abi.json
 IKilnStakingPositionParser.sol: KilnStakingPositionParser.abi.json
 ILidoWithdrawalsPositionLib.sol:LidoWithdrawalsPositionLib.abi.json
-ILiquityDebtPositionLib.sol: LiquityDebtPositionLib.abi.json
-ILiquityDebtPositionParser.sol: LiquityDebtPositionParser.abi.json
 IMapleLiquidityPositionLib.sol: MapleLiquidityPositionLib.abi.json
 IMapleLiquidityPositionParser.sol: MapleLiquidityPositionParser.abi.json
 IStaderWithdrawalsPositionLib.sol:StaderWithdrawalsPositionLib.abi.json
