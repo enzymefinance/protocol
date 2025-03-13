@@ -63,17 +63,20 @@ contract ParaSwapV6Adapter is AdapterBase {
     function __swapExactAmountIn(address _vaultProxyAddress, IParaSwapV6Adapter.SwapActionArgs memory _actionArgs)
         private
     {
+        // Using balance or tokens with on-transfer fees
+        uint256 srcTokenBalance = IERC20(_actionArgs.swapData.srcToken).balanceOf(address(this));
+
         // Grant max outgoing token allowance to ParaSwap
         __approveAssetMaxAsNeeded({
             _asset: _actionArgs.swapData.srcToken,
             _target: address(PARA_SWAP_V6_AUGUSTUS_SWAPPER),
-            _neededAmount: _actionArgs.swapData.fromAmount
+            _neededAmount: srcTokenBalance
         });
 
         IParaSwapV6AugustusSwapper.GenericData memory swapData = IParaSwapV6AugustusSwapper.GenericData({
             srcToken: _actionArgs.swapData.srcToken,
             destToken: _actionArgs.swapData.destToken,
-            fromAmount: IERC20(_actionArgs.swapData.srcToken).balanceOf(address(this)), // Using balance for tokens with on-transfer fees
+            fromAmount: srcTokenBalance, // Using balance for tokens with on-transfer fees
             toAmount: _actionArgs.swapData.toAmount,
             quotedAmount: _actionArgs.swapData.quotedAmount,
             metadata: _actionArgs.swapData.metadata,
