@@ -78,6 +78,22 @@ abstract contract IntegrationTest is CoreUtils {
 
     // Live deployments
 
+    function setUpLiveMainnetEnvironment() internal {
+        setUpLiveMainnetEnvironment(ETHEREUM_BLOCK_LATEST);
+    }
+
+    function setUpLivePolygonEnvironment() internal {
+        setUpLivePolygonEnvironment(POLYGON_BLOCK_LATEST);
+    }
+
+    function setUpLiveArbitrumEnvironment() internal {
+        setUpLiveArbitrumEnvironment(ARBITRUM_BLOCK_LATEST);
+    }
+
+    function setUpLiveBaseChainEnvironment() internal {
+        setUpLiveBaseChainEnvironment(BASE_BLOCK_LATEST);
+    }
+
     function setUpLiveMainnetEnvironment(uint256 _forkBlock) internal {
         vm.createSelectFork("mainnet", _forkBlock);
 
