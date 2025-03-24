@@ -163,9 +163,6 @@ IUniswapV3LiquidityPositionLib.sol: UniswapV3LiquidityPositionLib.abi.json
 IUniswapV3LiquidityPositionParser.sol: UniswapV3LiquidityPositionParser.abi.json
 ITermFinanceV1LendingPositionLib.sol: TermFinanceV1LendingPositionLib.abi.json
 ITermFinanceV1LendingPositionParser.sol: TermFinanceV1LendingPositionParser.abi.json
-IPendleV2MarketRegistry.sol: PendleV2MarketRegistry.abi.json
-IPendleV2PositionLib.sol: PendleV2PositionLib.abi.json
-IPendleV2PositionParser.sol: PendleV2PositionParser.abi.json
 IMorphoBluePositionLib.sol: MorphoBluePositionLib.abi.json
 IMorphoBluePositionParser.sol: MorphoBluePositionParser.abi.json
 IAlicePositionLib.sol: AlicePositionLib.abi.json
