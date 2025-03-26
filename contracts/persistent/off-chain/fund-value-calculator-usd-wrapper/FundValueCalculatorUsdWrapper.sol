@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 
 import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "../fund-value-calculator/FundValueCalculatorRouter.sol";
+import "../../fund-value-calculator/FundValueCalculatorRouter.sol";
 
 /// @title IChainlinkAggregatorFundValueCalculatorUsdWrapper Interface
 /// @author Enzyme Foundation <security@enzyme.finance>

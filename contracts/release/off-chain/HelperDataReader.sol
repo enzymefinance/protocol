@@ -14,7 +14,7 @@ import {IExternalPositionFactory} from "../../persistent/external-positions/IExt
 import {IExternalPositionProxy} from "../../persistent/external-positions/IExternalPositionProxy.sol";
 import {IHelperDataReader as IHelperDataReaderPersistent} from
     "../../persistent/off-chain/helper-data-reader/IHelperDataReader.sol";
-import {IFundValueCalculator} from "../../persistent/off-chain/fund-value-calculator/IFundValueCalculator.sol";
+import {IFundValueCalculator} from "../../persistent/fund-value-calculator/IFundValueCalculator.sol";
 
 import {IComptroller} from "../core/fund/comptroller/IComptroller.sol";
 import {IVault} from "../core/fund/vault/IVault.sol";

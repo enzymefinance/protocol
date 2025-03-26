@@ -11,7 +11,7 @@
 
 pragma solidity 0.8.19;
 
-import {IFundValueCalculator} from "../../off-chain/fund-value-calculator/IFundValueCalculator.sol";
+import {IFundValueCalculator} from "../../fund-value-calculator/IFundValueCalculator.sol";
 import {MultiCallAccountMixin} from "../utils/MultiCallAccountMixin.sol";
 import {ISharePriceThrottledAssetManagerLib} from "./ISharePriceThrottledAssetManagerLib.sol";
 

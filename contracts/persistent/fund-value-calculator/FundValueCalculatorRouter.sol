@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../dispatcher/IDispatcher.sol";
+import "../dispatcher/IDispatcher.sol";
 import "./IFundValueCalculator.sol";
 
 /// @title FundValueCalculatorRouter Contract

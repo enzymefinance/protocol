@@ -13,7 +13,7 @@ pragma solidity 0.6.12;
 
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
 import {IERC20} from "../../external-interfaces/IERC20.sol";
-import {IFundValueCalculator} from "../../persistent/off-chain/fund-value-calculator/IFundValueCalculator.sol";
+import {IFundValueCalculator} from "../../persistent/fund-value-calculator/IFundValueCalculator.sol";
 import {IComptroller} from "../core/fund/comptroller/IComptroller.sol";
 import {IVault} from "../core/fund/vault/IVault.sol";
 import {IFeeManager} from "../extensions/fee-manager/IFeeManager.sol";

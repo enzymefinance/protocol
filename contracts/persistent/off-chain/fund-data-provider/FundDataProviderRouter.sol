@@ -10,7 +10,7 @@
 pragma solidity 0.6.12;
 
 import {IERC20} from "../../../external-interfaces/IERC20.sol";
-import {FundValueCalculatorRouter} from "../fund-value-calculator/FundValueCalculatorRouter.sol";
+import {FundValueCalculatorRouter} from "../../fund-value-calculator/FundValueCalculatorRouter.sol";
 
 /// @title FundDataProviderRouter Contract
 /// @author Enzyme Foundation <security@enzyme.finance>
