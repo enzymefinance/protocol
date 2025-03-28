@@ -190,6 +190,7 @@ IUsdEthSimulatedAggregator.sol: UsdEthSimulatedAggregator.abi.json
 IPeggedDerivativesPriceFeed.sol: PeggedDerivativesPriceFeed.abi.json
 IStaderSDPriceFeed.sol: StaderSDPriceFeed.abi.json
 IConvertedQuoteAggregator.sol: ConvertedQuoteAggregator.abi.json
+IEnzymeVaultPriceFeed.sol: EnzymeVaultPriceFeed.abi.json
 
 # Protocol fee
 IProtocolFeeTracker.sol: ProtocolFeeTracker.abi.json

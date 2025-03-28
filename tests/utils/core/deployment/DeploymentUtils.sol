@@ -12,6 +12,8 @@ import {IExternalPositionFactory} from "tests/interfaces/internal/IExternalPosit
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {IFeeManager} from "tests/interfaces/internal/IFeeManager.sol";
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
+import {IFundValueCalculatorRouter} from "tests/interfaces/internal/IFundValueCalculatorRouter.sol";
+import {IFundValueCalculator} from "tests/interfaces/internal/IFundValueCalculator.sol";
 import {IGasRelayPaymasterFactory} from "tests/interfaces/internal/IGasRelayPaymasterFactory.sol";
 import {IGlobalConfigLib} from "tests/interfaces/internal/IGlobalConfigLib.sol";
 import {IIntegrationManager} from "tests/interfaces/internal/IIntegrationManager.sol";
@@ -81,12 +83,19 @@ abstract contract DeploymentUtils is CoreUtilsBase {
         });
         IUintListRegistry uintListRegistry = deployUintListRegistry({_dispatcher: dispatcher});
 
+        IFundValueCalculatorRouter fundValueCalculatorRouter = deployFundValueCalculatorRouter({
+            _dispatcher: dispatcher,
+            _fundDeployers: new address[](0),
+            _fundValueCalculators: new address[](0)
+        });
+
         vm.stopPrank();
 
         return PersistentContracts({
             addressListRegistry: addressListRegistry,
             dispatcher: dispatcher,
             externalPositionFactory: externalPositionFactory,
+            fundValueCalculatorRouter: fundValueCalculatorRouter,
             globalConfigProxy: globalConfigProxy,
             protocolFeeReserveProxy: protocolFeeReserveProxy,
             uintListRegistry: uintListRegistry
@@ -123,6 +132,13 @@ abstract contract DeploymentUtils is CoreUtilsBase {
             _protocolFeeTracker: releaseContracts_.protocolFeeTracker,
             _comptrollerLibAddress: releaseContracts_.comptrollerLibAddress,
             _vaultLibAddress: releaseContracts_.vaultLibAddress
+        });
+
+        // called by Dispatcher owner
+        setFundValueCalculatorRouterFundValueCalculators({
+            _fundValueCalculatorRouter: _persistentContracts.fundValueCalculatorRouter,
+            _fundDeployers: toArray(address(releaseContracts_.fundDeployer)),
+            _fundValueCalculators: toArray(address(releaseContracts_.fundValueCalculator))
         });
 
         // called by FundDeployer owner
@@ -210,6 +226,12 @@ abstract contract DeploymentUtils is CoreUtilsBase {
             _protocolFeeTracker: releaseContracts_.protocolFeeTracker
         });
 
+        releaseContracts_.fundValueCalculator = deployFundValueCalculator({
+            _feeManager: releaseContracts_.feeManager,
+            _protocolFeeTracker: releaseContracts_.protocolFeeTracker,
+            _valueInterpreter: releaseContracts_.valueInterpreter
+        });
+
         vm.stopPrank();
     }
 
@@ -239,6 +261,20 @@ abstract contract DeploymentUtils is CoreUtilsBase {
         _fundDeployer.setComptrollerLib(_comptrollerLibAddress);
         _fundDeployer.setVaultLib(_vaultLibAddress);
         vm.stopPrank();
+    }
+
+    function setFundValueCalculatorRouterFundValueCalculators(
+        IFundValueCalculatorRouter _fundValueCalculatorRouter,
+        address[] memory _fundDeployers,
+        address[] memory _fundValueCalculators
+    ) private {
+        IDispatcher dispatcher = IDispatcher(_fundValueCalculatorRouter.getDispatcher());
+
+        vm.prank(dispatcher.getOwner());
+        _fundValueCalculatorRouter.setFundValueCalculators({
+            _fundDeployers: _fundDeployers,
+            _fundValueCalculators: _fundValueCalculators
+        });
     }
 
     function setReleaseLive(IDispatcher _dispatcher, IFundDeployer _fundDeployer) private {
@@ -348,6 +384,26 @@ abstract contract DeploymentUtils is CoreUtilsBase {
         bytes memory args = abi.encode(_dispatcher);
         address addr = deployCode("FundDeployer.sol", args);
         return IFundDeployer(addr);
+    }
+
+    function deployFundValueCalculatorRouter(
+        IDispatcher _dispatcher,
+        address[] memory _fundDeployers,
+        address[] memory _fundValueCalculators
+    ) internal returns (IFundValueCalculatorRouter) {
+        bytes memory args = abi.encode(_dispatcher, _fundDeployers, _fundValueCalculators);
+        address addr = deployCode("FundValueCalculatorRouter.sol", args);
+        return IFundValueCalculatorRouter(addr);
+    }
+
+    function deployFundValueCalculator(
+        IFeeManager _feeManager,
+        IProtocolFeeTracker _protocolFeeTracker,
+        IValueInterpreter _valueInterpreter
+    ) internal returns (IFundValueCalculator) {
+        bytes memory args = abi.encode(_feeManager, _protocolFeeTracker, _valueInterpreter);
+        address addr = deployCode("FundValueCalculator.sol", args);
+        return IFundValueCalculator(addr);
     }
 
     function deployGasRelayPaymasterFactory(IDispatcher _dispatcher, address _gasRelayPaymasterLibAddress)

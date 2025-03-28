@@ -13,6 +13,7 @@ pragma solidity 0.6.12;
 
 import "../dispatcher/IDispatcher.sol";
 import "./IFundValueCalculator.sol";
+import "./IFundValueCalculatorRouter.sol";
 
 /// @title FundValueCalculatorRouter Contract
 /// @author Enzyme Foundation <security@enzyme.finance>
@@ -20,7 +21,7 @@ import "./IFundValueCalculator.sol";
 /// to the correct FundValueCalculator instance for a particular release
 /// @dev These values should generally only be consumed from off-chain,
 /// unless you understand how each release interprets each calculation
-contract FundValueCalculatorRouter {
+contract FundValueCalculatorRouter is IFundValueCalculatorRouter {
     event FundValueCalculatorUpdated(address indexed fundDeployer, address fundValueCalculator);
 
     address private immutable DISPATCHER;
@@ -39,7 +40,7 @@ contract FundValueCalculatorRouter {
     /// @param _vaultProxy The VaultProxy of the fund
     /// @return denominationAsset_ The denomination asset of the fund
     /// @return gav_ The GAV quoted in the denomination asset
-    function calcGav(address _vaultProxy) external returns (address denominationAsset_, uint256 gav_) {
+    function calcGav(address _vaultProxy) external override returns (address denominationAsset_, uint256 gav_) {
         return getFundValueCalculatorForVault(_vaultProxy).calcGav(_vaultProxy);
     }
 
@@ -47,7 +48,7 @@ contract FundValueCalculatorRouter {
     /// @param _vaultProxy The VaultProxy of the fund
     /// @param _quoteAsset The quote asset
     /// @return gav_ The GAV quoted in _quoteAsset
-    function calcGavInAsset(address _vaultProxy, address _quoteAsset) external returns (uint256 gav_) {
+    function calcGavInAsset(address _vaultProxy, address _quoteAsset) external override returns (uint256 gav_) {
         return getFundValueCalculatorForVault(_vaultProxy).calcGavInAsset(_vaultProxy, _quoteAsset);
     }
 
@@ -57,6 +58,7 @@ contract FundValueCalculatorRouter {
     /// @return grossShareValue_ The gross share value quoted in the denomination asset
     function calcGrossShareValue(address _vaultProxy)
         external
+        override
         returns (address denominationAsset_, uint256 grossShareValue_)
     {
         return getFundValueCalculatorForVault(_vaultProxy).calcGrossShareValue(_vaultProxy);
@@ -68,6 +70,7 @@ contract FundValueCalculatorRouter {
     /// @return grossShareValue_ The gross share value quoted in _quoteAsset
     function calcGrossShareValueInAsset(address _vaultProxy, address _quoteAsset)
         external
+        override
         returns (uint256 grossShareValue_)
     {
         return getFundValueCalculatorForVault(_vaultProxy).calcGrossShareValueInAsset(_vaultProxy, _quoteAsset);
@@ -77,7 +80,7 @@ contract FundValueCalculatorRouter {
     /// @param _vaultProxy The VaultProxy of the fund
     /// @return denominationAsset_ The denomination asset of the fund
     /// @return nav_ The NAV quoted in the denomination asset
-    function calcNav(address _vaultProxy) external returns (address denominationAsset_, uint256 nav_) {
+    function calcNav(address _vaultProxy) external override returns (address denominationAsset_, uint256 nav_) {
         return getFundValueCalculatorForVault(_vaultProxy).calcNav(_vaultProxy);
     }
 
@@ -85,7 +88,7 @@ contract FundValueCalculatorRouter {
     /// @param _vaultProxy The VaultProxy of the fund
     /// @param _quoteAsset The quote asset
     /// @return nav_ The NAV quoted in _quoteAsset
-    function calcNavInAsset(address _vaultProxy, address _quoteAsset) external returns (uint256 nav_) {
+    function calcNavInAsset(address _vaultProxy, address _quoteAsset) external override returns (uint256 nav_) {
         return getFundValueCalculatorForVault(_vaultProxy).calcNavInAsset(_vaultProxy, _quoteAsset);
     }
 
@@ -95,6 +98,7 @@ contract FundValueCalculatorRouter {
     /// @return netShareValue_ The net share value quoted in the denomination asset
     function calcNetShareValue(address _vaultProxy)
         external
+        override
         returns (address denominationAsset_, uint256 netShareValue_)
     {
         return getFundValueCalculatorForVault(_vaultProxy).calcNetShareValue(_vaultProxy);
@@ -106,6 +110,7 @@ contract FundValueCalculatorRouter {
     /// @return netShareValue_ The net share value quoted in _quoteAsset
     function calcNetShareValueInAsset(address _vaultProxy, address _quoteAsset)
         external
+        override
         returns (uint256 netShareValue_)
     {
         return getFundValueCalculatorForVault(_vaultProxy).calcNetShareValueInAsset(_vaultProxy, _quoteAsset);
@@ -118,6 +123,7 @@ contract FundValueCalculatorRouter {
     /// @return netValue_ The net value of all shares held by _sharesHolder
     function calcNetValueForSharesHolder(address _vaultProxy, address _sharesHolder)
         external
+        override
         returns (address denominationAsset_, uint256 netValue_)
     {
         return getFundValueCalculatorForVault(_vaultProxy).calcNetValueForSharesHolder(_vaultProxy, _sharesHolder);
@@ -130,6 +136,7 @@ contract FundValueCalculatorRouter {
     /// @return netValue_ The net value of all shares held by _sharesHolder quoted in _quoteAsset
     function calcNetValueForSharesHolderInAsset(address _vaultProxy, address _sharesHolder, address _quoteAsset)
         external
+        override
         returns (uint256 netValue_)
     {
         return getFundValueCalculatorForVault(_vaultProxy).calcNetValueForSharesHolderInAsset(
@@ -145,6 +152,7 @@ contract FundValueCalculatorRouter {
     function getFundValueCalculatorForVault(address _vaultProxy)
         public
         view
+        override
         returns (IFundValueCalculator fundValueCalculatorContract_)
     {
         address fundDeployer = IDispatcher(DISPATCHER).getFundDeployerForVaultProxy(_vaultProxy);
@@ -166,6 +174,7 @@ contract FundValueCalculatorRouter {
     /// to each instance in _fundDeployers
     function setFundValueCalculators(address[] memory _fundDeployers, address[] memory _fundValueCalculators)
         external
+        override
     {
         require(
             msg.sender == IDispatcher(getDispatcher()).getOwner(), "Only the Dispatcher owner can call this function"
@@ -195,7 +204,7 @@ contract FundValueCalculatorRouter {
 
     /// @notice Gets the `DISPATCHER` variable
     /// @return dispatcher_ The `DISPATCHER` variable value
-    function getDispatcher() public view returns (address dispatcher_) {
+    function getDispatcher() public view override returns (address dispatcher_) {
         return DISPATCHER;
     }
 
@@ -205,6 +214,7 @@ contract FundValueCalculatorRouter {
     function getFundValueCalculatorForFundDeployer(address _fundDeployer)
         public
         view
+        override
         returns (address fundValueCalculator_)
     {
         return fundDeployerToFundValueCalculator[_fundDeployer];

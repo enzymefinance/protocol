@@ -713,27 +713,34 @@ abstract contract IntegrationTest is CoreUtils {
         internal
         returns (address comptrollerProxyAddress_, address vaultProxyAddress_, address fundOwner_)
     {
-        // Use arbitrary test token as denomination asset
-        IERC20 denominationAsset = createTestToken();
+        return createTradingFundForVersion({
+            _version: _version,
+            _denominationAsset: createTestToken() // Use arbitrary test token as denomination asset
+        });
+    }
 
+    function createTradingFundForVersion(EnzymeVersion _version, IERC20 _denominationAsset)
+        internal
+        returns (address comptrollerProxyAddress_, address vaultProxyAddress_, address fundOwner_)
+    {
         if (_version == EnzymeVersion.V4) {
             // Add the denom asset as primitive
-            v4AddPrimitiveWithTestAggregator({_tokenAddress: address(denominationAsset), _skipIfRegistered: false});
+            v4AddPrimitiveWithTestAggregator({_tokenAddress: address(_denominationAsset), _skipIfRegistered: false});
 
             return v4CreateFundSimple({
                 _fundDeployer: v4ReleaseContracts.fundDeployer,
-                _denominationAsset: denominationAsset
+                _denominationAsset: _denominationAsset
             });
         } else {
             // Add the denom asset as primitive
             addPrimitiveWithTestAggregator({
                 _valueInterpreter: core.release.valueInterpreter,
-                _tokenAddress: address(denominationAsset),
+                _tokenAddress: address(_denominationAsset),
                 _skipIfRegistered: false
             });
 
             IFundDeployer.ConfigInput memory comptrollerConfig;
-            comptrollerConfig.denominationAsset = address(denominationAsset);
+            comptrollerConfig.denominationAsset = address(_denominationAsset);
             comptrollerConfig.extensionsConfig = new IFundDeployer.ExtensionConfigInput[](2);
             comptrollerConfig.extensionsConfig[0].extension = address(core.release.integrationManager);
             comptrollerConfig.extensionsConfig[1].extension = address(core.release.externalPositionManager);

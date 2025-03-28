@@ -5,6 +5,7 @@ pragma solidity 0.8.19;
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {IFeeManager} from "tests/interfaces/internal/IFeeManager.sol";
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
+import {IFundValueCalculator} from "tests/interfaces/internal/IFundValueCalculator.sol";
 import {IGasRelayPaymasterFactory} from "tests/interfaces/internal/IGasRelayPaymasterFactory.sol";
 import {IIntegrationManager} from "tests/interfaces/internal/IIntegrationManager.sol";
 import {IPolicyManager} from "tests/interfaces/internal/IPolicyManager.sol";
@@ -25,6 +26,7 @@ struct Contracts {
     IGasRelayPaymasterFactory gasRelayPaymasterFactory;
     IProtocolFeeTracker protocolFeeTracker;
     IValueInterpreter valueInterpreter;
+    IFundValueCalculator fundValueCalculator;
 }
 
 function getMainnetDeployment() pure returns (Contracts memory contracts_) {
