@@ -18,16 +18,18 @@ import {IComptroller} from "../../../../core/fund/comptroller/IComptroller.sol";
 import {IVault} from "../../../../core/fund/vault/IVault.sol";
 import {IIntegrationManager} from "../../IIntegrationManager.sol";
 import {AdapterBase} from "../utils/0.8.19/AdapterBase.sol";
-import {IEnzymeVaultAdapter} from "./interfaces/IEnzymeVaultAdapter.sol";
+import {IEnzymeV4VaultAdapter} from "./interfaces/IEnzymeV4VaultAdapter.sol";
 
-/// @title EnzymeVaultAdapter Contract
+/// @title EnzymeV4VaultAdapter Contract
 /// @author Enzyme Foundation <security@enzyme.finance>
-/// @notice Adapter for depositing into, and redeeming from Enzyme Vaults
-contract EnzymeVaultAdapter is AdapterBase {
+/// @notice Adapter for depositing into, and redeeming from Enzyme V4 Vaults
+/// @dev Supported vaults must have a configuration that allows for these actions to proceed via this adapter, e.g.
+///  - no `sharesActionTimelock`
+///  - no policies that block shares deposits to, redemptions from, or transfers to this adapter
+///  - redeemForSpecificAssets() as a redemption option
+/// Since such configuration can change, both holders and owners of vaults intended to be compatible with this adapter should be aware of the consequences of any changes.
+contract EnzymeV4VaultAdapter is AdapterBase {
     using SafeERC20 for IERC20;
-
-    /// @dev Same One Hundred Percent value as it used in the ComptrollerLib
-    uint256 private constant ONE_HUNDRED_PERCENT = 10_000;
 
     ///@dev Dispatcher contract, used to get the FundDeployer for a given VaultProxy, and validate whether a VaultProxy is valid
     IDispatcher public immutable DISPATCHER;
@@ -35,9 +37,9 @@ contract EnzymeVaultAdapter is AdapterBase {
     address public immutable FUND_DEPLOYER_ADDRESS;
 
     /// @dev Thrown if an invalid action is passed to the adapter
-    error EnzymeVaultAdapter__InvalidAction();
+    error EnzymeV4VaultAdapter__InvalidAction();
     /// @dev Thrown if an not deployed by FundDeployer VaultProxy is passed to the adapter
-    error EnzymeVaultAdapter__InvalidVaultProxy();
+    error EnzymeV4VaultAdapter__InvalidVaultProxy();
 
     constructor(address _integrationManagerAddress, address _fundDeployerAddress, IDispatcher _dispatcher)
         AdapterBase(_integrationManagerAddress)
@@ -54,20 +56,21 @@ contract EnzymeVaultAdapter is AdapterBase {
     /// @param _vaultProxyAddress The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     function action(address _vaultProxyAddress, bytes calldata _actionData, bytes calldata) external {
-        (IEnzymeVaultAdapter.Action actionId, bytes memory encodedActionArgs) =
-            abi.decode(_actionData, (IEnzymeVaultAdapter.Action, bytes));
+        (IEnzymeV4VaultAdapter.Action actionId, bytes memory encodedActionArgs) =
+            abi.decode(_actionData, (IEnzymeV4VaultAdapter.Action, bytes));
 
-        if (actionId == IEnzymeVaultAdapter.Action.BuyShares) {
-            __buyShares(_vaultProxyAddress, abi.decode(encodedActionArgs, (IEnzymeVaultAdapter.BuySharesActionArgs)));
-        } else if (actionId == IEnzymeVaultAdapter.Action.RedeemShares) {
-            __redeemShares(
-                _vaultProxyAddress, abi.decode(encodedActionArgs, (IEnzymeVaultAdapter.RedeemSharesActionArgs))
+        if (actionId == IEnzymeV4VaultAdapter.Action.BuyShares) {
+            __buyShares(_vaultProxyAddress, abi.decode(encodedActionArgs, (IEnzymeV4VaultAdapter.BuySharesActionArgs)));
+        } else if (actionId == IEnzymeV4VaultAdapter.Action.RedeemSharesForSpecificAssets) {
+            __redeemSharesForSpecificAssets(
+                _vaultProxyAddress,
+                abi.decode(encodedActionArgs, (IEnzymeV4VaultAdapter.RedeemSharesForSpecificAssetsActionArgs))
             );
         }
     }
 
     /// @dev Helper to buy shares from Enzyme Vault
-    function __buyShares(address _vaultProxyAddress, IEnzymeVaultAdapter.BuySharesActionArgs memory _actionArgs)
+    function __buyShares(address _vaultProxyAddress, IEnzymeV4VaultAdapter.BuySharesActionArgs memory _actionArgs)
         private
     {
         IComptroller comptrollerProxy = IComptroller(IVault(_actionArgs.vaultProxy).getAccessor());
@@ -87,20 +90,15 @@ contract EnzymeVaultAdapter is AdapterBase {
     }
 
     /// @dev Helper to redeem shares from Enzyme Vault
-    function __redeemShares(address _vaultProxyAddress, IEnzymeVaultAdapter.RedeemSharesActionArgs memory _actionArgs)
-        private
-    {
-        address[] memory payoutAssets = new address[](1);
-        payoutAssets[0] = _actionArgs.payoutAsset;
-
-        uint256[] memory payoutAssetPercentages = new uint256[](1);
-        payoutAssetPercentages[0] = ONE_HUNDRED_PERCENT;
-
+    function __redeemSharesForSpecificAssets(
+        address _vaultProxyAddress,
+        IEnzymeV4VaultAdapter.RedeemSharesForSpecificAssetsActionArgs memory _actionArgs
+    ) private {
         IComptroller(IVault(_actionArgs.vaultProxy).getAccessor()).redeemSharesForSpecificAssets({
             _recipient: _vaultProxyAddress,
             _sharesQuantity: _actionArgs.sharesQuantity,
-            _payoutAssets: payoutAssets,
-            _payoutAssetPercentages: payoutAssetPercentages
+            _payoutAssets: _actionArgs.payoutAssets,
+            _payoutAssetPercentages: _actionArgs.payoutAssetPercentages
         });
     }
 
@@ -129,36 +127,39 @@ contract EnzymeVaultAdapter is AdapterBase {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        if (_selector != ACTION_SELECTOR) revert EnzymeVaultAdapter__InvalidAction();
+        if (_selector != ACTION_SELECTOR) revert EnzymeV4VaultAdapter__InvalidAction();
 
-        (IEnzymeVaultAdapter.Action actionId, bytes memory encodedActionArgs) =
-            abi.decode(_actionData, (IEnzymeVaultAdapter.Action, bytes));
+        (IEnzymeV4VaultAdapter.Action actionId, bytes memory encodedActionArgs) =
+            abi.decode(_actionData, (IEnzymeV4VaultAdapter.Action, bytes));
 
-        spendAssets_ = new address[](1);
-        spendAssetAmounts_ = new uint256[](1);
-        incomingAssets_ = new address[](1);
-        minIncomingAssetAmounts_ = new uint256[](1);
-
-        if (actionId == IEnzymeVaultAdapter.Action.BuyShares) {
-            IEnzymeVaultAdapter.BuySharesActionArgs memory actionArgs =
-                abi.decode(encodedActionArgs, (IEnzymeVaultAdapter.BuySharesActionArgs));
+        if (actionId == IEnzymeV4VaultAdapter.Action.BuyShares) {
+            IEnzymeV4VaultAdapter.BuySharesActionArgs memory actionArgs =
+                abi.decode(encodedActionArgs, (IEnzymeV4VaultAdapter.BuySharesActionArgs));
 
             __validateVaultProxy(actionArgs.vaultProxy);
+
+            spendAssets_ = new address[](1);
+            spendAssetAmounts_ = new uint256[](1);
+            incomingAssets_ = new address[](1);
+            minIncomingAssetAmounts_ = new uint256[](1);
 
             spendAssets_[0] = actionArgs.denominationAsset;
             spendAssetAmounts_[0] = actionArgs.investmentAmount;
             incomingAssets_[0] = actionArgs.vaultProxy;
             minIncomingAssetAmounts_[0] = actionArgs.minSharesQuantity;
-        } else if (actionId == IEnzymeVaultAdapter.Action.RedeemShares) {
-            IEnzymeVaultAdapter.RedeemSharesActionArgs memory actionArgs =
-                abi.decode(encodedActionArgs, (IEnzymeVaultAdapter.RedeemSharesActionArgs));
+        } else if (actionId == IEnzymeV4VaultAdapter.Action.RedeemSharesForSpecificAssets) {
+            IEnzymeV4VaultAdapter.RedeemSharesForSpecificAssetsActionArgs memory actionArgs =
+                abi.decode(encodedActionArgs, (IEnzymeV4VaultAdapter.RedeemSharesForSpecificAssetsActionArgs));
 
             __validateVaultProxy(actionArgs.vaultProxy);
 
+            spendAssets_ = new address[](1);
+            spendAssetAmounts_ = new uint256[](1);
+
             spendAssets_[0] = actionArgs.vaultProxy;
             spendAssetAmounts_[0] = actionArgs.sharesQuantity;
-            incomingAssets_[0] = actionArgs.payoutAsset;
-            minIncomingAssetAmounts_[0] = actionArgs.minPayoutAssetAmount;
+            incomingAssets_ = actionArgs.payoutAssets;
+            minIncomingAssetAmounts_ = actionArgs.minPayoutAssetAmounts;
         }
 
         return (
@@ -177,7 +178,7 @@ contract EnzymeVaultAdapter is AdapterBase {
     /// @dev Helper to verify that a VaultProxy is valid
     function __validateVaultProxy(address _vaultProxyAddress) private view {
         if (DISPATCHER.getFundDeployerForVaultProxy(_vaultProxyAddress) != FUND_DEPLOYER_ADDRESS) {
-            revert EnzymeVaultAdapter__InvalidVaultProxy();
+            revert EnzymeV4VaultAdapter__InvalidVaultProxy();
         }
     }
 }

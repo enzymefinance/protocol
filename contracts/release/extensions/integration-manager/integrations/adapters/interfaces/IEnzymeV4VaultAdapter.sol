@@ -11,12 +11,12 @@
 
 pragma solidity >=0.6.0 <0.9.0;
 
-/// @title IEnzymeVaultAdapter interface
+/// @title IEnzymeV4VaultAdapter interface
 /// @author Enzyme Foundation <security@enzyme.finance>
-interface IEnzymeVaultAdapter {
+interface IEnzymeV4VaultAdapter {
     enum Action {
         BuyShares,
-        RedeemShares
+        RedeemSharesForSpecificAssets
     }
 
     /// @dev BuyShares action args to perform a deposit into an Enzyme Vault
@@ -31,15 +31,17 @@ interface IEnzymeVaultAdapter {
         uint256 minSharesQuantity;
     }
 
-    /// @dev RedeemShares action args to perform a redemption from an Enzyme Vault
+    /// @dev RedeemSharesForSpecificAssets action args to perform a redemption from an Enzyme Vault
     /// @param vaultProxy The VaultProxy address of the Vault to redeem from
     /// @param sharesQuantity The quantity of shares to redeem
-    /// @param payoutAsset The asset to receive as a result of the redemption
-    /// @param minPayoutAssetAmount The minimum amount of the payout asset to receive
-    struct RedeemSharesActionArgs {
+    /// @param payoutAssets The assets to payout
+    /// @param payoutAssetPercentages The percentage of the owed amount to pay out in each asset
+    /// @param minPayoutAssetAmounts The minimum asset amounts of the payout asset to receive
+    struct RedeemSharesForSpecificAssetsActionArgs {
         address vaultProxy;
         uint256 sharesQuantity;
-        address payoutAsset;
-        uint256 minPayoutAssetAmount;
+        address[] payoutAssets;
+        uint256[] payoutAssetPercentages;
+        uint256[] minPayoutAssetAmounts;
     }
 }

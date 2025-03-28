@@ -118,7 +118,7 @@ IUniswapV3Adapter.sol: UniswapV3Adapter.abi.json
 ICurveLiquidityAdapter.sol: CurveLiquidityAdapter.abi.json
 IUniswapV2ExchangeAdapter.sol: UniswapV2ExchangeAdapter.abi.json
 ICompoundV3Adapter.sol: CompoundV3Adapter.abi.json
-IEnzymeVaultAdapter.sol: EnzymeVaultAdapter.abi.json
+IEnzymeV4VaultAdapter.sol: EnzymeV4VaultAdapter.abi.json
 IYearnVaultV2Adapter.sol: YearnVaultV2Adapter.abi.json
 IParaSwapV5Adapter.sol: ParaSwapV5Adapter.abi.json
 IParaSwapV6Adapter.sol: ParaSwapV6Adapter.abi.json
