@@ -233,6 +233,28 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         });
     }
 
+    function __getDefaultOptionInfo(address _underlyingToken, address _settlementToken, bool premiumTokenIsUnderlying)
+        internal
+        view
+        returns (IMysoV3DataTypesProd.OptionInfo memory optionInfo)
+    {
+        return IMysoV3DataTypesProd.OptionInfo({
+            underlyingToken: _underlyingToken,
+            expiry: uint48(block.timestamp + 30 days), // default expiry 30 days
+            settlementToken: _settlementToken,
+            earliestExercise: uint48(block.timestamp),
+            notional: uint128(10 * assetUnit(underlyingToken)),
+            strike: uint128(underlyingTokenPrice),
+            advancedSettings: IMysoV3DataTypesProd.AdvancedSettings({
+                borrowCap: 1e18, // 100% borrowing allowed
+                oracle: address(0),
+                premiumTokenIsUnderlying: premiumTokenIsUnderlying,
+                votingDelegationAllowed: false,
+                allowedDelegateRegistry: address(0)
+            })
+        });
+    }
+
     function __getRfqPayloadHash(
         IMysoV3DataTypesProd.OptionInfo memory optionInfo,
         IMysoV3DataTypesProd.RFQQuote memory rfqQuote
@@ -1184,6 +1206,102 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
             mysoV3OptionWritingPosition.getManagedAssets();
         assertEq(managedAssets.length, 0, "Managed assets length non-zero");
         assertEq(managedAssetAmounts.length, 0, "Managed asset amounts length non-zero");
+    }
+
+    function test_sellTwoOptionsAndClose_success() public {
+        // Define option and quote to be traded
+        IMysoV3DataTypesProd.OptionInfo memory optionInfo1 = __getDefaultOptionInfo(ETHEREUM_MLN, ETHEREUM_WETH, true);
+        IMysoV3DataTypesProd.RFQQuote memory rfqQuote1 = __getDefaultSignedQuote(optionInfo1);
+
+        IMysoV3DataTypesProd.OptionInfo memory optionInfo2 = __getDefaultOptionInfo(ETHEREUM_MLN, ETHEREUM_USDC, true);
+        IMysoV3DataTypesProd.RFQQuote memory rfqQuote2 = __getDefaultSignedQuote(optionInfo2);
+
+        // Increase MLN balance with vault
+        increaseTokenBalance({
+            _token: IERC20(optionInfo1.underlyingToken),
+            _to: vaultProxyAddress,
+            _amount: optionInfo1.notional + optionInfo2.notional
+        });
+
+        // Increase MLN balance with trading firm to be able to pay premium
+        increaseTokenBalance({
+            _token: IERC20(optionInfo1.underlyingToken),
+            _to: tradingFirm,
+            _amount: rfqQuote1.premium + rfqQuote2.premium
+        });
+        increaseTokenBalance({_token: IERC20(optionInfo1.settlementToken), _to: tradingFirm, _amount: type(uint128).max});
+        increaseTokenBalance({_token: IERC20(optionInfo2.settlementToken), _to: tradingFirm, _amount: type(uint128).max});
+        vm.prank(tradingFirm);
+        IERC20(optionInfo1.underlyingToken).approve(address(mysoRouter), type(uint256).max);
+        vm.prank(tradingFirm);
+        IERC20(optionInfo1.settlementToken).approve(address(mysoRouter), type(uint256).max);
+        vm.prank(tradingFirm);
+        IERC20(optionInfo2.settlementToken).approve(address(mysoRouter), type(uint256).max);
+
+        // Sell option 1: underlying token = MLN, settlement token = ETH
+        vm.expectEmit();
+        emit EscrowCreated(mysoRouter.numEscrows());
+        __createEscrowByTakingQuote(
+            IMysoV3OptionWritingPositionProd.CreateEscrowByTakingQuoteActionArgs({
+                rfqInitialization: IMysoV3DataTypesProd.RFQInitialization({optionInfo: optionInfo1, rfqQuote: rfqQuote1}),
+                distPartner: address(0)
+            })
+        );
+
+        // Sell option 2: underlying token = MLN, settlement token = USDC
+        vm.expectEmit();
+        emit EscrowCreated(mysoRouter.numEscrows());
+        __createEscrowByTakingQuote(
+            IMysoV3OptionWritingPositionProd.CreateEscrowByTakingQuoteActionArgs({
+                rfqInitialization: IMysoV3DataTypesProd.RFQInitialization({optionInfo: optionInfo2, rfqQuote: rfqQuote2}),
+                distPartner: address(0)
+            })
+        );
+        assertEq(
+            IERC20(optionInfo2.underlyingToken).balanceOf(vaultProxyAddress),
+            rfqQuote1.premium + rfqQuote2.premium,
+            "Vault settlement token balance doesn't match premium"
+        ); // check premium has been received in vault
+
+        // Trading firm exercises both options
+        address[] memory linkedEscrowAddrs = mysoRouter.getEscrows({_from: 0, _numElements: 2});
+        bytes[] memory emptyOracleData = new bytes[](0);
+        vm.prank(tradingFirm);
+        mysoRouter.exercise({
+            _escrow: linkedEscrowAddrs[0],
+            _underlyingReceiver: tradingFirm,
+            _underlyingAmount: optionInfo1.notional,
+            _payInSettlementToken: true,
+            _oracleData: emptyOracleData
+        });
+        vm.prank(tradingFirm);
+        mysoRouter.exercise({
+            _escrow: linkedEscrowAddrs[1],
+            _underlyingReceiver: tradingFirm,
+            _underlyingAmount: optionInfo2.notional,
+            _payInSettlementToken: true,
+            _oracleData: emptyOracleData
+        });
+
+        uint32[] memory linkedEscrowIndices = mysoV3OptionWritingPosition.getEscrowIdxs({_from: 0, _numElements: 2});
+        vm.recordLogs();
+        vm.expectEmit();
+        emit EscrowClosedAndSwept(linkedEscrowIndices[0]);
+        emit EscrowClosedAndSwept(linkedEscrowIndices[1]);
+        __closeAndSweepEscrows(
+            IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
+                escrowIdxs: linkedEscrowIndices,
+                skipWithdrawFromEscrow: false
+            })
+        );
+        VmSafe.Log[] memory logs = vm.getRecordedLogs();
+
+        // Assert assetsToReceive was correctly formatted
+        assertExternalPositionAssetsToReceive({
+            _logs: logs,
+            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _assets: toArray(ETHEREUM_MLN, ETHEREUM_WETH, ETHEREUM_USDC)
+        });
     }
 }
 

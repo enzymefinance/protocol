@@ -88,7 +88,7 @@ contract MysoV3OptionWritingPositionParser is IExternalPositionParser {
         returns (address[] memory assetsToReceive_)
     {
         for (uint256 i = 0; i < _actionArgs.escrowIdxs.length; i++) {
-            address[] memory escrows = MYSO_ROUTER.getEscrows(_actionArgs.escrowIdxs[0], 1);
+            address[] memory escrows = MYSO_ROUTER.getEscrows(_actionArgs.escrowIdxs[i], 1);
             IMysoV3DataTypes.OptionInfo memory optionInfo = IMysoV3Escrow(escrows[0]).optionInfo();
             assetsToReceive_ = assetsToReceive_.addUniqueItem({_itemToAdd: optionInfo.underlyingToken});
             assetsToReceive_ = assetsToReceive_.addUniqueItem({_itemToAdd: optionInfo.settlementToken});
