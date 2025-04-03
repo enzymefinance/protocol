@@ -10,13 +10,17 @@
 pragma solidity 0.6.12;
 
 import {IERC20} from "../../../external-interfaces/IERC20.sol";
+import {IValueInterpreter} from "../../../release/infrastructure/value-interpreter/IValueInterpreter.sol";
 import {FundValueCalculatorRouter} from "../../fund-value-calculator/FundValueCalculatorRouter.sol";
+import {IValueInterpreterGetter} from "./interfaces/IValueInterpreterGetter.sol";
 
 /// @title FundDataProviderRouter Contract
 /// @author Enzyme Foundation <security@enzyme.finance>
 /// @notice A peripheral contract for routing fund data requests
 /// @dev These are convenience functions intended for off-chain consumption,
 /// some of which involve potentially expensive state transitions
+/// @dev This contract assumes that the FundValueCalculators for each release contain a getValueInterpreter getter.
+/// @dev This currently holds for Enzyme v2, v3 and v4.
 contract FundDataProviderRouter {
     address private immutable FUND_VALUE_CALCULATOR_ROUTER;
     address private immutable WETH_TOKEN;
@@ -36,6 +40,7 @@ contract FundDataProviderRouter {
     /// @return navInDenominationAsset_ The NAV quoted in the denomination asset
     /// @return navInEth_ The NAV quoted in ETH
     /// @return navIsValid_ True if the NAV calc succeeded
+    /// @return ethConversionIsValid_ True if conversion to ETH succeeded
     function getFundValueMetrics(address _vaultProxy)
         external
         returns (
@@ -46,34 +51,47 @@ contract FundDataProviderRouter {
             bool gavIsValid_,
             uint256 navInDenominationAsset_,
             uint256 navInEth_,
-            bool navIsValid_
+            bool navIsValid_,
+            bool ethConversionIsValid_
         )
     {
         timestamp_ = block.timestamp;
         sharesSupply_ = IERC20(_vaultProxy).totalSupply();
 
-        try FundValueCalculatorRouter(getFundValueCalculatorRouter()).calcGav(_vaultProxy) returns (
-            address, uint256 gav
-        ) {
-            gavInDenominationAsset_ = gav;
-        } catch {}
+        address denominationAsset;
 
-        try FundValueCalculatorRouter(getFundValueCalculatorRouter()).calcGavInAsset(_vaultProxy, getWethToken())
-        returns (uint256 gav) {
-            gavInEth_ = gav;
+        try FundValueCalculatorRouter(getFundValueCalculatorRouter()).calcGav(_vaultProxy) returns (
+            address denominationAsset_, uint256 gav_
+        ) {
+            gavInDenominationAsset_ = gav_;
+            denominationAsset = denominationAsset_;
             gavIsValid_ = true;
         } catch {}
 
         try FundValueCalculatorRouter(getFundValueCalculatorRouter()).calcNav(_vaultProxy) returns (
-            address, uint256 nav
+            address, uint256 nav_
         ) {
-            navInDenominationAsset_ = nav;
+            navInDenominationAsset_ = nav_;
+            navIsValid_ = true;
         } catch {}
 
-        try FundValueCalculatorRouter(getFundValueCalculatorRouter()).calcNavInAsset(_vaultProxy, getWethToken())
-        returns (uint256 nav) {
-            navInEth_ = nav;
-            navIsValid_ = true;
+        try IValueInterpreterGetter(
+            address(
+                FundValueCalculatorRouter(getFundValueCalculatorRouter()).getFundValueCalculatorForVault(_vaultProxy)
+            )
+        ).getValueInterpreter() returns (address valueInterpreter_) {
+            ethConversionIsValid_ = true;
+            gavInEth_ = IValueInterpreter(valueInterpreter_).calcCanonicalAssetValue({
+                _baseAsset: denominationAsset,
+                _amount: gavInDenominationAsset_,
+                _quoteAsset: WETH_TOKEN
+            });
+
+            navInEth_ = IValueInterpreter(valueInterpreter_).calcCanonicalAssetValue({
+                _baseAsset: denominationAsset,
+                _amount: navInDenominationAsset_,
+                _quoteAsset: WETH_TOKEN
+            });
         } catch {}
 
         return (
@@ -84,7 +102,8 @@ contract FundDataProviderRouter {
             gavIsValid_,
             navInDenominationAsset_,
             navInEth_,
-            navIsValid_
+            navIsValid_,
+            ethConversionIsValid_
         );
     }
 
