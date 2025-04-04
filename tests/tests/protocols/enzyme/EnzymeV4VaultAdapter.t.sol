@@ -97,7 +97,6 @@ abstract contract EnzymeV4VaultAdapterTesBase is IntegrationTest {
 
         IEnzymeV4VaultAdapterProd.BuySharesActionArgs memory args = IEnzymeV4VaultAdapterProd.BuySharesActionArgs({
             vaultProxy: childVaultProxyAddress,
-            denominationAsset: childVaultDenominationAsset,
             investmentAmount: investmentAmount,
             minSharesQuantity: 1
         });
@@ -141,7 +140,6 @@ abstract contract EnzymeV4VaultAdapterTesBase is IntegrationTest {
         __buyShares(
             IEnzymeV4VaultAdapterProd.BuySharesActionArgs({
                 vaultProxy: makeAddr("invalidVaultProxy"),
-                denominationAsset: makeAddr("denominationAsset"),
                 investmentAmount: 1,
                 minSharesQuantity: 1
             })

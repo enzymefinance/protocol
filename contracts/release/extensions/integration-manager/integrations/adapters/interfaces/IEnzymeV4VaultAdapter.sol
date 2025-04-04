@@ -21,12 +21,10 @@ interface IEnzymeV4VaultAdapter {
 
     /// @dev BuyShares action args to perform a deposit into an Enzyme Vault
     /// @param vaultProxy The VaultProxy address of the Vault to deposit into
-    /// @param denominationAsset The denomination asset of the Vault that we deposit into
     /// @param investmentAmount The amount of the denomination asset to deposit
     /// @param minSharesQuantity The minimum quantity of shares we expect to receive for the investment
     struct BuySharesActionArgs {
         address vaultProxy;
-        address denominationAsset;
         uint256 investmentAmount;
         uint256 minSharesQuantity;
     }

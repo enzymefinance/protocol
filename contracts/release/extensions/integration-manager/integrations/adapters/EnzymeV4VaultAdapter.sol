@@ -76,7 +76,7 @@ contract EnzymeV4VaultAdapter is AdapterBase {
         IComptroller comptrollerProxy = IComptroller(IVault(_actionArgs.vaultProxy).getAccessor());
 
         __approveAssetMaxAsNeeded({
-            _asset: _actionArgs.denominationAsset,
+            _asset: comptrollerProxy.getDenominationAsset(),
             _target: address(comptrollerProxy),
             _neededAmount: _actionArgs.investmentAmount
         });
@@ -143,7 +143,7 @@ contract EnzymeV4VaultAdapter is AdapterBase {
             incomingAssets_ = new address[](1);
             minIncomingAssetAmounts_ = new uint256[](1);
 
-            spendAssets_[0] = actionArgs.denominationAsset;
+            spendAssets_[0] = IComptroller(IVault(actionArgs.vaultProxy).getAccessor()).getDenominationAsset();
             spendAssetAmounts_[0] = actionArgs.investmentAmount;
             incomingAssets_[0] = actionArgs.vaultProxy;
             minIncomingAssetAmounts_[0] = actionArgs.minSharesQuantity;
