@@ -927,10 +927,26 @@ abstract contract SweepTest is TestBase {
 abstract contract ClaimMerklRewardsTest is TestBase {
     function test_claimMerklRewards_success() public {
         address tokenToClaim = address(createTestToken("Asset1"));
-        uint256 amountToClaim = 333;
+
+        uint256 totalAmountRewardedInTheFirstRound = 333;
+
+        __test_claimMerklRewards_success({
+            _tokenToClaim: tokenToClaim,
+            _totalAmountRewarded: totalAmountRewardedInTheFirstRound
+        });
+
+        __test_claimMerklRewards_success({
+            _tokenToClaim: tokenToClaim,
+            _totalAmountRewarded: totalAmountRewardedInTheFirstRound + 244
+        });
+    }
+
+    function __test_claimMerklRewards_success(address _tokenToClaim, uint256 _totalAmountRewarded) internal {
+        uint256 amountToClaim =
+            _totalAmountRewarded - merklDistributor.claimed(address(aaveV3DebtPosition), _tokenToClaim);
 
         bytes32[] memory nodes = new bytes32[](2);
-        nodes[0] = keccak256(abi.encode(address(aaveV3DebtPosition), tokenToClaim, amountToClaim));
+        nodes[0] = keccak256(abi.encode(address(aaveV3DebtPosition), _tokenToClaim, _totalAmountRewarded));
         nodes[1] = keccak256(abi.encode(makeAddr("random user 1"), makeAddr("random token 1"), 100));
 
         // set up reward token distribution
@@ -952,7 +968,7 @@ abstract contract ClaimMerklRewardsTest is TestBase {
         // clear mocks so we are sure it won't interfere with the test
         vm.clearMockedCalls();
 
-        increaseTokenBalance({_token: IERC20(tokenToClaim), _to: address(merklDistributor), _amount: amountToClaim});
+        increaseTokenBalance({_token: IERC20(_tokenToClaim), _to: address(merklDistributor), _amount: amountToClaim});
 
         // get merkle proof
         bytes32[] memory merkleProof = new bytes32[](1);
@@ -961,17 +977,23 @@ abstract contract ClaimMerklRewardsTest is TestBase {
         bytes32[][] memory merkleProofs = new bytes32[][](1);
         merkleProofs[0] = merkleProof;
 
+        uint256 preClaimRewardBalance = IERC20(_tokenToClaim).balanceOf(vaultProxyAddress);
+
         vm.recordLogs();
 
-        __claimMerklRewards({_tokens: toArray(tokenToClaim), _amounts: toArray(amountToClaim), _proofs: merkleProofs});
+        __claimMerklRewards({_tokens: toArray(_tokenToClaim), _amounts: toArray(amountToClaim), _proofs: merkleProofs});
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
             _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
-            _assets: toArray(tokenToClaim)
+            _assets: toArray(_tokenToClaim)
         });
 
-        assertEq(IERC20(tokenToClaim).balanceOf(vaultProxyAddress), amountToClaim, "Asset was not claimed");
+        assertEq(
+            IERC20(_tokenToClaim).balanceOf(vaultProxyAddress),
+            preClaimRewardBalance + amountToClaim,
+            "Asset was not claimed"
+        );
     }
 }
 

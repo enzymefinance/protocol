@@ -22,4 +22,6 @@ interface IMerklDistributor {
     function updateTree(MerkleTree calldata _tree) external;
 
     function core() external view returns (address core_);
+
+    function claimed(address _user, address _token) external view returns (uint256 amount_);
 }

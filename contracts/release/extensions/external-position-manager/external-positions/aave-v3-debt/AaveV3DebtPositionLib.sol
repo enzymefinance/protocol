@@ -253,11 +253,13 @@ contract AaveV3DebtPositionLib is
 
         uint256 tokensLength = tokens.length;
         address[] memory users = new address[](tokensLength);
+        uint256[] memory totalAmounts = new uint256[](tokensLength);
         for (uint256 i; i < tokensLength; i++) {
             users[i] = address(this);
+            totalAmounts[i] = amounts[i] + MERKL_DISTRIBUTOR.claimed({_user: address(this), _token: tokens[i]});
         }
 
-        MERKL_DISTRIBUTOR.claim({_users: users, _tokens: tokens, _amounts: amounts, _proofs: proofs});
+        MERKL_DISTRIBUTOR.claim({_users: users, _tokens: tokens, _amounts: totalAmounts, _proofs: proofs});
 
         for (uint256 i; i < tokensLength; i++) {
             IERC20(tokens[i]).safeTransfer(msg.sender, amounts[i]);

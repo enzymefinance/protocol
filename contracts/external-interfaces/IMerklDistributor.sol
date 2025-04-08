@@ -20,4 +20,6 @@ interface IMerklDistributor {
         uint256[] calldata _amounts,
         bytes32[][] calldata _proofs
     ) external;
+
+    function claimed(address _user, address _token) external view returns (uint256 amount_);
 }
