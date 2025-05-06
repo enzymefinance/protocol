@@ -251,6 +251,8 @@ contract AaveV3DebtPositionLib is
         (address[] memory tokens, uint256[] memory amounts, bytes32[][] memory proofs) =
             __decodeClaimMerklRewardsActionArgs(actionArgs);
 
+        require(tokens.isUniqueSet(), "__claimMerklRewards: Duplicate tokens to claim");
+
         uint256 tokensLength = tokens.length;
         address[] memory users = new address[](tokensLength);
         uint256[] memory totalAmounts = new uint256[](tokensLength);

@@ -53,7 +53,7 @@ contract AaveV3DebtPositionParser is
                 __decodeAddCollateralActionArgs(_encodedActionArgs);
 
             for (uint256 i; i < assetsToTransfer_.length; i++) {
-                // initialiy the assetsToTransfer_ are the aTokens
+                // Initially the assetsToTransfer_ are the aTokens
                 __validateAndAddListItemIfUnregistered(assetsToTransfer_[i]);
 
                 if (fromUnderlying) {

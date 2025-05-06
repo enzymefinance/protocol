@@ -995,6 +995,15 @@ abstract contract ClaimMerklRewardsTest is TestBase {
             "Asset was not claimed"
         );
     }
+
+    function test_claimMerklRewards_failsWithDuplicateToken() public {
+        address tokenToClaim = address(createTestToken("Asset1"));
+        address[] memory tokensToClaim = toArray(tokenToClaim, tokenToClaim);
+
+        vm.expectRevert(formatError("__claimMerklRewards: Duplicate tokens to claim"));
+
+        __claimMerklRewards({_tokens: tokensToClaim, _amounts: new uint256[](0), _proofs: new bytes32[][](0)});
+    }
 }
 
 // Normally in this place there would be tests for getManagedAssets, and getDebtAssets, but in Aave's case it is very straightforward, i.e., there is only one kind of managed asset with one way of calculating it, and same for debt assets.
