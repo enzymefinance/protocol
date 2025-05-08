@@ -22,7 +22,25 @@ interface IStakeWiseV3KeeperRewards {
         bytes signatures;
     }
 
+    function addOracle(address _oracle) external;
+
+    function owner() external view returns (address owner_);
+
+    function removeOracle(address _oracle) external;
+
     function rewardsDelay() external returns (uint256 rewardsDelay_);
 
+    function rewardsMinOracles() external view returns (uint256 minOracles_);
+
+    function rewardsNonce() external view returns (uint256 rewardsNonce_);
+
+    function rewardsRoot() external returns (bytes32 rewardsRoot_);
+
+    function setRewardsMinOracles(uint256 _rewardsMinOracles) external;
+
+    function setValidatorsMinOracles(uint256 _validatorsMinOracles) external;
+
     function updateRewards(RewardsUpdateParams calldata _params) external;
+
+    function validatorsMinOracles() external view returns (uint256 minOracles_);
 }

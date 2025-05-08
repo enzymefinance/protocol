@@ -19,11 +19,9 @@ interface IStakeWiseV3EthVault {
         uint256 _positionTicket,
         uint256 _timestamp,
         uint256 _exitQueueIndex
-    ) external view returns (uint256 leftShares_, uint256 claimedShares_, uint256 claimedAssets_);
+    ) external view returns (uint256 leftTickets_, uint256 exitedTickets_, uint256 exitedAssets_);
 
-    function claimExitedAssets(uint256 _positionTicket, uint256 _timestamp, uint256 _exitQueueIndex)
-        external
-        returns (uint256 newPositionTicket_, uint256 claimedShares_, uint256 claimedAssets_);
+    function claimExitedAssets(uint256 _positionTicket, uint256 _timestamp, uint256 _exitQueueIndex) external;
 
     function convertToShares(uint256 _assets) external view returns (uint256 shares_);
 
@@ -37,5 +35,5 @@ interface IStakeWiseV3EthVault {
 
     function getShares(address _account) external view returns (uint256 shares_);
 
-    function redeem(uint256 _shares, address _receiver) external returns (uint256 assets_);
+    function implementation() external view returns (address implementationAddress_);
 }

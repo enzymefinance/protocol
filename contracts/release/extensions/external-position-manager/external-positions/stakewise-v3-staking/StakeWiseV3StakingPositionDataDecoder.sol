@@ -25,15 +25,6 @@ abstract contract StakeWiseV3StakingPositionDataDecoder {
         return abi.decode(_actionArgs, (IStakeWiseV3EthVault, uint256));
     }
 
-    /// @dev Helper to decode args used during the Redeem action
-    function __decodeRedeemActionArgs(bytes memory _actionArgs)
-        internal
-        pure
-        returns (IStakeWiseV3EthVault vaultToken_, uint256 sharesAmount_)
-    {
-        return abi.decode(_actionArgs, (IStakeWiseV3EthVault, uint256));
-    }
-
     /// @dev Helper to decode args used during the EnterExitQueue action
     function __decodeEnterExitQueueActionArgs(bytes memory _actionArgs)
         internal

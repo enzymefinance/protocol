@@ -55,14 +55,6 @@ contract StakeWiseV3StakingPositionParser is StakeWiseV3StakingPositionDataDecod
 
             assetsToTransfer_[0] = WETH_ADDRESS;
             amountsToTransfer_[0] = amount;
-        } else if (_actionId == uint256(IStakeWiseV3StakingPosition.Actions.Redeem)) {
-            (IStakeWiseV3EthVault stakeWiseVault,) = __decodeRedeemActionArgs(_encodedActionArgs);
-
-            __validateStakeWiseVault(stakeWiseVault);
-
-            assetsToReceive_ = new address[](1);
-
-            assetsToReceive_[0] = WETH_ADDRESS;
         } else if (_actionId == uint256(IStakeWiseV3StakingPosition.Actions.ClaimExitedAssets)) {
             (IStakeWiseV3EthVault stakeWiseVault,,) = __decodeClaimExitedAssetsActionArgs(_encodedActionArgs);
 
@@ -75,6 +67,10 @@ contract StakeWiseV3StakingPositionParser is StakeWiseV3StakingPositionDataDecod
             (IStakeWiseV3EthVault stakeWiseVault,) = __decodeEnterExitQueueActionArgs(_encodedActionArgs);
 
             __validateStakeWiseVault(stakeWiseVault);
+
+            assetsToReceive_ = new address[](1);
+
+            assetsToReceive_[0] = WETH_ADDRESS;
         }
 
         return (assetsToTransfer_, amountsToTransfer_, assetsToReceive_);
@@ -90,7 +86,7 @@ contract StakeWiseV3StakingPositionParser is StakeWiseV3StakingPositionDataDecod
     function __validateStakeWiseVault(IStakeWiseV3EthVault _stakeWiseVault) private view {
         require(
             STAKEWISE_V3_VAULT_REGISTRY.vaults({_vault: address(_stakeWiseVault)}),
-            "__validateStakeWiseVault: Invalid stakewise vault contract"
+            "__validateStakeWiseVault: Invalid StakeWise vault contract"
         );
     }
 }

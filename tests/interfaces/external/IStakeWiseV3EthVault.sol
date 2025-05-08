@@ -32,9 +32,17 @@ interface IStakeWiseV3EthVault {
 
     function convertToAssets(uint256 _shares) external view returns (uint256 assets_);
 
+    function exitQueueTimelock() external view returns (uint256 exitQueueTimelock_);
+
     function getExitQueueIndex(uint256 _positionTicket) external view returns (int256 exitQueueIndex_);
+
+    function queuedShares() external view returns (uint128 queuedShares);
 
     function getShares(address _account) external view returns (uint256 shares_);
 
-    function updateState(HarvestParams calldata harvestParams) external;
+    function totalExitingAssets() external view returns (uint128 totalExitingAssets_);
+
+    function updateState(HarvestParams calldata _harvestParams) external;
+
+    function withdrawableAssets() external view returns (uint256 withdrawableAssets_);
 }

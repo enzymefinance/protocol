@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IAddressListRegistry as IAddressListRegistryProd} from
+    "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
 import {IStakeWiseV3StakingPosition as IStakeWiseV3StakingPositionProd} from
     "contracts/release/extensions/external-position-manager/external-positions/stakewise-v3-staking/IStakeWiseV3StakingPosition.sol";
 
@@ -9,14 +11,25 @@ import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {IStakeWiseV3EthVault} from "tests/interfaces/external/IStakeWiseV3EthVault.sol";
 import {IStakeWiseV3KeeperRewards} from "tests/interfaces/external/IStakeWiseV3KeeperRewards.sol";
+import {IStakeWiseV3OsTokenController} from "tests/interfaces/external/IStakeWiseV3OsTokenController.sol";
 import {IStakeWiseV3StakingPositionLib} from "tests/interfaces/internal/IStakeWiseV3StakingPositionLib.sol";
 import {IStakeWiseV3StakingPositionParser} from "tests/interfaces/internal/IStakeWiseV3StakingPositionParser.sol";
 
 // ETHEREUM MAINNET CONSTANTS
-address constant STAKEWISE_V3_ACTIVE_VAULT_TOKEN_ETHEREUM_ADDRESS = 0x8A93A876912c9F03F88Bc9114847cf5b63c89f56;
-address constant STAKEWISE_V3_INACTIVE_VAULT_TOKEN_ETHEREUM_ADDRESS = 0xAC0F906E433d58FA868F936E8A43230473652885;
+
 address constant STAKEWISE_V3_VAULT_REGISTRY_ETHEREUM_ADDRESS = 0x3a0008a588772446f6e656133C2D5029CC4FC20E;
 address constant STAKEWISE_V3_KEEPER_ETHEREUM_ADDRESS = 0x6B5815467da09DaA7DC83Db21c9239d98Bb487b5;
+address constant STAKEWISE_V3_OS_TOKEN_CONTROLLER_ADDRESS = 0x2A261e60FB14586B474C208b1B7AC6D0f5000306;
+
+// Chorus One Vault - EthVault v3 implementation
+address constant STAKEWISE_V3_ETH_VAULT_ETHEREUM_ADDRESS = 0xe6d8d8aC54461b1C5eD15740EEe322043F696C08;
+// Genesis Vault - EthGenesisVault v4 implementation
+address constant STAKEWISE_V3_ETH_GENESIS_VAULT_ETHEREUM_ADDRESS = 0xAC0F906E433d58FA868F936E8A43230473652885;
+address constant STAKEWISE_V3_STAKEWISE_VAULT_NO_VALIDATORS = 0x7f42ABE2353c09393D58E0240750C56F6acBA206;
+
+address constant STAKEWISE_ETH_VAULT_V3_IMPLEMENTATION = 0x9747e1fF73f1759217AFD212Dd36d21360D0880A;
+address constant STAKEWISE_ETH_VAULT_V4_IMPLEMENTATION = 0xDecb606ee9140f229Df78F9E40041EAD61610F8f;
+address constant STAKEWISE_ETH_GENESIS_VAULT_V4_IMPLEMENTATION = 0x9481A47c5650A868839c6511f0Eef8bF962FABD7;
 
 abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
     uint256 constant EXITING_ASSETS_CLAIM_DELAY = SECONDS_ONE_DAY;
@@ -39,13 +52,15 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
     uint256 internal stakeWiseV3StakingTypeId;
     address internal stakeWiseV3RegistryAddress;
     IStakeWiseV3KeeperRewards internal stakeWiseV3Keeper;
-    IStakeWiseV3EthVault internal stakeWiseInactiveVault;
-    IStakeWiseV3EthVault internal stakeWiseActiveVault;
+    IStakeWiseV3OsTokenController stakeWiseV3OsTokenController;
+    IStakeWiseV3EthVault internal stakeWiseVault;
 
     address internal fundOwner;
     address internal vaultProxyAddress;
     address internal comptrollerProxyAddress;
     IExternalPositionManager internal externalPositionManager;
+    address[] internal supportedImplementations;
+    uint256 internal supportedImplementationsListID;
 
     // Set by child contract
     EnzymeVersion internal version;
@@ -83,8 +98,19 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
             uint256 typeId_
         )
     {
-        stakeWiseV3StakingPositionLib_ =
-            deployStakeWiseV3StakingPositionLib({_wethAddress: _wethAddress, _referrer: address(0)});
+        // Create a new AddressListRegistry list containing the supported implementations
+        supportedImplementationsListID = core.persistent.addressListRegistry.createList({
+            _owner: makeAddr("ListOwner"),
+            _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.AddAndRemove),
+            _initialItems: supportedImplementations
+        });
+
+        stakeWiseV3StakingPositionLib_ = deployStakeWiseV3StakingPositionLib({
+            _wethAddress: _wethAddress,
+            _referrer: makeAddr("Referrer"),
+            _addressListRegistry: address(core.persistent.addressListRegistry),
+            _supportedImplementationsListID: supportedImplementationsListID
+        });
         stakeWiseV3StakingPositionParser_ = deployStakeWiseV3StakingPositionParser({
             _stakeWiseVaultsRegistryAddress: _stakeWiseVaultsRegistryAddress,
             _wethAddress: _wethAddress
@@ -100,11 +126,13 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
         return (stakeWiseV3StakingPositionLib_, stakeWiseV3StakingPositionParser_, typeId);
     }
 
-    function deployStakeWiseV3StakingPositionLib(address _wethAddress, address _referrer)
-        public
-        returns (IStakeWiseV3StakingPositionLib)
-    {
-        bytes memory args = abi.encode(_wethAddress, _referrer);
+    function deployStakeWiseV3StakingPositionLib(
+        address _wethAddress,
+        address _referrer,
+        address _addressListRegistry,
+        uint256 _supportedImplementationsListID
+    ) public returns (IStakeWiseV3StakingPositionLib) {
+        bytes memory args = abi.encode(_wethAddress, _referrer, _addressListRegistry, _supportedImplementationsListID);
         address addr = deployCode("StakeWiseV3StakingPositionLib.sol", args);
         return IStakeWiseV3StakingPositionLib(addr);
     }
@@ -134,21 +162,6 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
         });
     }
 
-    // Note: StakeWiseV3 only allows redemptions through the redeem action when the vault does not have validators)
-    function __redeem(IStakeWiseV3EthVault _stakeWiseVault, uint256 _sharesAmount) private {
-        bytes memory actionArgs = abi.encode(_stakeWiseVault, _sharesAmount);
-
-        vm.prank(fundOwner);
-
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _externalPositionAddress: address(stakeWiseV3ExternalPosition),
-            _actionId: uint256(IStakeWiseV3StakingPositionProd.Actions.Redeem),
-            _actionArgs: actionArgs
-        });
-    }
-
     // Note: A StakeWiseV3 vault needs to have registered validators to allow requesting an exit
     function __enterExitQueue(IStakeWiseV3EthVault _stakeWiseVault, uint256 _sharesAmount)
         private
@@ -170,8 +183,11 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
         // Retrieve the position counter from the last exit request
         IStakeWiseV3StakingPositionLib.ExitRequest[] memory exitRequests = stakeWiseV3ExternalPosition.getExitRequests();
 
-        positionTicket_ = exitRequests[exitRequests.length - 1].positionTicket;
-        timestamp_ = exitRequests[exitRequests.length - 1].timestamp;
+        // If enterExitQueue results in instant redemption, there will be no exitRequest in storage
+        if (exitRequests.length > 0) {
+            positionTicket_ = exitRequests[exitRequests.length - 1].positionTicket;
+            timestamp_ = exitRequests[exitRequests.length - 1].timestamp;
+        }
     }
 
     function __claimExitedAssets(IStakeWiseV3EthVault _stakeWiseVault, uint256 _positionTicket, uint256 _timestamp)
@@ -190,44 +206,152 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
         });
     }
 
-    /// @dev This logic is tied to the specific stakewise (active) vault used in this test suite
-    /// We update rewards 3 times to move from the time where staking + exitRequests are allowed,
-    /// to the updateReward that precedes the updateState we have the payload for.
-    function __updateRewardsAndState(IStakeWiseV3EthVault _stakeWiseVault) private {
-        bytes[] memory encodedUpdateRewards = new bytes[](3);
-        // src: https://etherscan.io/tx/0x8cd2a7d4291557dd00ae27341da9aaaa42f0326c0e7292574d760e3961813a51
-        encodedUpdateRewards[0] =
-            hex"0000000000000000000000000000000000000000000000000000000000000020a3b7c24d2e4c7a5e59a89fe6d9c572a84579c1b2aa00f16445362be1d6818a99000000000000000000000000000000000000000000000000000000002e8b6703000000000000000000000000000000000000000000000000000000006563664b00000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000003b6261666b726569657967687469336e686c71326f346a746336746e63357777647374656a6d6d64667776616d616a7071626273667371377a72697900000000000000000000000000000000000000000000000000000000000000000000000186acd182c3875d8c20f71a84a83fa041efa1e3d9f93441a4be9df199ab8ffd4567250875b3d497f60ecd1ae32c44ce29f9a79c8d85885081b25f661eca62d2a9271c49b44a31bcb9e182e889fcd2df9fc96bbcef29280eede95004638ad567c13d41124166fa96786c4e4b85353b9c91958e4e45a44aefd90df7f97b575b97e795661ce48508da34af15cb7fe9bde669d5b47aa568d4e7846b2d5676995d601e5072e97e05bafa901855d8b9e076a27e73df9b388e88d6363f99cef0b5344e4ce1b7951c54cba3b27797da86aea7f7db1b292093693cc10306ddc7e55649cb5d42f835f94df141fa62742c70d91e759c137d0620056eb23024ab3943fe1de627d52b156e1ce9c563446dcd5f1a0379d7c6b84c4692149c7c62f2dad75bb1136d6cbc4190d378c91815cc8e634c8dd8b977b974f006a4dfe9e6d48eeeee8fd2bcc75e1522201b94711741ef7edd22e17801750ad593b607180a3d0750184c331e53c8ef60fb8615d4ea4a73faf36846760d4e299b9114e5fa69501a0b955b512dd8c1f57fb8d61c0000000000000000000000000000000000000000000000000000";
-        // src: https://etherscan.io/tx/0x1f87845bf71a8bcd79e11e4b02535646971d92ddaecec59812a87fae1d5b3efe
-        encodedUpdateRewards[1] =
-            hex"0000000000000000000000000000000000000000000000000000000000000020943fa99100bf76cc850ba553addc0ec758786f16dbf2ab61b924df61025968b3000000000000000000000000000000000000000000000000000000002f102cee0000000000000000000000000000000000000000000000000000000065640fcb00000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000003b6261666b726569616b3479653333667169797562356977753433646b326e71693662696734647137756e7673696f6764693264796b75363666347500000000000000000000000000000000000000000000000000000000000000000000000186f781cabfa02dc2fbf40a95a369acf2553eabba41cc09c91a63f484b2aafb2af25d8b4a1b8457d81a1d506e1a54f19c82fb6917caf8830f31850794eec966dd9a1bc296470b37da4e050cd1a8cf89ae95d618f8536bdbac48374202a55c9eaf31e0627992ce2e0ae2d9c5bba233e93accdd2e55c512ad58673a2e8d5b04fa26529f1b544ceb5c2d0353ae8cf93fbd308acf9df0232e1c1e25a8fe868122522ecee70b67c0cb2aefbaf284f91fa2abf2f268a32b43c3fc97e001d40e7b4817142c2b151c7688f1bd2d7c8591fa944ca612ce57508040a478e57307b20c8ea1cbdcef43e6649963471ac591d9fe433dcfe9f99050e3b6b3d6ad30c3604ba9d0287f9821611c05ffbb8a033dc548dbf522d85c227d0d2e98c61936e45af8ff8fee99454b4de361df4a487bf617c646f5f488fdd78d1e0da041779d208f3f8adbdbb937f3d6141b4ae5105b667a6ef740c9ae3460f0c15cb38e3c1bc39b10810555b43ae902369c4f821449c6e5e47402b48b4598bc4f1715b472443e7a07b79d62211275f871da1c0000000000000000000000000000000000000000000000000000";
-        // src: https://etherscan.io/tx/0x63d70c91a022a7314da657eecc9f77beca8bc94ce9eace032b3d68222670122c
-        encodedUpdateRewards[2] =
-            hex"0000000000000000000000000000000000000000000000000000000000000020a38b9138cc8d3b58b6e031cfdd43ea12a23ca6a11c984560a804741915eed4a3000000000000000000000000000000000000000000000000000000002ef658a3000000000000000000000000000000000000000000000000000000006564b94b00000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000003b6261666b72656963716c657664346b77346e3779626564357074797a70336b636e6a62663473336372687674796166613679776d69737a6679616100000000000000000000000000000000000000000000000000000000000000000000000186b5dcd39969e9f6ceb4b0f5a4c57b161a7332f2e55c1befd10b6ecb3e006b5f776dc73663b493e5fd6987d05c4e7dd98c1788ed4b2747503253ef38ffc347f8f61bbe0d75eb34cb1b02b094e59209f5899e6a8ae6f40196c588a47361fc063071f93bb80674fcf7d4f958c8682169ebfa185427fa489bc7042fda04d7d21144f6311ba9b468ff0ba8fcdb94cfa1d212486a246bf1295c309e4a8a1aa673f4766e0c4a6cf25b28aa238853fdb9036555215523fa33e1b3ba39d401af15f1992171c7121c9feff44e20008161e57b0155cc4fdd4dc19cf8180a2ed487118b39d5aeb9bc5752530edf47c935da97476bdf2d7bdd9ec9002f07f51fcf5a3a534c9dbe9ff0671c059a12dc1e1335cdcb7482c41d7d32544ccc73da996ac99e8a626e99e8c4b6aa7706012432c6914f1f58c286edb204cba19d9e0a391c8e7aa3fdb4fa6d70da071c45b9c2f5d20c08bb69912903b4cc379bfb290de74e412623fde31d8b836f9bc646af4646def36b935723be6fb17ff925266af115dbf259d8a935307f21d4f4581b0000000000000000000000000000000000000000000000000000";
-
-        uint256 rewardsDelay = stakeWiseV3Keeper.rewardsDelay();
-        for (uint256 i = 0; i < encodedUpdateRewards.length; i++) {
-            (IStakeWiseV3KeeperRewards.RewardsUpdateParams memory rewardsParams) =
-                abi.decode(encodedUpdateRewards[i], (IStakeWiseV3KeeperRewards.RewardsUpdateParams));
-            vm.warp(block.timestamp + rewardsDelay + 1);
-            stakeWiseV3Keeper.updateRewards(rewardsParams);
+    function _getVaultRewards(address vault, int160 newTotalReward, uint160 newUnlockedMevReward)
+        private
+        pure
+        returns (int160, uint160)
+    {
+        // These come from actual values from https://graphs.stakewise.io/mainnet/subgraphs/name/stakewise/prod/graphql
+        if (vault == STAKEWISE_V3_ETH_GENESIS_VAULT_ETHEREUM_ADDRESS) {
+            // Genesis Vault
+            newTotalReward += 12081819477537065788690;
+            newUnlockedMevReward += 700320954200763229157;
+        } else if (vault == STAKEWISE_V3_ETH_VAULT_ETHEREUM_ADDRESS) {
+            newTotalReward += 736940809604000000000;
         }
 
-        // Update the state so that the exit request can be processed
-        // HarvestParams copied from this tx: https://etherscan.io/tx/0x611f86e25df927b6fcfab9f8bcc901aee7c856123d6fbfe4d0f16a5e7f52fce4
-        bytes memory encodedUpdateStateAndDeposit =
-            hex"000000000000000000000000f052e0df010819602f0b22a7cb600e33ffc9135800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000060a38b9138cc8d3b58b6e031cfdd43ea12a23ca6a11c984560a804741915eed4a300000000000000000000000000000000000000000000000000ef7dbcbc47ea000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000038b08645cf5fe9aa533f12fd963c047f6f3a9a6e3e504c1352baabad29349df9e1d133149353e32c6b5e9a80812d116730d3ad5cdfe962f700079e9f975c5de364d527de49ea7d0b4811b54c38b10ff4f861dee56372068df2a55bd4f382eaca2";
+        return (newTotalReward, newUnlockedMevReward);
+    }
 
-        (,, IStakeWiseV3EthVault.HarvestParams memory harvestParams) =
-            abi.decode(encodedUpdateStateAndDeposit, (address, address, IStakeWiseV3EthVault.HarvestParams));
+    address private _oracle;
+    uint256 internal _oraclePrivateKey;
+    uint256 private _validatorsMinOraclesBefore;
+    uint256 private _rewardsMinOraclesBefore;
 
-        // In order to update the state in a way that updates the exitQueue, a harvest must be performed.
-        // To perform a harvest, the rewards must have updated since the last harvest.
-        _stakeWiseVault.updateState({harvestParams: harvestParams});
+    function _startOracleImpersonate() internal {
+        if (_oracle != address(0)) return;
+
+        _validatorsMinOraclesBefore = stakeWiseV3Keeper.validatorsMinOracles();
+        _rewardsMinOraclesBefore = stakeWiseV3Keeper.rewardsMinOracles();
+
+        (_oracle, _oraclePrivateKey) = makeAddrAndKey("oracle");
+        vm.startPrank(stakeWiseV3Keeper.owner());
+        stakeWiseV3Keeper.setValidatorsMinOracles(1);
+        stakeWiseV3Keeper.setRewardsMinOracles(1);
+        stakeWiseV3Keeper.addOracle(_oracle);
+        vm.stopPrank();
+    }
+
+    function _stopOracleImpersonate() internal {
+        if (_oracle == address(0)) return;
+        vm.startPrank(stakeWiseV3Keeper.owner());
+        stakeWiseV3Keeper.setValidatorsMinOracles(_validatorsMinOraclesBefore);
+        stakeWiseV3Keeper.setRewardsMinOracles(_rewardsMinOraclesBefore);
+        stakeWiseV3Keeper.removeOracle(_oracle);
+        vm.stopPrank();
+
+        _oracle = address(0);
+        _oraclePrivateKey = 0;
+        _validatorsMinOraclesBefore = 0;
+        _rewardsMinOraclesBefore = 0;
+    }
+
+    function toTypedDataHash(bytes32 domainSeparator, bytes32 structHash) internal pure returns (bytes32 digest) {
+        assembly ("memory-safe") {
+            let ptr := mload(0x40)
+            mstore(ptr, hex"1901")
+            mstore(add(ptr, 0x02), domainSeparator)
+            mstore(add(ptr, 0x22), structHash)
+            digest := keccak256(ptr, 0x42)
+        }
+    }
+
+    function _hashKeeperTypedData(address keeper, bytes32 structHash) internal view returns (bytes32) {
+        return toTypedDataHash(
+            keccak256(
+                abi.encode(
+                    keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                    keccak256(bytes("KeeperOracles")),
+                    keccak256(bytes("1")),
+                    block.chainid,
+                    keeper
+                )
+            ),
+            structHash
+        );
+    }
+
+    function _setVaultReward(address _vault, int160 _totalReward, uint160 _unlockedMevReward)
+        internal
+        returns (IStakeWiseV3EthVault.HarvestParams memory harvestParams)
+    {
+        // setup oracle
+        _startOracleImpersonate();
+
+        bytes32 rewardsRoot = keccak256(bytes.concat(keccak256(abi.encode(_vault, _totalReward, _unlockedMevReward))));
+
+        uint256 avgRewardPerSecond = stakeWiseV3OsTokenController.avgRewardPerSecond();
+        uint64 updateTimestamp = uint64(block.timestamp);
+        string memory ipfsHash = "rewardsIpfsHash";
+        uint256 rewardsNonce = stakeWiseV3Keeper.rewardsNonce();
+        bytes32 digest = _hashKeeperTypedData(
+            address(stakeWiseV3Keeper),
+            keccak256(
+                abi.encode(
+                    keccak256(
+                        "KeeperRewards(bytes32 rewardsRoot,string rewardsIpfsHash,uint256 avgRewardPerSecond,uint64 updateTimestamp,uint64 nonce)"
+                    ),
+                    rewardsRoot,
+                    keccak256(bytes(ipfsHash)),
+                    avgRewardPerSecond,
+                    updateTimestamp,
+                    rewardsNonce
+                )
+            )
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_oraclePrivateKey, digest);
+
+        // push down the stack
+        IStakeWiseV3KeeperRewards.RewardsUpdateParams memory updateParams = IStakeWiseV3KeeperRewards
+            .RewardsUpdateParams({
+            rewardsRoot: rewardsRoot,
+            rewardsIpfsHash: ipfsHash,
+            avgRewardPerSecond: avgRewardPerSecond,
+            updateTimestamp: updateTimestamp,
+            signatures: abi.encodePacked(r, s, v)
+        });
+
+        vm.warp(block.timestamp + stakeWiseV3Keeper.rewardsDelay() + 1);
+        stakeWiseV3Keeper.updateRewards(updateParams);
+
+        _stopOracleImpersonate();
+
+        bytes32[] memory proof = new bytes32[](0);
+        return IStakeWiseV3EthVault.HarvestParams({
+            rewardsRoot: rewardsRoot,
+            reward: _totalReward,
+            unlockedMevReward: _unlockedMevReward,
+            proof: proof
+        });
+    }
+
+    function _setEthVaultReward(address _vault, int160 _totalReward, uint160 _unlockedMevReward)
+        internal
+        returns (IStakeWiseV3EthVault.HarvestParams memory)
+    {
+        (_totalReward, _unlockedMevReward) = _getVaultRewards(_vault, _totalReward, _unlockedMevReward);
+        return _setVaultReward({_vault: _vault, _totalReward: _totalReward, _unlockedMevReward: _unlockedMevReward});
+    }
+
+    function __updateRewardsAndState(IStakeWiseV3EthVault _stakeWiseVault) private {
+        IStakeWiseV3EthVault.HarvestParams memory params =
+            _setEthVaultReward({_vault: address(_stakeWiseVault), _totalReward: 0, _unlockedMevReward: 0});
+
+        vm.warp(block.timestamp + stakeWiseV3Keeper.rewardsDelay());
+        _stakeWiseVault.updateState(params);
     }
 
     function test_stake_success() public {
-        IStakeWiseV3EthVault stakeWiseVault = stakeWiseInactiveVault;
         uint256 amount = 7 ether;
 
         uint256 expectedStakeWiseV3VaultShares = stakeWiseVault.convertToShares({_assets: amount});
@@ -255,14 +379,15 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
         assertEq(wethVaultBalancePre - wethVaulBalancePost, amount, "Incorrect vault weth balance");
 
         // Assert that the external position has the correct amount of shares.
-        assertEq(
+        assertApproxEqAbs(
             stakeWiseVaultExternalPositionBalance,
             expectedStakeWiseV3VaultShares,
+            1,
             "Incorrect external position stakeWiseV3 vault shares"
         );
 
         assertEq(assets, toArray(address(wethToken)), "Incorrect managed assets");
-        assertEq(amounts, toArray(amount), "Incorrect managed asset amounts");
+        assertApproxEqAbs(amounts[0], amount, 1, "Incorrect managed asset amounts");
 
         // Check that the stakewise vault has been added to storage
         assertEq(
@@ -272,61 +397,7 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
         );
     }
 
-    function __test_redeem_success(bool _redeemAll) private {
-        IStakeWiseV3EthVault stakeWiseVault = stakeWiseInactiveVault;
-        __stake({_stakeWiseVault: stakeWiseVault, _assetAmount: 7 ether});
-
-        uint256 sharesBalance = stakeWiseVault.getShares(address(stakeWiseV3ExternalPosition));
-
-        uint256 sharesToRedeem = _redeemAll ? sharesBalance : sharesBalance / 3;
-
-        if (_redeemAll) {
-            expectEmit(address(stakeWiseV3ExternalPosition));
-            emit VaultTokenRemoved(address(stakeWiseVault));
-        }
-
-        vm.recordLogs();
-
-        __redeem({_stakeWiseVault: stakeWiseVault, _sharesAmount: sharesToRedeem});
-
-        assertExternalPositionAssetsToReceive({
-            _logs: vm.getRecordedLogs(),
-            _externalPositionManager: externalPositionManager,
-            _assets: toArray(address(wethToken))
-        });
-
-        uint256 sharesBalancePostRedemption = stakeWiseVault.getShares(address(stakeWiseV3ExternalPosition));
-        uint256 expectedSharesBalancePostRedemption = sharesBalance - sharesToRedeem;
-
-        assertEq(sharesBalancePostRedemption, expectedSharesBalancePostRedemption, "Incorrect shares balance");
-
-        if (_redeemAll) {
-            // Check that the stakewise vault has been removed from storage
-            assertEq(
-                stakeWiseV3ExternalPosition.getStakeWiseVaultTokens().length,
-                0,
-                "StakeWise vault token not removed from storage"
-            );
-        } else {
-            // Check that the stakewise vault is still in storage
-            assertEq(
-                stakeWiseV3ExternalPosition.getStakeWiseVaultTokens()[0],
-                address(stakeWiseVault),
-                "StakeWise vault token missing from storage"
-            );
-        }
-    }
-
-    function test_redeem_successWithFullRedemption() public {
-        __test_redeem_success({_redeemAll: true});
-    }
-
-    function test_redeem_successWithPartialRedemption() public {
-        __test_redeem_success({_redeemAll: false});
-    }
-
     function __test_enterExitQueue_success(bool _exitAll) private {
-        IStakeWiseV3EthVault stakeWiseVault = stakeWiseActiveVault;
         __stake({_stakeWiseVault: stakeWiseVault, _assetAmount: 7 ether});
 
         uint256 sharesBalance = stakeWiseVault.getShares(address(stakeWiseV3ExternalPosition));
@@ -348,7 +419,8 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
             _externalPositionManager: externalPositionManager,
-            _assets: new address[](0)
+            // The wethIncoming has been added to handle case where entering the exit queue redeems instantly
+            _assets: toArray(address(wethToken))
         });
 
         address expectedAsset = address(wethToken);
@@ -358,7 +430,7 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
         (address[] memory assets, uint256[] memory amounts) = stakeWiseV3ExternalPosition.getManagedAssets();
 
         assertEq(assets, toArray(expectedAsset), "Incorrect managed assets");
-        assertEq(amounts, toArray(expectedAssetAmount), "Incorrect managed asset amounts");
+        assertApproxEqAbs(amounts[0], expectedAssetAmount, 1, "Incorrect managed asset amounts");
 
         if (_exitAll) {
             assertEq(
@@ -381,6 +453,47 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
         assertEq(exitRequests[0].sharesAmount, sharesToExit, "amount exitRequest mismatch");
     }
 
+    function test_enterExitQueue_successWithImmediateRedemption() public {
+        // StakeWise vault with no validators (to allow immediate redemptions)
+        IStakeWiseV3EthVault stakeWiseVaultNoValidators =
+            IStakeWiseV3EthVault(STAKEWISE_V3_STAKEWISE_VAULT_NO_VALIDATORS);
+        __stake({_stakeWiseVault: stakeWiseVaultNoValidators, _assetAmount: 7 ether});
+
+        uint256 sharesToExit = stakeWiseVaultNoValidators.getShares(address(stakeWiseV3ExternalPosition));
+
+        expectEmit(address(stakeWiseV3ExternalPosition));
+        emit VaultTokenRemoved(address(stakeWiseVaultNoValidators));
+
+        vm.recordLogs();
+
+        uint256 wethBalancePreExit = wethToken.balanceOf(vaultProxyAddress);
+
+        __enterExitQueue({_stakeWiseVault: stakeWiseVaultNoValidators, _sharesAmount: sharesToExit});
+
+        uint256 wethBalancePostExit = wethToken.balanceOf(vaultProxyAddress);
+
+        assertExternalPositionAssetsToReceive({
+            _logs: vm.getRecordedLogs(),
+            _externalPositionManager: externalPositionManager,
+            _assets: toArray(address(wethToken))
+        });
+
+        // Funds should be returned to the vault
+        assertEq(
+            wethBalancePostExit - wethBalancePreExit,
+            stakeWiseVaultNoValidators.convertToAssets({_shares: sharesToExit}),
+            "Incorrect vault weth balance"
+        );
+
+        (address[] memory assets,) = stakeWiseV3ExternalPosition.getManagedAssets();
+
+        // There should be no assets in the external position since the only position has been redeemed in full
+        assertEq(assets.length, 0, "Incorrect managed assets");
+        assertEq(stakeWiseV3ExternalPosition.getStakeWiseVaultTokens().length, 0, "StakeWise vault still in storage");
+        IStakeWiseV3StakingPositionLib.ExitRequest[] memory exitRequests = stakeWiseV3ExternalPosition.getExitRequests();
+        assertEq(exitRequests.length, 0, "ExitRequest incorrectly found in storage");
+    }
+
     function test_enterExitQueue_successWithFullSharesAmount() public {
         __test_enterExitQueue_success({_exitAll: true});
     }
@@ -390,7 +503,6 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
     }
 
     function __test_claimExitedAssets_success(bool _fullyClaimable) private {
-        IStakeWiseV3EthVault stakeWiseVault = stakeWiseActiveVault;
         __stake({_stakeWiseVault: stakeWiseVault, _assetAmount: 7 ether});
 
         uint256 sharesBalance = stakeWiseVault.getShares(address(stakeWiseV3ExternalPosition));
@@ -398,14 +510,35 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
         (uint256 positionTicket, uint256 timestamp) =
             __enterExitQueue({_stakeWiseVault: stakeWiseVault, _sharesAmount: sharesBalance});
 
-        uint256 sharesAvailableToClaim = sharesBalance;
+        uint256 queuedShares = uint256(stakeWiseVault.queuedShares());
+        uint256 totalExitingAssets_ = uint256(stakeWiseVault.totalExitingAssets());
+        uint256 minimalAssetsRequired = stakeWiseVault.convertToAssets({_shares: sharesBalance + queuedShares})
+            + totalExitingAssets_ + address(stakeWiseVault).balance;
+        // Adjust the Ether balance of the StakeWise vault so it either fulfills a full or partial claim
         if (!_fullyClaimable) {
-            // Adjust the Ether balance of the StakeWise vault so that it's insufficient for a full claim
-            vm.deal(address(stakeWiseVault), stakeWiseVault.convertToAssets({_shares: sharesBalance}) / 3);
-            sharesAvailableToClaim = stakeWiseVault.convertToShares({_assets: address(stakeWiseVault).balance});
+            if (address(stakeWiseVault) == STAKEWISE_V3_ETH_GENESIS_VAULT_ETHEREUM_ADDRESS) {
+                vm.deal(address(stakeWiseVault), minimalAssetsRequired - 25 ether);
+            } else if (address(stakeWiseVault) == STAKEWISE_V3_ETH_VAULT_ETHEREUM_ADDRESS) {
+                vm.deal(address(stakeWiseVault), minimalAssetsRequired * 99 / 100);
+            }
+        } else {
+            // Make sure that the vault has enough balance to fulfill the exit request
+            vm.deal(address(stakeWiseVault), minimalAssetsRequired);
         }
 
         __updateRewardsAndState({_stakeWiseVault: stakeWiseVault});
+
+        int256 exitQueueIndex = stakeWiseVault.getExitQueueIndex({_positionTicket: positionTicket});
+
+        assertGe(exitQueueIndex, 0, "__claimExitedAssets: ExitQueueIndex should be >= 0");
+
+        // Calculate expected remainingShares, and expected assets to receive
+        (uint256 remainingShares,, uint256 claimedAssets) = stakeWiseVault.calculateExitedAssets({
+            _receiver: address(stakeWiseV3ExternalPosition),
+            _positionTicket: positionTicket,
+            _timestamp: timestamp,
+            _exitQueueIndex: uint256(exitQueueIndex)
+        });
 
         expectEmit(address(stakeWiseV3ExternalPosition));
         emit ExitRequestRemoved(address(stakeWiseVault), positionTicket);
@@ -413,14 +546,6 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
         uint256 vaultWethBalancePreClaim = wethToken.balanceOf(vaultProxyAddress);
 
         vm.recordLogs();
-
-        // Calculate expected remainingShares, and expected assets to receive
-        (uint256 remainingShares,, uint256 claimedAssets) = stakeWiseVault.calculateExitedAssets({
-            _receiver: address(stakeWiseV3ExternalPosition),
-            _positionTicket: positionTicket,
-            _timestamp: timestamp,
-            _exitQueueIndex: uint256(stakeWiseVault.getExitQueueIndex({_positionTicket: positionTicket}))
-        });
 
         __claimExitedAssets({_stakeWiseVault: stakeWiseVault, _positionTicket: positionTicket, _timestamp: timestamp});
 
@@ -473,22 +598,64 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
     function test_claimExitedAssets_successWithPartialClaim() public {
         __test_claimExitedAssets_success({_fullyClaimable: false});
     }
+
+    function test_getManagedAssets_failsWithUnregisteredImplementation() public {
+        __stake({_stakeWiseVault: stakeWiseVault, _assetAmount: 7 ether});
+
+        vm.prank(makeAddr("ListOwner"));
+        // Update the supported implementations list to remove all the implementations
+        core.persistent.addressListRegistry.removeFromList({
+            _id: supportedImplementationsListID,
+            _items: supportedImplementations
+        });
+
+        vm.expectRevert("__validateStakeWiseVault: Unregistered implementation");
+        stakeWiseV3ExternalPosition.getManagedAssets();
+    }
 }
 
-contract StakeWiseTestEthereum is StakeWiseV3StakingPositionTest {
+abstract contract StakeWiseTestEthereum is StakeWiseV3StakingPositionTest {
     function setUp() public virtual override {
         setUpMainnetEnvironment(ETHEREUM_BLOCK_TIME_SENSITIVE_STAKEWISE);
 
         stakeWiseV3Keeper = IStakeWiseV3KeeperRewards(STAKEWISE_V3_KEEPER_ETHEREUM_ADDRESS);
+        stakeWiseV3OsTokenController = IStakeWiseV3OsTokenController(STAKEWISE_V3_OS_TOKEN_CONTROLLER_ADDRESS);
         stakeWiseV3RegistryAddress = STAKEWISE_V3_VAULT_REGISTRY_ETHEREUM_ADDRESS;
-        stakeWiseInactiveVault = IStakeWiseV3EthVault(STAKEWISE_V3_INACTIVE_VAULT_TOKEN_ETHEREUM_ADDRESS);
-        stakeWiseActiveVault = IStakeWiseV3EthVault(STAKEWISE_V3_ACTIVE_VAULT_TOKEN_ETHEREUM_ADDRESS);
+        supportedImplementations = toArray(
+            STAKEWISE_ETH_VAULT_V3_IMPLEMENTATION,
+            STAKEWISE_ETH_VAULT_V4_IMPLEMENTATION,
+            STAKEWISE_ETH_GENESIS_VAULT_V4_IMPLEMENTATION
+        );
 
         super.setUp();
     }
 }
 
-contract StakeWiseTestEthereumV4 is StakeWiseTestEthereum {
+contract StakeWiseTestEthereumEthVault is StakeWiseTestEthereum {
+    function setUp() public virtual override {
+        stakeWiseVault = IStakeWiseV3EthVault(STAKEWISE_V3_ETH_VAULT_ETHEREUM_ADDRESS);
+
+        super.setUp();
+    }
+}
+
+contract StakeWiseTestEthereumV4EthVault is StakeWiseTestEthereumEthVault {
+    function setUp() public override {
+        version = EnzymeVersion.V4;
+
+        super.setUp();
+    }
+}
+
+contract StakeWiseTestEthereumGenesisVault is StakeWiseTestEthereum {
+    function setUp() public virtual override {
+        stakeWiseVault = IStakeWiseV3EthVault(STAKEWISE_V3_ETH_GENESIS_VAULT_ETHEREUM_ADDRESS);
+
+        super.setUp();
+    }
+}
+
+contract StakeWiseTestEthereumVGenesisVault is StakeWiseTestEthereumGenesisVault {
     function setUp() public override {
         version = EnzymeVersion.V4;
 
