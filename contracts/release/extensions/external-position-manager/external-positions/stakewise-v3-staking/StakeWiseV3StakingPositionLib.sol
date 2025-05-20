@@ -250,7 +250,7 @@ contract StakeWiseV3StakingPositionLib is
                 continue;
             }
 
-            (,, uint256 claimedAssets) = stakeWiseVault.calculateExitedAssets({
+            (uint256 leftTickets,, uint256 claimedAssets) = stakeWiseVault.calculateExitedAssets({
                 _receiver: address(this),
                 _positionTicket: exitRequest.positionTicket,
                 _timestamp: exitRequest.timestamp,
@@ -258,6 +258,11 @@ contract StakeWiseV3StakingPositionLib is
             });
 
             amounts_[0] += claimedAssets;
+
+            // If tickets are left, price them at the sharePrice (1 ticket = 1 share)
+            if (leftTickets > 0) {
+                amounts_[0] += stakeWiseVault.convertToAssets({_shares: leftTickets});
+            }
         }
 
         return (assets_, amounts_);
