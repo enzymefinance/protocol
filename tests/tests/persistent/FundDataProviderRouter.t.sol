@@ -53,7 +53,8 @@ contract FundDataProviderRouterTest is IntegrationTest {
             uint256 navInDenominationAsset,
             uint256 navInEth,
             bool navIsValid,
-            bool ethConversionIsValid_
+            bool ethConversionIsValid_,
+            address fetchedDenominationAsset
         ) = fundDataProviderRouter.getFundValueMetrics({_vaultProxy: vaultProxyAddress});
 
         assertEq(timestamp, block.timestamp, "Timestamp should match block timestamp");
@@ -65,5 +66,6 @@ contract FundDataProviderRouterTest is IntegrationTest {
         assertGt(navInEth, 0, "NAV in ETH should be greater than 0");
         assertTrue(navIsValid, "NAV should be valid");
         assertTrue(ethConversionIsValid_, "ETH conversion should be valid");
+        assertEq(address(denominationAsset), fetchedDenominationAsset, "Denomination asset should be valid");
     }
 }

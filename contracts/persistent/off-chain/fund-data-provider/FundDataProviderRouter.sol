@@ -52,19 +52,18 @@ contract FundDataProviderRouter {
             uint256 navInDenominationAsset_,
             uint256 navInEth_,
             bool navIsValid_,
-            bool ethConversionIsValid_
+            bool ethConversionIsValid_,
+            address denominationAsset_
         )
     {
         timestamp_ = block.timestamp;
         sharesSupply_ = IERC20(_vaultProxy).totalSupply();
 
-        address denominationAsset;
-
         try FundValueCalculatorRouter(getFundValueCalculatorRouter()).calcGav(_vaultProxy) returns (
-            address denominationAsset_, uint256 gav_
+            address denomination_, uint256 gav_
         ) {
             gavInDenominationAsset_ = gav_;
-            denominationAsset = denominationAsset_;
+            denominationAsset_ = denomination_;
             gavIsValid_ = true;
         } catch {}
 
@@ -82,13 +81,13 @@ contract FundDataProviderRouter {
         ).getValueInterpreter() returns (address valueInterpreter_) {
             ethConversionIsValid_ = true;
             gavInEth_ = IValueInterpreter(valueInterpreter_).calcCanonicalAssetValue({
-                _baseAsset: denominationAsset,
+                _baseAsset: denominationAsset_,
                 _amount: gavInDenominationAsset_,
                 _quoteAsset: WETH_TOKEN
             });
 
             navInEth_ = IValueInterpreter(valueInterpreter_).calcCanonicalAssetValue({
-                _baseAsset: denominationAsset,
+                _baseAsset: denominationAsset_,
                 _amount: navInDenominationAsset_,
                 _quoteAsset: WETH_TOKEN
             });
@@ -103,7 +102,8 @@ contract FundDataProviderRouter {
             navInDenominationAsset_,
             navInEth_,
             navIsValid_,
-            ethConversionIsValid_
+            ethConversionIsValid_,
+            denominationAsset_
         );
     }
 
