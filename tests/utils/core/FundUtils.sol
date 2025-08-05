@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
+    "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
+
 import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
@@ -10,6 +13,8 @@ import {IExtension} from "tests/interfaces/internal/IExtension.sol";
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IMigrationHookHandler} from "tests/interfaces/internal/IMigrationHookHandler.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
+import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
+import {TestChainlinkAggregator} from "tests/utils/core/AssetUniverseUtils.sol";
 import {MockDefaultMigrationHookHandler} from "tests/utils/Mocks.sol";
 
 bytes32 constant ANY_VAULT_CALL = keccak256(abi.encodePacked("mln.vaultCall.any"));
@@ -32,18 +37,24 @@ abstract contract FundUtils is CoreUtilsBase {
         return computeCreateAddress(address(_fundDeployer), vm.getNonce(address(_fundDeployer)));
     }
 
-    function createFund(IFundDeployer _fundDeployer, IFundDeployer.ConfigInput memory _comptrollerConfig)
-        internal
-        returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_, address fundOwner_)
-    {
+    function createFund(
+        IFundDeployer _fundDeployer,
+        IERC20 _denominationAsset,
+        uint256 _sharesActionTimelock,
+        bytes memory _feeManagerConfigData,
+        bytes memory _policyManagerConfigData
+    ) internal returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_, address fundOwner_) {
         fundOwner_ = makeAddr("createFund: FundOwner");
 
-        (address comptrollerProxy, address vaultProxy) = _fundDeployer.createNewFund({
-            _fundOwner: fundOwner_,
-            _fundName: "testFund",
-            _fundSymbol: "TEST_FUND",
-            _comptrollerConfig: _comptrollerConfig
-        });
+        (address comptrollerProxy, address vaultProxy) = _fundDeployer.createNewFund(
+            fundOwner_,
+            "testVault",
+            "TEST_VAULT",
+            address(_denominationAsset),
+            _sharesActionTimelock,
+            _feeManagerConfigData,
+            _policyManagerConfigData
+        );
 
         comptrollerProxy_ = IComptrollerLib(comptrollerProxy);
         vaultProxy_ = IVaultLib(payable(vaultProxy));
@@ -53,25 +64,36 @@ abstract contract FundUtils is CoreUtilsBase {
         internal
         returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_, address fundOwner_)
     {
-        IFundDeployer.ConfigInput memory config;
-        config.denominationAsset = address(_denominationAsset);
-
-        return createFund({_fundDeployer: _fundDeployer, _comptrollerConfig: config});
+        return createFund({
+            _fundDeployer: _fundDeployer,
+            _denominationAsset: _denominationAsset,
+            _sharesActionTimelock: 0,
+            _feeManagerConfigData: "",
+            _policyManagerConfigData: ""
+        });
     }
 
-    function createFundWithExtension(
-        IFundDeployer _fundDeployer,
-        IERC20 _denominationAsset,
-        address _extensionAddress,
-        bytes memory _extensionConfigData
-    ) internal returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_, address fundOwner_) {
-        IFundDeployer.ConfigInput memory config;
-        config.denominationAsset = address(_denominationAsset);
-        config.extensionsConfig = new IFundDeployer.ExtensionConfigInput[](1);
-        config.extensionsConfig[0].extension = _extensionAddress;
-        config.extensionsConfig[0].configData = _extensionConfigData;
+    function createFundMinimal(IFundDeployer _fundDeployer)
+        internal
+        returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_, address fundOwner_)
+    {
+        IERC20 denominationAsset = createTestToken();
 
-        return createFund({_fundDeployer: _fundDeployer, _comptrollerConfig: config});
+        // register the denomination asset
+        IValueInterpreter valueInterpreter =
+            IValueInterpreter(IComptrollerLib(_fundDeployer.getComptrollerLib()).getValueInterpreter());
+        IValueInterpreter.RateAsset[] memory rateAssets = new IValueInterpreter.RateAsset[](1);
+        rateAssets[0] = formatChainlinkRateAsset(IChainlinkPriceFeedMixinProd.RateAsset.ETH);
+
+        vm.startPrank(_fundDeployer.getOwner());
+        valueInterpreter.addPrimitives({
+            _primitives: toArray(address(denominationAsset)),
+            _aggregators: toArray(address(new TestChainlinkAggregator(8))),
+            _rateAssets: rateAssets
+        });
+        vm.stopPrank();
+
+        return createFundMinimal({_fundDeployer: _fundDeployer, _denominationAsset: denominationAsset});
     }
 
     function createFundWithPolicy(
@@ -80,12 +102,13 @@ abstract contract FundUtils is CoreUtilsBase {
         address _policyAddress,
         bytes memory _policySettings
     ) internal returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_, address fundOwner_) {
-        IFundDeployer.ConfigInput memory comptrollerConfig;
-        comptrollerConfig.denominationAsset = address(_denominationAsset);
-        comptrollerConfig.policyManagerConfigData = abi.encode(toArray(_policyAddress), toArray(_policySettings));
-
-        (comptrollerProxy_, vaultProxy_, fundOwner_) =
-            createFund({_fundDeployer: _fundDeployer, _comptrollerConfig: comptrollerConfig});
+        return createFund({
+            _fundDeployer: _fundDeployer,
+            _denominationAsset: _denominationAsset,
+            _sharesActionTimelock: 0,
+            _feeManagerConfigData: "",
+            _policyManagerConfigData: abi.encode(toArray(_policyAddress), toArray(_policySettings))
+        });
     }
 
     function createVaultFromMockFundDeployer(IDispatcher _dispatcher, address _vaultLibAddress)

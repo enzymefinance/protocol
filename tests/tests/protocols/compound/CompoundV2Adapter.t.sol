@@ -11,8 +11,10 @@ import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
 import {ICompoundAdapter} from "tests/interfaces/internal/ICompoundAdapter.sol";
 import {ICompoundPriceFeed} from "tests/interfaces/internal/ICompoundPriceFeed.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 import {ETHEREUM_COMPTROLLER} from "./CompoundV2Constants.sol";
 
@@ -33,21 +35,24 @@ abstract contract CompoundV2TestBase is IntegrationTest {
     ICERC20 internal non18DecimalCToken = ICERC20(ETHEREUM_COMPOUND_V2_CUSDC);
 
     // Set by child contract
-    EnzymeVersion internal version;
 
     function setUp() public virtual override {
         setUpMainnetEnvironment();
 
-        (comptrollerProxyAddress, vaultProxyAddress, vaultOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, vaultOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         priceFeed = __deployCompoundPriceFeed({
-            _fundDeployerAddress: getFundDeployerAddressForVersion(version),
+            _fundDeployerAddress: address(core.release.fundDeployer),
             _wethToken: wethToken,
             _cETH: cETHAddress
         });
 
         adapter = __deployAdapter({
-            _integrationManagerAddress: getIntegrationManagerAddressForVersion(version),
+            _integrationManagerAddress: address(core.release.integrationManager),
             _compoundPriceFeed: priceFeed,
             _wethToken: wethToken
         });
@@ -80,10 +85,10 @@ abstract contract CompoundV2TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_cToken, _underlyingAmount, _minCTokenAmount);
 
         vm.prank(vaultOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: ICompoundAdapter.lend.selector,
             _actionArgs: actionArgs
         });
@@ -93,10 +98,10 @@ abstract contract CompoundV2TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_cToken, _cTokenAmount, _minUnderlyingAmount);
 
         vm.prank(vaultOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: ICompoundAdapter.redeem.selector,
             _actionArgs: actionArgs
         });
@@ -106,10 +111,10 @@ abstract contract CompoundV2TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_cTokens, _compoundComptroller);
 
         vm.prank(vaultOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: ICompoundAdapter.claimRewards.selector,
             _actionArgs: actionArgs
         });
@@ -123,22 +128,21 @@ abstract contract CompoundV2TestBase is IntegrationTest {
 
     function __registerCTokensAndUnderlyings(address[] memory _cTokens) internal {
         for (uint256 i = 0; i < _cTokens.length; i++) {
-            if (version == EnzymeVersion.V4) {
-                v4AddPrimitiveWithTestAggregator({
-                    _tokenAddress: __getCTokenUnderlying(ICERC20(_cTokens[i])),
-                    _skipIfRegistered: true
-                });
-            }
+            addPrimitiveWithTestAggregator({
+                _valueInterpreter: core.release.valueInterpreter,
+                _tokenAddress: __getCTokenUnderlying(ICERC20(_cTokens[i])),
+                _skipIfRegistered: true
+            });
 
             // cETH is already registered in the CompoundPriceFeed constructor
             if (_cTokens[i] != cETHAddress) {
-                vm.prank(IFundDeployer(getFundDeployerAddressForVersion(version)).getOwner());
+                vm.prank(core.release.fundDeployer.getOwner());
 
                 ICompoundPriceFeed(priceFeed).addCTokens(toArray(_cTokens[i]));
             }
 
             addDerivative({
-                _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion(version)),
+                _valueInterpreter: core.release.valueInterpreter,
                 _tokenAddress: _cTokens[i],
                 _skipIfRegistered: true,
                 _priceFeedAddress: address(priceFeed)
@@ -329,13 +333,5 @@ contract CompoundV2AdapterTestEthereum is
 
     function test_claimRewards_success() public {
         __test_claimRewards_success({_cTokens: toArray(address(regular18DecimalCToken), address(non18DecimalCToken))});
-    }
-}
-
-contract CompoundV2AdapterTestEthereumV4 is CompoundV2AdapterTestEthereum {
-    function setUp() public override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
     }
 }

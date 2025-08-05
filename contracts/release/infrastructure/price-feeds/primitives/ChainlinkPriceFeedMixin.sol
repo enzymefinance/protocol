@@ -9,16 +9,19 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.8.19;
+pragma solidity 0.6.12;
 
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import {IChainlinkAggregator} from "../../../../external-interfaces/IChainlinkAggregator.sol";
-import {IERC20} from "../../../../external-interfaces/IERC20.sol";
 import {IChainlinkPriceFeedMixin} from "./IChainlinkPriceFeedMixin.sol";
 
 /// @title ChainlinkPriceFeedMixin Contract
 /// @author Enzyme Foundation <security@enzyme.finance>
 /// @notice A price feed that uses Chainlink oracles as price sources
 abstract contract ChainlinkPriceFeedMixin is IChainlinkPriceFeedMixin {
+    using SafeMath for uint256;
+
     event EthUsdAggregatorSet(address prevEthUsdAggregator, address nextEthUsdAggregator);
 
     event PrimitiveAdded(address indexed primitive, address aggregator, RateAsset rateAsset, uint256 unit);
@@ -34,7 +37,7 @@ abstract contract ChainlinkPriceFeedMixin is IChainlinkPriceFeedMixin {
     mapping(address => AggregatorInfo) private primitiveToAggregatorInfo;
     mapping(address => uint256) private primitiveToUnit;
 
-    constructor(address _wethToken, uint256 _staleRateThreshold) {
+    constructor(address _wethToken, uint256 _staleRateThreshold) public {
         STALE_RATE_THRESHOLD = _staleRateThreshold;
         WETH_TOKEN = _wethToken;
     }
@@ -127,9 +130,9 @@ abstract contract ChainlinkPriceFeedMixin is IChainlinkPriceFeedMixin {
     ) private pure returns (uint256 quoteAssetAmount_) {
         // Only allows two consecutive multiplication operations to avoid potential overflow.
         // Intermediate step needed to resolve stack-too-deep error.
-        uint256 intermediateStep = _baseAssetAmount * _baseAssetRate * _ethPerUsdRate / ETH_UNIT;
+        uint256 intermediateStep = _baseAssetAmount.mul(_baseAssetRate).mul(_ethPerUsdRate).div(ETH_UNIT);
 
-        return intermediateStep * _quoteAssetUnit / _baseAssetUnit / _quoteAssetRate;
+        return intermediateStep.mul(_quoteAssetUnit).div(_baseAssetUnit).div(_quoteAssetRate);
     }
 
     /// @dev Helper to convert amounts where base and quote assets both have ETH rates or both have USD rates
@@ -141,7 +144,7 @@ abstract contract ChainlinkPriceFeedMixin is IChainlinkPriceFeedMixin {
         uint256 _quoteAssetRate
     ) private pure returns (uint256 quoteAssetAmount_) {
         // Only allows two consecutive multiplication operations to avoid potential overflow
-        return _baseAssetAmount * _baseAssetRate * _quoteAssetUnit / (_baseAssetUnit * _quoteAssetRate);
+        return _baseAssetAmount.mul(_baseAssetRate).mul(_quoteAssetUnit).div(_baseAssetUnit.mul(_quoteAssetRate));
     }
 
     /// @dev Helper to convert amounts where the base asset has a USD rate and the quote asset has an ETH rate
@@ -155,9 +158,9 @@ abstract contract ChainlinkPriceFeedMixin is IChainlinkPriceFeedMixin {
     ) private pure returns (uint256 quoteAssetAmount_) {
         // Only allows two consecutive multiplication operations to avoid potential overflow
         // Intermediate step needed to resolve stack-too-deep error.
-        uint256 intermediateStep = _baseAssetAmount * _baseAssetRate * _quoteAssetUnit / _ethPerUsdRate;
+        uint256 intermediateStep = _baseAssetAmount.mul(_baseAssetRate).mul(_quoteAssetUnit).div(_ethPerUsdRate);
 
-        return intermediateStep * ETH_UNIT / _baseAssetUnit / _quoteAssetRate;
+        return intermediateStep.mul(ETH_UNIT).div(_baseAssetUnit).div(_quoteAssetRate);
     }
 
     /// @dev Helper to get the latest rate for a given primitive
@@ -179,7 +182,7 @@ abstract contract ChainlinkPriceFeedMixin is IChainlinkPriceFeedMixin {
     /// @dev Helper to validate that a rate is not from a round considered to be stale
     function __validateRateIsNotStale(uint256 _latestUpdatedAt) private view {
         require(
-            _latestUpdatedAt >= block.timestamp - getStaleRateThreshold(),
+            _latestUpdatedAt >= block.timestamp.sub(getStaleRateThreshold()),
             "__validateRateIsNotStale: Stale rate detected"
         );
     }
@@ -215,7 +218,7 @@ abstract contract ChainlinkPriceFeedMixin is IChainlinkPriceFeedMixin {
                 AggregatorInfo({aggregator: _aggregators[i], rateAsset: _rateAssets[i]});
 
             // Store the amount that makes up 1 unit given the asset's decimals
-            uint256 unit = 10 ** uint256(IERC20(_primitives[i]).decimals());
+            uint256 unit = 10 ** uint256(ERC20(_primitives[i]).decimals());
             primitiveToUnit[_primitives[i]] = unit;
 
             emit PrimitiveAdded(_primitives[i], _aggregators[i], _rateAssets[i], unit);

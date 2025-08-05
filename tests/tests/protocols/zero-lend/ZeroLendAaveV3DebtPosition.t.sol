@@ -19,9 +19,8 @@ import {
 } from "./ZeroLendConstants.sol";
 
 abstract contract ZeroLendLRTBTCAaveV3DebtPositionTestBaseEthereum is AaveV3DebtPositionTestBase {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         __initialize({
-            _version: _version,
             _chainId: ETHEREUM_CHAIN_ID,
             _merklDistributor: IMerklDistributor(ETHEREUM_MERKL_DISTRIBUTOR),
             _poolAddressProvider: IAaveV3PoolAddressProvider(ETHEREUM_ZERO_LEND_LRT_BTC_AAVE_V3_POOL_ADDRESS_PROVIDER),
@@ -35,9 +34,8 @@ abstract contract ZeroLendLRTBTCAaveV3DebtPositionTestBaseEthereum is AaveV3Debt
 }
 
 abstract contract ZeroLendRWAStablecoinsAaveV3DebtPositionTestBaseEthereum is AaveV3DebtPositionTestBase {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         __initialize({
-            _version: _version,
             _chainId: ETHEREUM_CHAIN_ID,
             _merklDistributor: IMerklDistributor(ETHEREUM_MERKL_DISTRIBUTOR),
             _poolAddressProvider: IAaveV3PoolAddressProvider(
@@ -56,13 +54,7 @@ abstract contract ZeroLendRWAStablecoinsAaveV3DebtPositionTestBaseEthereum is Aa
 
 contract ZeroLendLRTBTCAaveV3DebtPositionTestEthereum is ZeroLendLRTBTCAaveV3DebtPositionTestBaseEthereum {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
-    }
-}
-
-contract ZeroLendLRTBTCAaveV3DebtPositionTestEthereumV4 is ZeroLendLRTBTCAaveV3DebtPositionTestBaseEthereum {
-    function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }
 
@@ -70,14 +62,6 @@ contract ZeroLendRWAStablecoinsAaveV3DebtPositionTestEthereum is
     ZeroLendRWAStablecoinsAaveV3DebtPositionTestBaseEthereum
 {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
-    }
-}
-
-contract ZeroLendRWAStablecoinsAaveV3DebtPositionTestEthereumV4 is
-    ZeroLendRWAStablecoinsAaveV3DebtPositionTestBaseEthereum
-{
-    function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }

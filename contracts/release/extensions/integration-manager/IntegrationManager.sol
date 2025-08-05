@@ -9,12 +9,14 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.8.19;
+pragma solidity 0.6.12;
 
-import {IERC20} from "../../../external-interfaces/IERC20.sol";
-import {AddressArrayLib} from "../../../utils/0.8.19/AddressArrayLib.sol";
-import {AssetHelpers} from "../../../utils/0.8.19/AssetHelpers.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {AddressArrayLib} from "../../../utils/0.6.12/AddressArrayLib.sol";
+import {AssetHelpers} from "../../../utils/0.6.12/AssetHelpers.sol";
 import {IVault} from "../../core/fund/vault/IVault.sol";
+import {IValueInterpreter} from "../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import {IPolicyManager} from "../policy-manager/IPolicyManager.sol";
 import {ExtensionBase} from "../utils/ExtensionBase.sol";
 import {PermissionedVaultActionMixin} from "../utils/PermissionedVaultActionMixin.sol";
@@ -30,6 +32,7 @@ import {IIntegrationManager} from "./IIntegrationManager.sol";
 /// arbitrary adapters that they interact with.
 contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedVaultActionMixin, AssetHelpers {
     using AddressArrayLib for address[];
+    using SafeMath for uint256;
 
     event CallOnIntegrationExecutedForFund(
         address indexed comptrollerProxy,
@@ -44,9 +47,14 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
     );
 
     address private immutable POLICY_MANAGER;
+    address private immutable VALUE_INTERPRETER;
 
-    constructor(address _fundDeployer, address _policyManager) ExtensionBase(_fundDeployer) {
+    constructor(address _fundDeployer, address _policyManager, address _valueInterpreter)
+        public
+        ExtensionBase(_fundDeployer)
+    {
         POLICY_MANAGER = _policyManager;
+        VALUE_INTERPRETER = _valueInterpreter;
     }
 
     /////////////
@@ -54,8 +62,14 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
     /////////////
 
     /// @notice Enables the IntegrationManager to be used by a fund
-    function setConfigForFund(bytes calldata) external override {
-        __setValidatedVaultProxy({_comptrollerProxy: msg.sender});
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _vaultProxy The VaultProxy of the fund
+    function setConfigForFund(address _comptrollerProxy, address _vaultProxy, bytes calldata)
+        external
+        override
+        onlyFundDeployer
+    {
+        __setValidatedVaultProxy(_comptrollerProxy, _vaultProxy);
     }
 
     ///////////////////////////////
@@ -102,6 +116,11 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
         );
 
         for (uint256 i; i < assets.length; i++) {
+            require(
+                IValueInterpreter(getValueInterpreter()).isSupportedAsset(assets[i]),
+                "__addTrackedAssetsToVault: Unsupported asset"
+            );
+
             __addTrackedAsset(_comptrollerProxy, assets[i]);
         }
     }
@@ -143,7 +162,8 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
     ) private {
         // Validating the ComptrollerProxy is the active VaultProxy.accessor()
         // protects against corner cases of lingering permissions on adapters issued
-        // via VaultLib.callOnContract() that could otherwise be reached from an old ComptrollerProxy
+        // via VaultLib.callOnContract() that could otherwise be called from an
+        // undestructed ComptrollerProxy
         require(
             _comptrollerProxy == IVault(_vaultProxy).getAccessor(), "receiveCallFromComptroller: Fund is not active"
         );
@@ -258,7 +278,7 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
 
     /// @dev Helper to get the vault's balance of a particular asset
     function __getVaultAssetBalance(address _vaultProxy, address _asset) private view returns (uint256) {
-        return IERC20(_asset).balanceOf(_vaultProxy);
+        return ERC20(_asset).balanceOf(_vaultProxy);
     }
 
     /// @dev Helper for the internal actions to take prior to executing CoI
@@ -298,14 +318,19 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
         // as a spend asset can be immediately transferred after recording its balance
         preCallIncomingAssetBalances_ = new uint256[](incomingAssets_.length);
         for (uint256 i; i < incomingAssets_.length; i++) {
-            preCallIncomingAssetBalances_[i] = IERC20(incomingAssets_[i]).balanceOf(_vaultProxy);
+            require(
+                IValueInterpreter(getValueInterpreter()).isSupportedAsset(incomingAssets_[i]),
+                "__preProcessCoI: Non-receivable incoming asset"
+            );
+
+            preCallIncomingAssetBalances_[i] = ERC20(incomingAssets_[i]).balanceOf(_vaultProxy);
         }
 
         // SPEND ASSETS
 
         preCallSpendAssetBalances_ = new uint256[](spendAssets_.length);
         for (uint256 i; i < spendAssets_.length; i++) {
-            preCallSpendAssetBalances_[i] = IERC20(spendAssets_[i]).balanceOf(_vaultProxy);
+            preCallSpendAssetBalances_[i] = ERC20(spendAssets_[i]).balanceOf(_vaultProxy);
 
             // Grant adapter access to the spend assets.
             // spendAssets_ is already asserted to be a unique set.
@@ -336,7 +361,7 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
         incomingAssetAmounts_ = new uint256[](_incomingAssets.length);
         for (uint256 i; i < _incomingAssets.length; i++) {
             incomingAssetAmounts_[i] =
-                __getVaultAssetBalance(_vaultProxy, _incomingAssets[i]) - _preCallIncomingAssetBalances[i];
+                __getVaultAssetBalance(_vaultProxy, _incomingAssets[i]).sub(_preCallIncomingAssetBalances[i]);
             require(
                 incomingAssetAmounts_[i] >= _minIncomingAssetAmounts[i],
                 "__postProcessCoI: Received incoming asset less than expected"
@@ -353,13 +378,13 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
             // Calculate the balance change of spend assets. Ignore if balance increased.
             uint256 postCallSpendAssetBalance = __getVaultAssetBalance(_vaultProxy, _spendAssets[i]);
             if (postCallSpendAssetBalance < _preCallSpendAssetBalances[i]) {
-                spendAssetAmounts_[i] = _preCallSpendAssetBalances[i] - postCallSpendAssetBalance;
+                spendAssetAmounts_[i] = _preCallSpendAssetBalances[i].sub(postCallSpendAssetBalance);
             }
 
             // Reset any unused approvals
             if (
                 _spendAssetsHandleType == SpendAssetsHandleType.Approve
-                    && IERC20(_spendAssets[i]).allowance(_vaultProxy, _adapter) > 0
+                    && ERC20(_spendAssets[i]).allowance(_vaultProxy, _adapter) > 0
             ) {
                 __approveAssetSpender(_comptrollerProxy, _spendAssets[i], _adapter, 0);
             } else if (_spendAssetsHandleType == SpendAssetsHandleType.None) {
@@ -383,5 +408,11 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
     /// @return policyManager_ The `POLICY_MANAGER` variable value
     function getPolicyManager() public view override returns (address policyManager_) {
         return POLICY_MANAGER;
+    }
+
+    /// @notice Gets the `VALUE_INTERPRETER` variable
+    /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
+    function getValueInterpreter() public view override returns (address valueInterpreter_) {
+        return VALUE_INTERPRETER;
     }
 }

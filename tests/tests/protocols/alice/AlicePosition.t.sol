@@ -7,6 +7,8 @@ import {IUintListRegistry as IUintListRegistryProd} from "contracts/persistent/u
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {IAliceOrderManager} from "tests/interfaces/external/IAliceOrderManager.sol";
 import {IAliceWhitelistManager} from "tests/interfaces/external/IAliceWhitelistManager.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
@@ -51,19 +53,10 @@ abstract contract AliceTestBase is IntegrationTest {
     address internal vaultProxyAddress;
     IExternalPositionManager internal externalPositionManager;
 
-    EnzymeVersion internal version;
-
-    function __initialize(
-        EnzymeVersion _version,
-        address _aliceOrderManagerAddress,
-        uint16 _instrumentId,
-        uint256 _chainId
-    ) internal {
-        version = _version;
-
+    function __initialize(address _aliceOrderManagerAddress, uint16 _instrumentId, uint256 _chainId) internal {
         setUpNetworkEnvironment({_chainId: _chainId});
 
-        externalPositionManager = IExternalPositionManager(getExternalPositionManagerAddressForVersion(version));
+        externalPositionManager = core.release.externalPositionManager;
         aliceTypeId = deployAlice({
             _aliceOrderManagerAddress: _aliceOrderManagerAddress,
             _wrappedNativeAssetAddress: address(wrappedNativeToken)
@@ -73,15 +66,20 @@ abstract contract AliceTestBase is IntegrationTest {
         aliceOwner = aliceOrderManager.aliceKey();
         liquidityPoolContract = aliceOrderManager.liquidityPoolContract();
 
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         vm.prank(fundOwner);
         aliceExternalPosition = IAlicePositionLib(
-            createExternalPositionForVersion({
-                _version: version,
-                _comptrollerProxyAddress: comptrollerProxyAddress,
+            createExternalPosition({
+                _externalPositionManager: core.release.externalPositionManager,
+                _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
                 _typeId: aliceTypeId,
-                _initializationData: ""
+                _initializationData: "",
+                _callOnExternalPositionCallArgs: ""
             })
         );
 
@@ -135,8 +133,8 @@ abstract contract AliceTestBase is IntegrationTest {
             _wrappedNativeAssetAddress: _wrappedNativeAssetAddress
         });
 
-        typeId_ = registerExternalPositionTypeForVersion({
-            _version: version,
+        typeId_ = registerExternalPositionType({
+            _externalPositionManager: core.release.externalPositionManager,
             _label: "ALICE",
             _lib: address(alicePositionLib),
             _parser: address(alicePositionParser)
@@ -168,9 +166,9 @@ abstract contract AliceTestBase is IntegrationTest {
     function __placeOrder(IAlicePositionProd.PlaceOrderActionArgs memory _args) private {
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(aliceExternalPosition),
             _actionId: uint256(IAlicePositionProd.Actions.PlaceOrder),
             _actionArgs: abi.encode(_args)
@@ -180,9 +178,9 @@ abstract contract AliceTestBase is IntegrationTest {
     function __refundOrder(IAlicePositionProd.RefundOrderActionArgs memory _args) private {
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(aliceExternalPosition),
             _actionId: uint256(IAlicePositionProd.Actions.RefundOrder),
             _actionArgs: abi.encode(_args)
@@ -192,9 +190,9 @@ abstract contract AliceTestBase is IntegrationTest {
     function __sweep(IAlicePositionProd.SweepActionArgs memory _args) private {
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(aliceExternalPosition),
             _actionId: uint256(IAlicePositionProd.Actions.Sweep),
             _actionArgs: abi.encode(_args)
@@ -653,18 +651,6 @@ abstract contract AliceTestBase is IntegrationTest {
 contract AliceWbtcUsdcTestEthereum is AliceTestBase {
     function setUp() public override {
         __initialize({
-            _version: EnzymeVersion.Current,
-            _aliceOrderManagerAddress: ETHEREUM_ALICE_ORDER_MANAGER,
-            _instrumentId: ETHEREUM_ALICE_WBTC_USDC_INSTRUMENT_ID,
-            _chainId: ETHEREUM_CHAIN_ID
-        });
-    }
-}
-
-contract AliceWbtcUsdcTestEthereumV4 is AliceTestBase {
-    function setUp() public override {
-        __initialize({
-            _version: EnzymeVersion.V4,
             _aliceOrderManagerAddress: ETHEREUM_ALICE_ORDER_MANAGER,
             _instrumentId: ETHEREUM_ALICE_WBTC_USDC_INSTRUMENT_ID,
             _chainId: ETHEREUM_CHAIN_ID
@@ -676,18 +662,6 @@ contract AliceWbtcUsdcTestEthereumV4 is AliceTestBase {
 contract AliceEthUsdcTestEthereum is AliceTestBase {
     function setUp() public override {
         __initialize({
-            _version: EnzymeVersion.Current,
-            _aliceOrderManagerAddress: ETHEREUM_ALICE_ORDER_MANAGER,
-            _instrumentId: ETHEREUM_ALICE_ETH_USDC_INSTRUMENT_ID,
-            _chainId: ETHEREUM_CHAIN_ID
-        });
-    }
-}
-
-contract AliceEthUsdcTestEthereumV4 is AliceTestBase {
-    function setUp() public override {
-        __initialize({
-            _version: EnzymeVersion.V4,
             _aliceOrderManagerAddress: ETHEREUM_ALICE_ORDER_MANAGER,
             _instrumentId: ETHEREUM_ALICE_ETH_USDC_INSTRUMENT_ID,
             _chainId: ETHEREUM_CHAIN_ID

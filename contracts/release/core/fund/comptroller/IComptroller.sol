@@ -10,35 +10,13 @@
 */
 
 pragma solidity >=0.6.0 <0.9.0;
-pragma experimental ABIEncoderV2;
 
 import {IVault} from "../vault/IVault.sol";
 
 /// @title IComptroller Interface
 /// @author Enzyme Foundation <security@enzyme.finance>
 interface IComptroller {
-    struct ConfigInput {
-        // The asset in which the fund's value should be denominated
-        address denominationAsset;
-        // A timelock after the last time shares were bought for an account
-        // that must expire before that account transfers or redeems their shares
-        uint256 sharesActionTimelock;
-        // Encoded data for the fees to be enabled for the fund
-        bytes feeManagerConfigData;
-        // Encoded data for the policies to be enabled for the fund
-        bytes policyManagerConfigData;
-        // Arbitrary extensions to be enabled for the fund
-        ExtensionConfigInput[] extensionsConfig;
-    }
-
-    struct ExtensionConfigInput {
-        // The extension address
-        address extension;
-        // Encoded data for the extension-specific config
-        bytes configData;
-    }
-
-    function activate() external;
+    function activate(bool _isMigration) external;
 
     function buyBackProtocolFeeShares(uint256 _sharesAmount) external;
 
@@ -56,7 +34,13 @@ interface IComptroller {
 
     function callOnExtension(address _extension, uint256 _actionId, bytes calldata _callArgs) external;
 
-    function deactivate() external;
+    function deployGasRelayPaymaster() external;
+
+    function depositToGasRelayPaymaster() external;
+
+    function destructActivated(uint256 _deactivateFeeManagerGasLimit, uint256 _payProtocolFeeGasLimit) external;
+
+    function destructUnactivated() external;
 
     function doesAutoProtocolFeeSharesBuyback() external view returns (bool doesAutoBuyback_);
 
@@ -64,11 +48,15 @@ interface IComptroller {
 
     function getDispatcher() external view returns (address dispatcher_);
 
-    function getExtensions() external view returns (address[] memory extensions_);
+    function getExternalPositionManager() external view returns (address externalPositionManager_);
 
     function getFeeManager() external view returns (address feeManager_);
 
     function getFundDeployer() external view returns (address fundDeployer_);
+
+    function getGasRelayPaymaster() external view returns (address gasRelayPaymaster_);
+
+    function getIntegrationManager() external view returns (address integrationManager_);
 
     function getLastSharesBoughtTimestampForAccount(address _who)
         external
@@ -89,9 +77,7 @@ interface IComptroller {
 
     function getWethToken() external view returns (address wethToken_);
 
-    function init(address _vaultProxy, ConfigInput calldata _config) external;
-
-    function isExtension(address _who) external view returns (bool isExtension_);
+    function init(address _denominationAsset, uint256 _sharesActionTimelock) external;
 
     function permissionedVaultAction(IVault.VaultAction _action, bytes calldata _actionData) external;
 
@@ -114,6 +100,12 @@ interface IComptroller {
     ) external returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_);
 
     function setAutoProtocolFeeSharesBuyback(bool _nextAutoProtocolFeeSharesBuyback) external;
+
+    function setGasRelayPaymaster(address _nextGasRelayPaymaster) external;
+
+    function setVaultProxy(address _vaultProxy) external;
+
+    function shutdownGasRelayPaymaster() external;
 
     function vaultCallOnContract(address _contract, bytes4 _selector, bytes calldata _encodedArgs)
         external

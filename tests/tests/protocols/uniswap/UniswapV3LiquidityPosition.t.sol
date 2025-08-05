@@ -11,9 +11,11 @@ import {IUniswapV3Factory} from "uniswap-v3-core-0.8/contracts/interfaces/IUnisw
 import {TickMath} from "uniswap-v3-core-0.8/contracts/libraries/TickMath.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {INonfungiblePositionManager} from "tests/interfaces/external/INonfungiblePositionManager.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
 import {IUniswapV3LiquidityPositionLib} from "tests/interfaces/internal/IUniswapV3LiquidityPositionLib.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 import {
     ETHEREUM_NON_FUNGIBLE_TOKEN_MANAGER,
@@ -47,27 +49,31 @@ abstract contract TestBase is UniswapV3Utils, IntegrationTest {
     IUniswapV3LiquidityPositionLib internal uniswapV3LiquidityPosition;
 
     // Set by child contract
-    EnzymeVersion internal version;
     address internal factoryAddress;
     address internal nonFungibleTokenManagerAddress;
 
     function setUp() public virtual override {
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         // Deploy all UniswapV3LiquidityPosition dependencies
         uint256 typeId = __deployPositionType({
             _nonFungibleTokenManagerAddress: nonFungibleTokenManagerAddress,
-            _valueInterpreter: IValueInterpreter(address(getValueInterpreterAddressForVersion(version)))
+            _valueInterpreter: core.release.valueInterpreter
         });
 
         // Create an empty UniswapV3LiquidityPosition for the fund
         vm.prank(fundOwner);
         uniswapV3LiquidityPosition = IUniswapV3LiquidityPositionLib(
-            createExternalPositionForVersion({
-                _version: version,
-                _comptrollerProxyAddress: comptrollerProxyAddress,
+            createExternalPosition({
+                _externalPositionManager: core.release.externalPositionManager,
+                _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
                 _typeId: typeId,
-                _initializationData: ""
+                _initializationData: "",
+                _callOnExternalPositionCallArgs: ""
             })
         );
     }
@@ -111,8 +117,8 @@ abstract contract TestBase is UniswapV3Utils, IntegrationTest {
         );
 
         // Register UniswapV3LiquidityPosition type
-        typeId_ = registerExternalPositionTypeForVersion({
-            _version: version,
+        typeId_ = registerExternalPositionType({
+            _externalPositionManager: core.release.externalPositionManager,
             _label: "UNISWAP_V3_LIQUIDITY",
             _lib: uniswapV3LiquidityPositionLibAddress,
             _parser: uniswapV3LiquidityPositionPositionParserAddress
@@ -139,9 +145,9 @@ abstract contract TestBase is UniswapV3Utils, IntegrationTest {
         );
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(uniswapV3LiquidityPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IUniswapV3LiquidityPositionProd.UniswapV3LiquidityPositionActions.Mint)
@@ -158,9 +164,9 @@ abstract contract TestBase is UniswapV3Utils, IntegrationTest {
         bytes memory actionArgs = abi.encode(_nftId, _amount0Desired, _amount1Desired, _amount0Min, _amount1Min);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(uniswapV3LiquidityPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IUniswapV3LiquidityPositionProd.UniswapV3LiquidityPositionActions.AddLiquidity)
@@ -171,9 +177,9 @@ abstract contract TestBase is UniswapV3Utils, IntegrationTest {
         bytes memory actionArgs = abi.encode(_nftId, _liquidity, _amount0Min, _amount1Min);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(uniswapV3LiquidityPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IUniswapV3LiquidityPositionProd.UniswapV3LiquidityPositionActions.RemoveLiquidity)
@@ -184,9 +190,9 @@ abstract contract TestBase is UniswapV3Utils, IntegrationTest {
         bytes memory actionArgs = abi.encode(_nftId);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(uniswapV3LiquidityPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IUniswapV3LiquidityPositionProd.UniswapV3LiquidityPositionActions.Collect)
@@ -197,9 +203,9 @@ abstract contract TestBase is UniswapV3Utils, IntegrationTest {
         bytes memory actionArgs = abi.encode(_nftId, _liquidity, _amount0Min, _amount1Min);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(uniswapV3LiquidityPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IUniswapV3LiquidityPositionProd.UniswapV3LiquidityPositionActions.Purge)
@@ -347,7 +353,7 @@ abstract contract MintTest is TestBase {
             // Nothing should be received
             assertExternalPositionAssetsToReceive({
                 _logs: vm.getRecordedLogs(),
-                _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+                _externalPositionManager: core.release.externalPositionManager,
                 _assets: new address[](0)
             });
 
@@ -436,7 +442,7 @@ abstract contract AddLiquidityTest is TestBase {
             // Nothing should be received
             assertExternalPositionAssetsToReceive({
                 _logs: vm.getRecordedLogs(),
-                _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+                _externalPositionManager: core.release.externalPositionManager,
                 _assets: new address[](0)
             });
 
@@ -493,7 +499,7 @@ abstract contract CollectTest is TestBase {
         // Token0 and token1 should be received
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: assetsToReceive
         });
 
@@ -538,7 +544,7 @@ abstract contract RemoveLiquidityTest is TestBase {
         // Token0 and token1 should be received
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: assetsToReceive
         });
 
@@ -590,7 +596,7 @@ abstract contract PurgeTest is TestBase {
         // Token0 and token1 should be received
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: assetsToReceive
         });
 
@@ -656,7 +662,7 @@ abstract contract PurgeTest is TestBase {
         // Token0 and token1 should be received
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: assetsToReceive
         });
 
@@ -977,24 +983,18 @@ contract UniswapV3LiquidityPositionTestArbitrum is UniswapV3LiquidityPositionTes
 
 contract UniswapV3LiquidityPositionTestEthereumV4 is UniswapV3LiquidityPositionTestEthereum {
     function setUp() public override {
-        version = EnzymeVersion.V4;
-
         super.setUp();
     }
 }
 
 contract UniswapV3LiquidityPositionTestPolygonV4 is UniswapV3LiquidityPositionTestPolygon {
     function setUp() public override {
-        version = EnzymeVersion.V4;
-
         super.setUp();
     }
 }
 
 contract UniswapV3LiquidityPositionTestArbitrumV4 is UniswapV3LiquidityPositionTestArbitrum {
     function setUp() public override {
-        version = EnzymeVersion.V4;
-
         super.setUp();
     }
 }

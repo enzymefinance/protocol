@@ -12,6 +12,8 @@ import {ICompoundV3CometRewards} from "tests/interfaces/external/ICompoundV3Come
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
 import {ICompoundV3Adapter} from "tests/interfaces/internal/ICompoundV3Adapter.sol";
 import {ICompoundV3CTokenListOwner} from "tests/interfaces/internal/ICompoundV3CTokenListOwner.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 import {
     ETHEREUM_COMPOUND_V3_CONFIGURATOR,
@@ -35,11 +37,12 @@ abstract contract CompoundV3TestBase is IntegrationTest {
     address internal compoundV3ConfiguratorAddress;
     ICompoundV3CometRewards internal compoundV3Rewards;
 
-    // Set by child contract
-    EnzymeVersion internal version;
-
     function setUp() public virtual override {
-        (comptrollerProxyAddress, vaultProxyAddress, vaultOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, vaultOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         (, uint256 cTokenListId) = __deployCompoundV3CTokenListOwner({
             _addressListRegistry: core.persistent.addressListRegistry,
@@ -47,7 +50,7 @@ abstract contract CompoundV3TestBase is IntegrationTest {
         });
 
         adapter = __deployAdapter({
-            _integrationManagerAddress: getIntegrationManagerAddressForVersion(version),
+            _integrationManagerAddress: address(core.release.integrationManager),
             _compoundV3Configurator: compoundV3ConfiguratorAddress,
             _compoundV3Rewards: compoundV3Rewards,
             _addressListRegistry: core.persistent.addressListRegistry,
@@ -86,10 +89,10 @@ abstract contract CompoundV3TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_cTokens);
 
         vm.prank(vaultOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: ICompoundV3Adapter.claimRewards.selector,
             _actionArgs: actionArgs
         });
@@ -99,10 +102,10 @@ abstract contract CompoundV3TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_cToken, _underlyingAmount);
 
         vm.prank(vaultOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: ICompoundV3Adapter.lend.selector,
             _actionArgs: actionArgs
         });
@@ -112,10 +115,10 @@ abstract contract CompoundV3TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_cToken, _amount);
 
         vm.prank(vaultOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: ICompoundV3Adapter.redeem.selector,
             _actionArgs: actionArgs
         });
@@ -123,11 +126,16 @@ abstract contract CompoundV3TestBase is IntegrationTest {
 
     // MISC HELPERS
 
-    function __v4registerCTokensAndUnderlyings(address[] memory _cTokens) internal {
+    function __registerCTokensAndUnderlyings(address[] memory _cTokens) internal {
         for (uint256 i = 0; i < _cTokens.length; i++) {
-            v4AddPrimitiveWithTestAggregator({_tokenAddress: _cTokens[i], _skipIfRegistered: true});
+            addPrimitiveWithTestAggregator({
+                _valueInterpreter: core.release.valueInterpreter,
+                _tokenAddress: _cTokens[i],
+                _skipIfRegistered: true
+            });
 
-            v4AddPrimitiveWithTestAggregator({
+            addPrimitiveWithTestAggregator({
+                _valueInterpreter: core.release.valueInterpreter,
                 _tokenAddress: ICompoundV3Comet(_cTokens[i]).baseToken(),
                 _skipIfRegistered: true
             });
@@ -261,6 +269,8 @@ contract CompoundV3TestEthereum is CompoundV3Test {
         regular18DecimalCToken = IERC20(ETHEREUM_COMPOUND_V3_CWETH);
         non18DecimalCToken = IERC20(ETHEREUM_COMPOUND_V3_CUSDC);
 
+        __registerCTokensAndUnderlyings(toArray(address(non18DecimalCToken), address(regular18DecimalCToken)));
+
         super.setUp();
     }
 
@@ -296,6 +306,8 @@ contract CompoundV3TestPolygon is CompoundV3Test {
 
         non18DecimalCToken = IERC20(POLYGON_COMPOUND_V3_CUSDC);
 
+        __registerCTokensAndUnderlyings(toArray(address(non18DecimalCToken)));
+
         super.setUp();
     }
 
@@ -309,25 +321,5 @@ contract CompoundV3TestPolygon is CompoundV3Test {
 
     function test_claimRewards_success() public {
         __test_claimRewards_success(toArray(address(non18DecimalCToken)));
-    }
-}
-
-contract CompoundV3TestEthereumV4 is CompoundV3TestEthereum {
-    function setUp() public override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
-
-        __v4registerCTokensAndUnderlyings(toArray(address(non18DecimalCToken), address(regular18DecimalCToken)));
-    }
-}
-
-contract CompoundV3TestPolygonV4 is CompoundV3TestPolygon {
-    function setUp() public override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
-
-        __v4registerCTokensAndUnderlyings(toArray(address(non18DecimalCToken)));
     }
 }

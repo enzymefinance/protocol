@@ -11,9 +11,11 @@ import {ITheGraphController} from "tests/interfaces/external/ITheGraphController
 import {ITheGraphEpochManager} from "tests/interfaces/external/ITheGraphEpochManager.sol";
 import {ITheGraphStaking} from "tests/interfaces/external/ITheGraphStaking.sol";
 
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {ITheGraphDelegationPositionLib} from "tests/interfaces/internal/ITheGraphDelegationPositionLib.sol";
 import {ITheGraphDelegationPositionParser} from "tests/interfaces/internal/ITheGraphDelegationPositionParser.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 // ETHEREUM MAINNET CONSTANTS
 address constant ETHEREUM_THE_GRAPH_CONTROLLER = 0x24CCD4D3Ac8529fF08c58F74ff6755036E616117;
@@ -51,17 +53,12 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
     address internal vaultProxyAddress;
     IExternalPositionManager internal externalPositionManager;
 
-    EnzymeVersion internal version;
-
     function __initialize(
-        EnzymeVersion _version,
         uint256 _chainId,
         uint256 _forkBlock,
         address _theGraphControllerAddress,
         address[] memory _indexerAddresses
     ) internal {
-        version = _version;
-
         setUpNetworkEnvironment({_chainId: _chainId, _forkBlock: _forkBlock});
 
         theGraphController = ITheGraphController(_theGraphControllerAddress);
@@ -71,22 +68,27 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
         grtToken = IERC20(theGraphController.getContractProxy(keccak256("GraphToken")));
         indexers = _indexerAddresses;
 
-        externalPositionManager = IExternalPositionManager(getExternalPositionManagerAddressForVersion(version));
+        externalPositionManager = IExternalPositionManager(core.release.externalPositionManager);
         (theGraphDelegationPositionLib, theGraphDelegationPositionParser, theGraphDelegationTypeId) =
         deployTheGraphDelegation({
             _theGraphStakingAddress: address(theGraphStaking),
             _grtTokenAddress: address(grtToken)
         });
 
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        (IComptrollerLib comptrollerProxy, IVaultLib vaultProxy, address owner) =
+            createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
+        fundOwner = owner;
 
         vm.prank(fundOwner);
         theGraphDelegationExternalPosition = ITheGraphDelegationPositionLib(
-            createExternalPositionForVersion({
-                _version: version,
-                _comptrollerProxyAddress: comptrollerProxyAddress,
+            createExternalPosition({
+                _externalPositionManager: externalPositionManager,
+                _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
                 _typeId: theGraphDelegationTypeId,
-                _initializationData: ""
+                _initializationData: "",
+                _callOnExternalPositionCallArgs: ""
             })
         );
 
@@ -121,8 +123,8 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
         });
         theGraphDelegationPositionParser_ = deployTheGraphDelegationPositionParser({_grtTokenAddress: _grtTokenAddress});
 
-        typeId_ = registerExternalPositionTypeForVersion({
-            _version: version,
+        typeId_ = registerExternalPositionType({
+            _externalPositionManager: externalPositionManager,
             _label: "THE_GRAPH_DELEGATION",
             _lib: address(theGraphDelegationPositionLib_),
             _parser: address(theGraphDelegationPositionParser_)
@@ -156,9 +158,9 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
 
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(theGraphDelegationExternalPosition),
             _actionId: uint256(ITheGraphDelegationPositionProd.Actions.Delegate),
             _actionArgs: actionArgs
@@ -170,9 +172,9 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
 
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(theGraphDelegationExternalPosition),
             _actionId: uint256(ITheGraphDelegationPositionProd.Actions.Undelegate),
             _actionArgs: actionArgs
@@ -184,9 +186,9 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
 
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(theGraphDelegationExternalPosition),
             _actionId: uint256(ITheGraphDelegationPositionProd.Actions.Withdraw),
             _actionArgs: actionArgs
@@ -457,11 +459,10 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
 }
 
 abstract contract TheGraphDelegationTestEthereumBase is TheGraphDelegationTestBase {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         __initialize({
             _chainId: ETHEREUM_CHAIN_ID,
             _forkBlock: ETHEREUM_BLOCK_TIME_SENSITIVE_THE_GRAPH,
-            _version: _version,
             _theGraphControllerAddress: ETHEREUM_THE_GRAPH_CONTROLLER,
             _indexerAddresses: toArray(ETHEREUM_THE_GRAPH_INDEXER_1, ETHEREUM_THE_GRAPH_INDEXER_2)
         });
@@ -470,22 +471,15 @@ abstract contract TheGraphDelegationTestEthereumBase is TheGraphDelegationTestBa
 
 contract TheGraphDelegationTestEthereum is TheGraphDelegationTestEthereumBase {
     function setUp() public override {
-        __initialize({_version: EnzymeVersion.Current});
-    }
-}
-
-contract TheGraphDelegationTestEthereumV4 is TheGraphDelegationTestEthereumBase {
-    function setUp() public override {
-        __initialize({_version: EnzymeVersion.V4});
+        __initialize();
     }
 }
 
 abstract contract TheGraphDelegationTestArbitrumBase is TheGraphDelegationTestBase {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         __initialize({
             _chainId: ARBITRUM_CHAIN_ID,
             _forkBlock: ARBITRUM_BLOCK_LATEST,
-            _version: _version,
             _theGraphControllerAddress: ARBITRUM_THE_GRAPH_CONTROLLER,
             _indexerAddresses: toArray(ARBITRUM_THE_GRAPH_INDEXER_1, ARBITRUM_THE_GRAPH_INDEXER_2)
         });
@@ -494,12 +488,6 @@ abstract contract TheGraphDelegationTestArbitrumBase is TheGraphDelegationTestBa
 
 contract TheGraphDelegationTestArbitrum is TheGraphDelegationTestArbitrumBase {
     function setUp() public override {
-        __initialize({_version: EnzymeVersion.Current});
-    }
-}
-
-contract TheGraphDelegationTestArbitrumV4 is TheGraphDelegationTestArbitrumBase {
-    function setUp() public override {
-        __initialize({_version: EnzymeVersion.V4});
+        __initialize();
     }
 }

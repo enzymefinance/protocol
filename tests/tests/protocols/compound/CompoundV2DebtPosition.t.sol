@@ -11,10 +11,12 @@ import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {ICompoundV2CERC20} from "tests/interfaces/external/ICompoundV2CERC20.sol";
 import {ICompoundV2CEther} from "tests/interfaces/external/ICompoundV2CEther.sol";
 import {ICompoundV2Comptroller} from "tests/interfaces/external/ICompoundV2Comptroller.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {ICompoundDebtPositionLib} from "tests/interfaces/internal/ICompoundDebtPositionLib.sol";
-import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
+import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {ICompoundPriceFeed} from "tests/interfaces/internal/ICompoundPriceFeed.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {ETHEREUM_COMPTROLLER} from "./CompoundV2Constants.sol";
 
 abstract contract TestBase is IntegrationTest {
@@ -33,18 +35,19 @@ abstract contract TestBase is IntegrationTest {
     address internal compToken;
     ICompoundPriceFeed internal priceFeed;
 
-    // Set by child contract
-    EnzymeVersion internal version;
-
     function setUp() public virtual override {
-        (comptrollerProxyAddress, vaultProxyAddress, vaultOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, vaultOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         // Deploy all CompoundV2Debt dependencies
         (uint256 typeId, address _priceFeed) = __deployPositionType({
-            _externalPositionManagerAddress: getExternalPositionManagerAddressForVersion(version),
+            _externalPositionManagerAddress: address(core.release.externalPositionManager),
             _wethToken: address(wethToken),
-            _fundDeployerAddress: getFundDeployerAddressForVersion(version),
-            _valueInterpreterAddress: getValueInterpreterAddressForVersion(version),
+            _fundDeployerAddress: address(core.release.fundDeployer),
+            _valueInterpreterAddress: address(core.release.valueInterpreter),
             _cETH: address(cETH),
             _compToken: compToken,
             _compoundV2Comptroller: compoundV2Comptroller
@@ -55,11 +58,12 @@ abstract contract TestBase is IntegrationTest {
         // Create an empty CompoundV2Debt for the fund
         vm.prank(vaultOwner);
         compoundV2DebtPosition = ICompoundDebtPositionLib(
-            createExternalPositionForVersion({
-                _version: version,
-                _comptrollerProxyAddress: comptrollerProxyAddress,
+            createExternalPosition({
+                _externalPositionManager: core.release.externalPositionManager,
+                _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
                 _typeId: typeId,
-                _initializationData: ""
+                _initializationData: "",
+                _callOnExternalPositionCallArgs: ""
             })
         );
     }
@@ -135,9 +139,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_cTokens, _amounts, "");
 
         vm.prank(vaultOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(compoundV2DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(ICompoundDebtPositionProd.ExternalPositionActions.AddCollateral)
@@ -148,9 +152,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_cTokens, _amounts, "");
 
         vm.prank(vaultOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(compoundV2DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(ICompoundDebtPositionProd.ExternalPositionActions.RemoveCollateral)
@@ -163,9 +167,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_underlyings, _amounts, abi.encode(_cTokens));
 
         vm.prank(vaultOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(compoundV2DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(ICompoundDebtPositionProd.ExternalPositionActions.Borrow)
@@ -176,9 +180,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_underlyings, _amounts, "");
 
         vm.prank(vaultOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(compoundV2DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(ICompoundDebtPositionProd.ExternalPositionActions.RepayBorrow)
@@ -187,9 +191,9 @@ abstract contract TestBase is IntegrationTest {
 
     function __claimComp() internal {
         vm.prank(vaultOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(compoundV2DebtPosition),
             _actionArgs: abi.encode(new address[](0), new uint256[](0), ""),
             _actionId: uint256(ICompoundDebtPositionProd.ExternalPositionActions.ClaimComp)
@@ -203,16 +207,15 @@ abstract contract TestBase is IntegrationTest {
 
     function __registerCTokensAndUnderlyings(address[] memory _cTokens) internal {
         for (uint256 i = 0; i < _cTokens.length; i++) {
-            if (version == EnzymeVersion.V4) {
-                v4AddPrimitiveWithTestAggregator({
-                    _tokenAddress: __getCTokenUnderlying(ICompoundV2CERC20(_cTokens[i])),
-                    _skipIfRegistered: true
-                });
-            }
+            addPrimitiveWithTestAggregator({
+                _valueInterpreter: core.release.valueInterpreter,
+                _tokenAddress: __getCTokenUnderlying(ICompoundV2CERC20(_cTokens[i])),
+                _skipIfRegistered: true
+            });
 
             // cETH is already registered in the CompoundPriceFeed constructor
             if (_cTokens[i] != address(cETH)) {
-                vm.prank(IFundDeployer(getFundDeployerAddressForVersion(version)).getOwner());
+                vm.prank(core.release.fundDeployer.getOwner());
 
                 ICompoundPriceFeed(priceFeed).addCTokens(toArray(_cTokens[i]));
             }
@@ -258,7 +261,7 @@ abstract contract AddCollateralTest is TestBase {
         // Assert assetsToReceive was correctly formatted (no assets in this case)
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -317,7 +320,7 @@ abstract contract RemoveCollateralTest is TestBase {
         // Assert assetsToReceive was correctly formatted (removed collateral assets)
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: _cTokens
         });
 
@@ -383,7 +386,7 @@ abstract contract BorrowTest is TestBase {
         // Assert assetsToReceive was correctly formatted (borrowed assets)
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: _underlyingsToBorrow
         });
 
@@ -491,7 +494,7 @@ abstract contract RepayBorrowTest is TestBase {
         // Assert assetsToReceive was correctly formatted (no assets in this case)
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -627,7 +630,7 @@ abstract contract ClaimCompTest is TestBase {
         // Assert assetsToReceive was correctly formatted (COMP only)
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: toArray(compToken)
         });
 
@@ -793,13 +796,5 @@ contract CompoundV2DebtPositionTestEthereum is CompoundV2DebtPositionTest {
             _cTokens: toArray(ETHEREUM_COMPOUND_V2_CDAI),
             _amounts: toArray(10_000 * assetUnit(IERC20(ETHEREUM_COMPOUND_V2_CDAI)))
         });
-    }
-}
-
-contract CompoundV2DebtPositionTestEthereumV4 is CompoundV2DebtPositionTestEthereum {
-    function setUp() public override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
     }
 }

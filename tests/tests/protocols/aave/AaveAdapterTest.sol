@@ -27,25 +27,37 @@ abstract contract AaveAdapterTestBase is IntegrationTest {
     IERC20 private regular18DecimalUnderlying;
     IERC20 private non18DecimalUnderlying;
 
-    EnzymeVersion private version;
-
     function __initializeAaveAdapterTestBase(
-        EnzymeVersion _version,
         address _adapterAddress,
         address _lendingPool,
         address _lendingPoolAddressProvider,
         IERC20 _regular18DecimalUnderlying,
         IERC20 _non18DecimalUnderlying
     ) internal {
-        version = _version;
-
         adapter = _adapterAddress;
         lendingPool = _lendingPool;
         lendingPoolAddressProvider = _lendingPoolAddressProvider;
         regular18DecimalUnderlying = _regular18DecimalUnderlying;
         non18DecimalUnderlying = _non18DecimalUnderlying;
 
-        (comptrollerProxyAddress, vaultProxyAddress, vaultOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, vaultOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
+
+        // Register assets in the asset universe
+        address[] memory tokenAddresses = new address[](4);
+        tokenAddresses[0] = address(_regular18DecimalUnderlying);
+        tokenAddresses[1] = address(_non18DecimalUnderlying);
+        tokenAddresses[2] = __getATokenAddress(address(_regular18DecimalUnderlying));
+        tokenAddresses[3] = __getATokenAddress(address(_non18DecimalUnderlying));
+
+        addPrimitivesWithTestAggregator({
+            _valueInterpreter: core.release.valueInterpreter,
+            _tokenAddresses: tokenAddresses,
+            _skipIfRegistered: true
+        });
     }
 
     // ACTION HELPERS
@@ -54,10 +66,10 @@ abstract contract AaveAdapterTestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_aToken, _amount);
 
         vm.prank(vaultOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: adapter,
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: adapter,
             _selector: IAaveV2Adapter.lend.selector, // selectors are the same for V2 and V3
             _actionArgs: actionArgs
         });
@@ -67,10 +79,10 @@ abstract contract AaveAdapterTestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_aToken, _amount);
 
         vm.prank(vaultOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: adapter,
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: adapter,
             _selector: IAaveV2Adapter.redeem.selector, // selectors are the same for V2 and V3
             _actionArgs: actionArgs
         });
@@ -135,10 +147,12 @@ abstract contract AaveAdapterTestBase is IntegrationTest {
             returnData: abi.encode(fakeUnderlying)
         });
 
-        // If v4, register incoming asset to pass the asset universe validation
-        if (version == EnzymeVersion.V4) {
-            v4AddPrimitiveWithTestAggregator({_tokenAddress: fakeAToken, _skipIfRegistered: true});
-        }
+        // Register incoming asset to pass the asset universe validation
+        addPrimitiveWithTestAggregator({
+            _valueInterpreter: core.release.valueInterpreter,
+            _tokenAddress: fakeAToken,
+            _skipIfRegistered: true
+        });
 
         // lend minimal amount
         uint256 amountToLend = 1 + ROUNDING_BUFFER;
@@ -212,10 +226,11 @@ abstract contract AaveAdapterTestBase is IntegrationTest {
             returnData: abi.encode(fakeUnderlying)
         });
 
-        // If v4, register incoming asset to pass the asset universe validation
-        if (version == EnzymeVersion.V4) {
-            v4AddPrimitiveWithTestAggregator({_tokenAddress: fakeUnderlying, _skipIfRegistered: true});
-        }
+        addPrimitiveWithTestAggregator({
+            _valueInterpreter: core.release.valueInterpreter,
+            _tokenAddress: fakeUnderlying,
+            _skipIfRegistered: true
+        });
 
         // redeem minimal amount
         uint256 amountToRedeem = 1 + ROUNDING_BUFFER;

@@ -15,11 +15,8 @@ abstract contract ChainlinkLikeWstethPriceFeedTest is IntegrationTest {
     IChainlinkAggregator wstethAggregator;
     IChainlinkAggregator originalStethEthAggregator = IChainlinkAggregator(ETHEREUM_STETH_ETH_AGGREGATOR);
 
-    EnzymeVersion internal version;
-
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         setUpMainnetEnvironment();
-        version = _version;
         wstethAggregator = __deployWstethAggregator();
     }
 
@@ -44,7 +41,7 @@ abstract contract ChainlinkLikeWstethPriceFeedTest is IntegrationTest {
         __reinitialize(ETHEREUM_BLOCK_TIME_SENSITIVE);
 
         addPrimitive({
-            _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion(version)),
+            _valueInterpreter: IValueInterpreter(address(core.release.valueInterpreter)),
             _tokenAddress: ETHEREUM_WSTETH,
             _skipIfRegistered: false,
             _aggregatorAddress: address(wstethAggregator),
@@ -52,8 +49,7 @@ abstract contract ChainlinkLikeWstethPriceFeedTest is IntegrationTest {
         });
 
         // WSTETH/USD price on Jan 26th 2025 https://www.coingecko.com/en/coins/wrapped-steth/historical_data
-        assertValueInUSDForVersion({
-            _version: version,
+        assertValueInUSD({
             _asset: ETHEREUM_WSTETH,
             _amount: assetUnit(IERC20(ETHEREUM_WSTETH)),
             _expected: 3944813217073595265581 // 3944.813217073595265581 USD
@@ -126,12 +122,12 @@ abstract contract ChainlinkLikeWstethPriceFeedTest is IntegrationTest {
 
 contract ChainlinkLikeWstethPriceFeedTestEthereum is ChainlinkLikeWstethPriceFeedTest {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
+        __initialize();
     }
 }
 
 contract ChainlinkLikeWstethPriceFeedTestEthereumV4 is ChainlinkLikeWstethPriceFeedTest {
     function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }

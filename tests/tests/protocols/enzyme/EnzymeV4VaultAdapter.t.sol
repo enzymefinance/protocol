@@ -9,6 +9,7 @@ import {IIntegrationManager as IIntegrationManagerProd} from
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IEnzymeV4VaultAdapter} from "tests/interfaces/internal/IEnzymeV4VaultAdapter.sol";
@@ -26,16 +27,20 @@ abstract contract EnzymeV4VaultAdapterTesBase is IntegrationTest {
 
     IEnzymeV4VaultAdapter internal adapter;
 
-    EnzymeVersion internal version;
+    function __initialize() internal {
+        IComptrollerLib parentComptrollerProxy;
+        IVaultLib parentVaultProxy;
+        (parentComptrollerProxy, parentVaultProxy, parentVaultFundOwner) =
+            createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        parentVaultComptrollerProxyAddress = address(parentComptrollerProxy);
+        parentVaultProxyAddress = address(parentVaultProxy);
 
-    function __initialize(EnzymeVersion _version) internal {
-        version = _version;
-
-        (parentVaultComptrollerProxyAddress, parentVaultProxyAddress, parentVaultFundOwner) =
-            createTradingFundForVersion(version);
-
-        (childVaultComptrollerProxyAddress, childVaultProxyAddress, childVaultFundOwner) =
-            createTradingFundForVersion(version);
+        IComptrollerLib childComptrollerProxy;
+        IVaultLib childVaultProxy;
+        (childComptrollerProxy, childVaultProxy, childVaultFundOwner) =
+            createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        childVaultComptrollerProxyAddress = address(childComptrollerProxy);
+        childVaultProxyAddress = address(childVaultProxy);
         childVaultDenominationAsset = IComptrollerLib(childVaultComptrollerProxyAddress).getDenominationAsset();
 
         adapter = __deployAdapter();
@@ -47,9 +52,7 @@ abstract contract EnzymeV4VaultAdapterTesBase is IntegrationTest {
 
     function __deployAdapter() private returns (IEnzymeV4VaultAdapter adapter_) {
         bytes memory args = abi.encode(
-            getIntegrationManagerAddressForVersion(version),
-            getFundDeployerAddressForVersion(version),
-            core.persistent.dispatcher
+            address(core.release.integrationManager), address(core.release.fundDeployer), core.persistent.dispatcher
         );
         return IEnzymeV4VaultAdapter(deployCode("EnzymeV4VaultAdapter.sol", args));
     }
@@ -62,10 +65,10 @@ abstract contract EnzymeV4VaultAdapterTesBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_actionId, _encodedActionArgs);
 
         vm.prank(parentVaultFundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: parentVaultComptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(parentVaultComptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: IEnzymeV4VaultAdapter.action.selector,
             _actionArgs: actionArgs
         });
@@ -88,7 +91,7 @@ abstract contract EnzymeV4VaultAdapterTesBase is IntegrationTest {
     function test_buyShares_success() public {
         // register childVaultProxyAddress so it can be received as an incoming asset
         addPrimitiveWithTestAggregator({
-            _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion(version)),
+            _valueInterpreter: core.release.valueInterpreter,
             _tokenAddress: childVaultProxyAddress,
             _skipIfRegistered: false
         });
@@ -148,9 +151,8 @@ abstract contract EnzymeV4VaultAdapterTesBase is IntegrationTest {
 
     function test_redeemSharesForSpecificAssets_success() public {
         // buy some shares for parent vault, so it has some shares to redeem
-        buySharesForVersion({
-            _version: version,
-            _comptrollerProxyAddress: childVaultComptrollerProxyAddress,
+        buyShares({
+            _comptrollerProxy: IComptrollerLib(childVaultComptrollerProxyAddress),
             _sharesBuyer: parentVaultProxyAddress,
             _amountToDeposit: assetUnit(IERC20(childVaultDenominationAsset))
         });
@@ -213,10 +215,10 @@ abstract contract EnzymeV4VaultAdapterTesBase is IntegrationTest {
         vm.expectRevert(IEnzymeV4VaultAdapter.EnzymeV4VaultAdapter__InvalidAction.selector);
 
         vm.prank(parentVaultFundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: parentVaultComptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(parentVaultComptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: IComptrollerLib.buyShares.selector, // invalid selector
             _actionArgs: abi.encode("")
         });
@@ -227,38 +229,38 @@ contract EnzymeV4VaultAdapterStandaloneTest is EnzymeV4VaultAdapterTesBase {
     function setUp() public override {
         setUpStandaloneEnvironment();
 
-        __initialize(EnzymeVersion.Current);
+        __initialize();
     }
 }
 
-contract EnzymeV4VaultAdapterEthereumV4Test is EnzymeV4VaultAdapterTesBase {
+contract EnzymeV4VaultAdapterEthereumTest is EnzymeV4VaultAdapterTesBase {
     function setUp() public override {
         setUpLiveMainnetEnvironment();
 
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }
 
-contract EnzymeV4VaultAdapterPolygonV4Test is EnzymeV4VaultAdapterTesBase {
+contract EnzymeV4VaultAdapterPolygonTest is EnzymeV4VaultAdapterTesBase {
     function setUp() public override {
         setUpLivePolygonEnvironment();
 
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }
 
-contract EnzymeV4VaultAdapterArbitrumV4Test is EnzymeV4VaultAdapterTesBase {
+contract EnzymeV4VaultAdapterArbitrumTest is EnzymeV4VaultAdapterTesBase {
     function setUp() public override {
         setUpLiveArbitrumEnvironment();
 
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }
 
-contract EnzymeV4VaultAdapterBaseChainV4Test is EnzymeV4VaultAdapterTesBase {
+contract EnzymeV4VaultAdapterBaseChainTest is EnzymeV4VaultAdapterTesBase {
     function setUp() public override {
         setUpLiveBaseChainEnvironment();
 
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }

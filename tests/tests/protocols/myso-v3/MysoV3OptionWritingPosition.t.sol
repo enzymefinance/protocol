@@ -9,6 +9,8 @@ import {IMysoV3OptionWritingPosition as IMysoV3OptionWritingPositionProd} from
     "contracts/release/extensions/external-position-manager/external-positions/myso-v3/IMysoV3OptionWritingPosition.sol";
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {IMysoV3DataTypes} from "tests/interfaces/external/IMysoV3DataTypes.sol";
 import {IMysoV3Router} from "tests/interfaces/external/IMysoV3Router.sol";
 import {IMysoV3Escrow} from "tests/interfaces/external/IMysoV3Escrow.sol";
@@ -43,12 +45,8 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
     IERC20 settlementToken;
     uint256 underlyingTokenPrice;
 
-    // Set by child contract
-    EnzymeVersion version;
-
     function __initialize(
         uint256 _chainId,
-        EnzymeVersion _version,
         uint256 _forkBlock,
         address _underlyingTokenAddress,
         address _settlementTokenAddress,
@@ -58,11 +56,14 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
 
         setUpNetworkEnvironment({_chainId: _chainId, _forkBlock: _forkBlock});
 
-        version = _version;
         mysoRouter = IMysoV3Router(_mysoRouterAddress);
 
         // Create a fund
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        (IComptrollerLib comptrollerProxy, IVaultLib vaultProxy, address fundOwner_) =
+            createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
+        fundOwner = fundOwner_;
 
         // Deploy all position dependencies
         uint256 typeId = __deployPositionType();
@@ -78,11 +79,12 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         // Create an empty MysoV3OptionWritingPosition for the fund
         vm.prank(fundOwner);
         mysoV3OptionWritingPosition = IMysoV3OptionWritingPositionLib(
-            createExternalPositionForVersion({
-                _version: version,
-                _comptrollerProxyAddress: comptrollerProxyAddress,
+            createExternalPosition({
+                _externalPositionManager: core.release.externalPositionManager,
+                _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
                 _typeId: typeId,
-                _initializationData: ""
+                _initializationData: "",
+                _callOnExternalPositionCallArgs: ""
             })
         );
 
@@ -121,8 +123,8 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         address parserAddress = __deployParser();
 
         // Register position type
-        typeId_ = registerExternalPositionTypeForVersion({
-            _version: version,
+        typeId_ = registerExternalPositionType({
+            _externalPositionManager: core.release.externalPositionManager,
             _label: "MYSO_V3",
             _lib: libAddress,
             _parser: parserAddress
@@ -141,9 +143,9 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         IMysoV3OptionWritingPositionProd.CreateEscrowByTakingQuoteActionArgs memory _actionArgs
     ) internal {
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(mysoV3OptionWritingPosition),
             _actionId: uint256(IMysoV3OptionWritingPositionProd.Actions.CreateEscrowByTakingQuote),
             _actionArgs: abi.encode(_actionArgs)
@@ -154,9 +156,9 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         IMysoV3OptionWritingPositionProd.CreateEscrowByStartingAuctionActionArgs memory _actionArgs
     ) internal {
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(mysoV3OptionWritingPosition),
             _actionId: uint256(IMysoV3OptionWritingPositionProd.Actions.CreateEscrowByStartingAuction),
             _actionArgs: abi.encode(_actionArgs)
@@ -167,9 +169,9 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         internal
     {
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(mysoV3OptionWritingPosition),
             _actionId: uint256(IMysoV3OptionWritingPositionProd.Actions.CloseAndSweepEscrows),
             _actionArgs: abi.encode(_actionArgs)
@@ -181,9 +183,9 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
     ) internal {
         vm.prank(tradingFirm);
         vm.expectRevert("receiveCallFromComptroller: Unauthorized");
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(mysoV3OptionWritingPosition),
             _actionId: uint256(IMysoV3OptionWritingPositionProd.Actions.CloseAndSweepEscrows),
             _actionArgs: abi.encode(_actionArgs)
@@ -194,9 +196,9 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         IMysoV3OptionWritingPositionProd.WithdrawTokensFromEscrowsActionArgs memory _actionArgs
     ) internal {
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(mysoV3OptionWritingPosition),
             _actionId: uint256(IMysoV3OptionWritingPositionProd.Actions.WithdrawTokensFromEscrows),
             _actionArgs: abi.encode(_actionArgs)
@@ -205,9 +207,9 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
 
     function __sweep(IMysoV3OptionWritingPositionProd.SweepActionArgs memory _actionArgs) internal {
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(mysoV3OptionWritingPosition),
             _actionId: uint256(IMysoV3OptionWritingPositionProd.Actions.Sweep),
             _actionArgs: abi.encode(_actionArgs)
@@ -432,7 +434,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         // Assert assetsToReceive was correctly formatted
         assertExternalPositionAssetsToReceive({
             _logs: logs,
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: IExternalPositionManager(core.release.externalPositionManager),
             _assets: toArray(ETHEREUM_WETH, ETHEREUM_USDC)
         });
 
@@ -936,7 +938,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         // Assert assetsToReceive was correctly formatted
         assertExternalPositionAssetsToReceive({
             _logs: logs,
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: IExternalPositionManager(core.release.externalPositionManager),
             _assets: toArray(optionInfo.settlementToken)
         });
         assertEq(
@@ -1299,17 +1301,16 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         // Assert assetsToReceive was correctly formatted
         assertExternalPositionAssetsToReceive({
             _logs: logs,
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: IExternalPositionManager(core.release.externalPositionManager),
             _assets: toArray(ETHEREUM_MLN, ETHEREUM_WETH, ETHEREUM_USDC)
         });
     }
 }
 
 abstract contract MysoV3OptionWritingPositionEthereumTestBase is MysoV3OptionWritingPositionTestBase {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         __initialize({
             _chainId: ETHEREUM_CHAIN_ID,
-            _version: _version,
             _forkBlock: ETHEREUM_BLOCK_TIME_SENSITIVE_MYSO_V3,
             _underlyingTokenAddress: ETHEREUM_WETH,
             _settlementTokenAddress: ETHEREUM_USDC,
@@ -1320,12 +1321,6 @@ abstract contract MysoV3OptionWritingPositionEthereumTestBase is MysoV3OptionWri
 
 contract MysoV3OptionWritingPositionEthereumTest is MysoV3OptionWritingPositionEthereumTestBase {
     function setUp() public override {
-        __initialize({_version: EnzymeVersion.Current});
-    }
-}
-
-contract MysoV3OptionWritingPositionEthereumTestV4 is MysoV3OptionWritingPositionEthereumTestBase {
-    function setUp() public override {
-        __initialize({_version: EnzymeVersion.V4});
+        __initialize();
     }
 }

@@ -25,6 +25,7 @@ import {ICurvePriceFeed} from "tests/interfaces/internal/ICurvePriceFeed.sol";
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IIntegrationAdapter} from "tests/interfaces/internal/IIntegrationAdapter.sol";
 import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 import {CurveUtils} from "./CurveUtils.sol";
 
@@ -46,9 +47,6 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
     address[] internal poolAssetAddresses;
     address[] internal poolUnderlyingAddresses;
 
-    // Set by child contract
-    EnzymeVersion internal version;
-
     // Vars defined by child contract
     bool internal isConvex;
     IERC20 internal crvToken;
@@ -65,7 +63,11 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
         // stakingToken can be empty (no staking token)
 
         // Create fund
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         // Store pool assets
         poolAssetAddresses = __getPoolAssets({_pool: poolAddress, _useUnderlying: false});
@@ -73,14 +75,15 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
 
         // Add all pool assets to asset universe to make them receivable
         address[] memory tokensToRegister = poolAssetAddresses.mergeArray(poolUnderlyingAddresses);
-        // If v4, register incoming asset to pass the asset universe validation
-        if (version == EnzymeVersion.V4) {
-            v4AddPrimitivesWithTestAggregator({_tokenAddresses: tokensToRegister, _skipIfRegistered: true});
-        }
+        addPrimitivesWithTestAggregator({
+            _valueInterpreter: core.release.valueInterpreter,
+            _tokenAddresses: tokensToRegister,
+            _skipIfRegistered: true
+        });
         // lpToken and stakingToken must be registered on the CurvePriceFeed
         // _invariantProxyAssets and _reentrantVirtualPrices are arbitrary
         // _gaugeTokens is not needed for Convex
-        vm.prank(IFundDeployer(getFundDeployerAddressForVersion(version)).getOwner());
+        vm.prank(core.release.fundDeployer.getOwner());
         priceFeed.addPools({
             _pools: toArray(poolAddress),
             _invariantProxyAssets: toArray(address(getCoreToken("USD"))),
@@ -90,7 +93,7 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
         });
         // Convex tests will register its own stakingToken
         addDerivatives({
-            _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion(version)),
+            _valueInterpreter: core.release.valueInterpreter,
             _tokenAddresses: isConvex ? toArray(address(lpToken)) : toArray(address(lpToken), address(stakingToken)),
             _priceFeedAddresses: isConvex ? toArray(address(priceFeed)) : toArray(address(priceFeed), address(priceFeed)),
             _skipIfRegistered: false
@@ -103,10 +106,10 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
         bytes memory actionArgs = abi.encode(address(stakingToken));
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: ICurveLiquidityAdapter.claimRewards.selector,
             _actionArgs: actionArgs
         });
@@ -126,10 +129,10 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
         );
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: ICurveLiquidityAdapter.lendAndStake.selector,
             _actionArgs: actionArgs
         });
@@ -139,10 +142,10 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
         bytes memory actionArgs = abi.encode(poolAddress, address(stakingToken), _amount);
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: ICurveLiquidityAdapter.stake.selector,
             _actionArgs: actionArgs
         });
@@ -152,10 +155,10 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
         bytes memory actionArgs = abi.encode(poolAddress, address(stakingToken), _amount);
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: ICurveLiquidityAdapter.unstake.selector,
             _actionArgs: actionArgs
         });
@@ -177,10 +180,10 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
         );
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: ICurveLiquidityAdapter.unstakeAndRedeem.selector,
             _actionArgs: actionArgs
         });
@@ -273,14 +276,11 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
         // Setup rewards claiming on the Minter (mainnet Curve tests only)
         if (__isCurveMainnetTest()) {
             // Approve adapter to call Minter on behalf of the vault
-            // for V4 fork it is already registered
-            if (version != EnzymeVersion.V4) {
-                registerVaultCall({
-                    _fundDeployer: IFundDeployer(getFundDeployerAddressForVersion(version)),
-                    _contract: ETHEREUM_MINTER_ADDRESS,
-                    _selector: ICurveMinter.toggle_approve_mint.selector
-                });
-            }
+            registerVaultCall({
+                _fundDeployer: core.release.fundDeployer,
+                _contract: ETHEREUM_MINTER_ADDRESS,
+                _selector: ICurveMinter.toggle_approve_mint.selector
+            });
             vm.prank(fundOwner);
             IComptrollerLib(comptrollerProxyAddress).vaultCallOnContract({
                 _contract: ETHEREUM_MINTER_ADDRESS,
@@ -512,15 +512,12 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
 abstract contract CurvePoolTest is CurveAndConvexPoolTest {
     function __deployAdapter(address _minterAddress) internal returns (address adapterAddress_) {
         // Validate required vars are set
-        require(
-            getIntegrationManagerAddressForVersion(version) != address(0), "__deployAdapter: integrationManager not set"
-        );
         require(address(priceFeed) != address(0), "__deployAdapter: priceFeed not set");
         require(address(wrappedNativeToken) != address(0), "__deployAdapter: wrappedNativeToken not set");
         require(address(crvToken) != address(0), "__deployAdapter: crvToken not set");
 
         bytes memory args = abi.encode(
-            getIntegrationManagerAddressForVersion(version),
+            address(core.release.integrationManager),
             priceFeed,
             wrappedNativeToken,
             _minterAddress,
@@ -542,7 +539,7 @@ abstract contract EthereumCurvePoolTest is CurvePoolTest {
 
         // Deploy the price feed
         priceFeed = deployPriceFeed({
-            _fundDeployer: IFundDeployer(getFundDeployerAddressForVersion(version)),
+            _fundDeployer: core.release.fundDeployer,
             _addressProviderAddress: ADDRESS_PROVIDER_ADDRESS,
             _poolOwnerAddress: ETHEREUM_POOL_OWNER_ADDRESS,
             _virtualPriceDeviationThreshold: BPS_ONE_PERCENT
@@ -564,7 +561,7 @@ abstract contract PolygonCurvePoolTest is CurvePoolTest {
 
         // Deploy the price feed
         priceFeed = deployPriceFeed({
-            _fundDeployer: IFundDeployer(getFundDeployerAddressForVersion(version)),
+            _fundDeployer: core.release.fundDeployer,
             _addressProviderAddress: ADDRESS_PROVIDER_ADDRESS,
             _poolOwnerAddress: POLYGON_POOL_OWNER_ADDRESS,
             _virtualPriceDeviationThreshold: BPS_ONE_PERCENT
@@ -585,7 +582,7 @@ abstract contract ArbitrumCurvePoolTest is CurvePoolTest {
 
         // Deploy the price feed
         priceFeed = deployPriceFeed({
-            _fundDeployer: IFundDeployer(getFundDeployerAddressForVersion(version)),
+            _fundDeployer: core.release.fundDeployer,
             _addressProviderAddress: ADDRESS_PROVIDER_ADDRESS,
             _poolOwnerAddress: ARBITRUM_POOL_OWNER_ADDRESS,
             _virtualPriceDeviationThreshold: BPS_ONE_PERCENT
@@ -647,38 +644,6 @@ contract PolygonAavePoolTest is PolygonCurvePoolTest {
 //         poolAddress = ARBITRUM_2POOL_ADDRESS;
 //         lpToken = IERC20(ARBITRUM_2POOL_LP_TOKEN_ADDRESS);
 //         stakingToken = IERC20(address(0));
-
-//         super.setUp();
-//     }
-// }
-
-contract EthereumAavePoolTestV4 is EthereumAavePoolTest {
-    function setUp() public override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
-    }
-}
-
-contract EthereumStethNgPoolTestV4 is EthereumStethNgPoolTest {
-    function setUp() public override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
-    }
-}
-
-contract PolygonAavePoolTestV4 is PolygonAavePoolTest {
-    function setUp() public override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
-    }
-}
-
-// contract Arbitrum2PoolTestV4 is Arbitrum2PoolTest {
-//     function setUp() public override {
-//         version = EnzymeVersion.V4;
 
 //         super.setUp();
 //     }

@@ -26,15 +26,16 @@ contract TransferAssetsAdapterTest is IntegrationTest {
     address recipient = makeAddr("TransferRecipient");
     address[] assetAddresses;
 
-    // TODO: make dynamic
-    EnzymeVersion internal version = EnzymeVersion.V4;
-
     function setUp() public override {
         setUpMainnetEnvironment();
 
         transferAssetsAdapter = __deployAdapter();
 
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         // Define a couple assets to use
         // Include USDT since it's a pain
@@ -50,7 +51,7 @@ contract TransferAssetsAdapterTest is IntegrationTest {
     // DEPLOYMENT HELPERS
 
     function __deployAdapter() private returns (ITransferAssetsAdapter transferAssetsAdapter_) {
-        bytes memory args = abi.encode(getIntegrationManagerAddressForVersion(version));
+        bytes memory args = abi.encode(address(core.release.integrationManager));
         return ITransferAssetsAdapter(deployCode("TransferAssetsAdapter.sol", args));
     }
 
@@ -66,11 +67,11 @@ contract TransferAssetsAdapterTest is IntegrationTest {
         );
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _actionArgs: actionArgs,
-            _adapterAddress: address(transferAssetsAdapter),
+            _adapter: address(transferAssetsAdapter),
             _selector: transferAssetsAdapter.transfer.selector
         });
     }

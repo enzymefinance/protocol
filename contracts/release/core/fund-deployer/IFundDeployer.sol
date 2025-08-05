@@ -12,8 +12,6 @@
 pragma solidity >=0.6.0 <0.9.0;
 pragma experimental ABIEncoderV2;
 
-import {IComptroller} from "../fund/comptroller/IComptroller.sol";
-
 /// @title IFundDeployer Interface
 /// @author Enzyme Foundation <security@enzyme.finance>
 interface IFundDeployer {
@@ -28,7 +26,10 @@ interface IFundDeployer {
 
     function createMigrationRequest(
         address _vaultProxy,
-        IComptroller.ConfigInput calldata _comptrollerConfig,
+        address _denominationAsset,
+        uint256 _sharesActionTimelock,
+        bytes calldata _feeManagerConfigData,
+        bytes calldata _policyManagerConfigData,
         bool _bypassPrevReleaseFailure
     ) external returns (address comptrollerProxy_);
 
@@ -36,12 +37,19 @@ interface IFundDeployer {
         address _fundOwner,
         string calldata _fundName,
         string calldata _fundSymbol,
-        IComptroller.ConfigInput calldata _comptrollerConfig
+        address _denominationAsset,
+        uint256 _sharesActionTimelock,
+        bytes calldata _feeManagerConfigData,
+        bytes calldata _policyManagerConfigData
     ) external returns (address comptrollerProxy_, address vaultProxy_);
 
-    function createReconfigurationRequest(address _vaultProxy, IComptroller.ConfigInput calldata _comptrollerConfig)
-        external
-        returns (address comptrollerProxy_);
+    function createReconfigurationRequest(
+        address _vaultProxy,
+        address _denominationAsset,
+        uint256 _sharesActionTimelock,
+        bytes calldata _feeManagerConfigData,
+        bytes calldata _policyManagerConfigData
+    ) external returns (address comptrollerProxy_);
 
     function deregisterBuySharesOnBehalfCallers(address[] calldata _callers) external;
 
@@ -61,6 +69,11 @@ interface IFundDeployer {
 
     function getDispatcher() external view returns (address dispatcher_);
 
+    function getGasLimitsForDestructCall()
+        external
+        view
+        returns (uint256 deactivateFeeManagerGasLimit_, uint256 payProtocolFeeGasLimit_);
+
     function getOwner() external view returns (address owner_);
 
     function getProtocolFeeTracker() external view returns (address protocolFeeTracker_);
@@ -73,8 +86,6 @@ interface IFundDeployer {
     function getReconfigurationTimelock() external view returns (uint256 reconfigurationTimelock_);
 
     function getVaultLib() external view returns (address vaultLib_);
-
-    function getVaultProxyForComptrollerProxy(address _comptrollerProxy) external view returns (address vaultProxy_);
 
     function hasReconfigurationRequest(address _vaultProxy) external view returns (bool hasReconfigurationRequest_);
 
@@ -101,6 +112,9 @@ interface IFundDeployer {
     function releaseIsLive() external view returns (bool isLive_);
 
     function setComptrollerLib(address _comptrollerLib) external;
+
+    function setGasLimitsForDestructCall(uint32 _nextDeactivateFeeManagerGasLimit, uint32 _nextPayProtocolFeeGasLimit)
+        external;
 
     function setProtocolFeeTracker(address _protocolFeeTracker) external;
 

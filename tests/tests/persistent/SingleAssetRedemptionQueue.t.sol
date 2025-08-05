@@ -14,8 +14,6 @@ import {Uint256ArrayLib} from "tests/utils/libs/Uint256ArrayLib.sol";
 // This runs e2e tests against Enzyme v4 live deployments.
 // TODO: when GlobalConfigLib updated to include v5, refactor test against against v5
 contract SingleAssetRedemptionQueueTest is IntegrationTest {
-    EnzymeVersion internal version = EnzymeVersion.V4;
-
     using Uint256ArrayLib for uint256[];
 
     event BypassableSharesThresholdSet(uint256 nextSharesAmount);
@@ -173,8 +171,12 @@ contract SingleAssetRedemptionQueueTest is IntegrationTest {
         public
         returns (FundWithRedemptionQueueTestVars memory testVars_)
     {
-        (address comptrollerProxyAddress, address vaultProxyAddress, address fundOwner) =
-            createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        address fundOwner;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        address comptrollerProxyAddress = address(comptrollerProxy);
+        address vaultProxyAddress = address(vaultProxy);
         IERC20 sharesToken = IERC20(vaultProxyAddress);
         address manager = makeAddr("Manager");
 
@@ -191,16 +193,14 @@ contract SingleAssetRedemptionQueueTest is IntegrationTest {
         // Define holders and buy them some shares
         address holder1 = makeAddr("Holder1");
         address holder2 = makeAddr("Holder2");
-        buySharesForVersion({
-            _version: version,
+        buyShares({
             _sharesBuyer: holder1,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _amountToDeposit: assetUnit(redemptionAsset) * 100
         });
-        buySharesForVersion({
-            _version: version,
+        buyShares({
             _sharesBuyer: holder2,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _amountToDeposit: assetUnit(redemptionAsset) * 20
         });
 

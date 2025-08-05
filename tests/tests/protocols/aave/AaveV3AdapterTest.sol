@@ -13,7 +13,6 @@ import {AaveV3Utils} from "./AaveV3Utils.sol";
 
 abstract contract AaveV3AdapterTest is AaveAdapterTestBase, AaveV3Utils {
     function __initializeAaveV3AdapterTest(
-        EnzymeVersion _version,
         uint256 _chainId,
         address _lendingPool,
         address _lendingPoolAddressProvider,
@@ -24,13 +23,12 @@ abstract contract AaveV3AdapterTest is AaveAdapterTestBase, AaveV3Utils {
 
         (IAaveV3Adapter aaveV3Adapter,) = __deployATokenListOwnerAndAdapter({
             _addressListRegistry: core.persistent.addressListRegistry,
-            _integrationManagerAddress: getIntegrationManagerAddressForVersion(_version),
+            _integrationManagerAddress: address(core.release.integrationManager),
             _lendingPool: _lendingPool,
             _lendingPoolAddressProvider: _lendingPoolAddressProvider
         });
 
         __initializeAaveAdapterTestBase({
-            _version: _version,
             _adapterAddress: address(aaveV3Adapter),
             _lendingPool: _lendingPool,
             _lendingPoolAddressProvider: _lendingPoolAddressProvider,
@@ -39,7 +37,6 @@ abstract contract AaveV3AdapterTest is AaveAdapterTestBase, AaveV3Utils {
         });
 
         __registerTokensAndATokensForThem({
-            _version: _version,
             _underlyingAddresses: toArray(address(_regular18DecimalUnderlying), address(_non18DecimalUnderlying))
         });
     }
@@ -87,11 +84,9 @@ abstract contract AaveV3AdapterTest is AaveAdapterTestBase, AaveV3Utils {
         return getATokenAddress({_lendingPool: __getLendingPool(), _underlying: _underlying});
     }
 
-    function __registerTokensAndATokensForThem(EnzymeVersion _version, address[] memory _underlyingAddresses)
-        internal
-    {
+    function __registerTokensAndATokensForThem(address[] memory _underlyingAddresses) internal {
         registerUnderlyingsAndATokensForThem({
-            _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion(_version)),
+            _valueInterpreter: core.release.valueInterpreter,
             _underlyings: _underlyingAddresses,
             _lendingPool: __getLendingPool()
         });

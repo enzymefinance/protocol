@@ -28,9 +28,8 @@ import {
 import {AaveV3DebtPositionTestBase} from "./AaveV3DebtPositionTest.sol";
 
 abstract contract AaveV3DebtPositionTestBaseEthereum is AaveV3DebtPositionTestBase {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         __initialize({
-            _version: _version,
             _chainId: ETHEREUM_CHAIN_ID,
             _merklDistributor: IMerklDistributor(ETHEREUM_MERKL_DISTRIBUTOR),
             _poolAddressProvider: IAaveV3PoolAddressProvider(ETHEREUM_POOL_ADDRESS_PROVIDER),
@@ -46,9 +45,8 @@ abstract contract AaveV3DebtPositionTestBaseEthereum is AaveV3DebtPositionTestBa
 }
 
 abstract contract AaveV3DebtPositionTestBasePolygon is AaveV3DebtPositionTestBase {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         __initialize({
-            _version: _version,
             _chainId: POLYGON_CHAIN_ID,
             _merklDistributor: IMerklDistributor(POLYGON_MERKL_DISTRIBUTOR),
             _poolAddressProvider: IAaveV3PoolAddressProvider(POLYGON_POOL_ADDRESS_PROVIDER),
@@ -62,9 +60,8 @@ abstract contract AaveV3DebtPositionTestBasePolygon is AaveV3DebtPositionTestBas
 }
 
 abstract contract AaveV3DebtPositionTestBaseArbitrum is AaveV3DebtPositionTestBase {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         __initialize({
-            _version: _version,
             _chainId: ARBITRUM_CHAIN_ID,
             _merklDistributor: IMerklDistributor(ARBITRUM_MERKL_DISTRIBUTOR),
             _poolAddressProvider: IAaveV3PoolAddressProvider(ARBITRUM_POOL_ADDRESS_PROVIDER),
@@ -80,9 +77,8 @@ abstract contract AaveV3DebtPositionTestBaseArbitrum is AaveV3DebtPositionTestBa
 }
 
 abstract contract AaveV3DebtPositionTestBaseBaseChain is AaveV3DebtPositionTestBase {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         __initialize({
-            _version: _version,
             _chainId: BASE_CHAIN_ID,
             _merklDistributor: IMerklDistributor(BASE_MERKL_DISTRIBUTOR),
             _poolAddressProvider: IAaveV3PoolAddressProvider(BASE_POOL_ADDRESS_PROVIDER),
@@ -97,48 +93,24 @@ abstract contract AaveV3DebtPositionTestBaseBaseChain is AaveV3DebtPositionTestB
 
 contract AaveV3DebtPositionTestEthereum is AaveV3DebtPositionTestBaseEthereum {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
-    }
-}
-
-contract AaveV3DebtPositionTestEthereumV4 is AaveV3DebtPositionTestBaseEthereum {
-    function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }
 
 contract AaveV3DebtPositionTestPolygon is AaveV3DebtPositionTestBasePolygon {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
-    }
-}
-
-contract AaveV3DebtPositionTestPolygonV4 is AaveV3DebtPositionTestBasePolygon {
-    function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }
 
 contract AaveV3DebtPositionTestArbitrum is AaveV3DebtPositionTestBaseArbitrum {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
-    }
-}
-
-contract AaveV3DebtPositionTestArbitrumV4 is AaveV3DebtPositionTestBaseArbitrum {
-    function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }
 
 contract AaveV3DebtPositionTestBaseChain is AaveV3DebtPositionTestBaseBaseChain {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
-    }
-}
-
-contract AaveV3DebtPositionTestBaseChainV4 is AaveV3DebtPositionTestBaseBaseChain {
-    function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }

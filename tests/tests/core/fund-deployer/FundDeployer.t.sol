@@ -22,9 +22,9 @@ contract FundDeployerTest is IntegrationTest {
     // FundDeployer events
     event ComptrollerProxyDeployed(
         address indexed creator,
-        address indexed comptrollerProxy,
-        address indexed vaultProxy,
-        IFundDeployer.ConfigInput comptrollerConfig
+        address comptrollerProxy,
+        address indexed denominationAsset,
+        uint256 sharesActionTimelock
     );
 
     event NewFundCreated(address indexed creator, address vaultProxy, address comptrollerProxy);
@@ -35,7 +35,10 @@ contract FundDeployerTest is IntegrationTest {
 
     function test_getOwner_success() public {
         // Deploy a new FundDeployer
-        IFundDeployer newFundDeployer = deployFundDeployer({_dispatcher: core.persistent.dispatcher});
+        IFundDeployer newFundDeployer = deployFundDeployer({
+            _dispatcher: core.persistent.dispatcher,
+            _gasRelayPaymasterFactory: core.release.gasRelayPaymasterFactory
+        });
 
         // Owner starts as the FundDeployer contract deployer
         address creator = newFundDeployer.getOwner();
@@ -53,7 +56,7 @@ contract FundDeployerTest is IntegrationTest {
     }
 
     // TODO: use newFundDeployer instead of core.release.fundDeployer
-    // function test_createNewFund_failsWithNonLiveRelease() public {
+    // function test_createNewFund_failWithNonLiveRelease() public {
     //     vm.expectRevert("Release is not yet live");
 
     //     core.release.fundDeployer.createNewFund({
@@ -71,25 +74,15 @@ contract FundDeployerTest is IntegrationTest {
         address fundCreator = makeAddr("FundCreator");
         address fundOwner = makeAddr("FundOwner");
         string memory fundName = "My Fund";
+        uint256 sharesActionTimelock = 123;
 
         // Add denomination asset to the asset universe
         address denominationAsset = address(standardPrimitive);
         address expectedComptrollerProxy = predictComptrollerProxyAddress(core.release.fundDeployer);
         address expectedVaultProxyAddress = predictVaultProxyAddress(core.persistent.dispatcher);
 
-        IFundDeployer.ExtensionConfigInput[] memory extensionsConfig;
-        IFundDeployer.ConfigInput memory comptrollerConfig = IFundDeployer.ConfigInput({
-            denominationAsset: denominationAsset,
-            sharesActionTimelock: 123,
-            feeManagerConfigData: "",
-            policyManagerConfigData: "",
-            extensionsConfig: extensionsConfig
-        });
-
         expectEmit(address(core.release.fundDeployer));
-        emit ComptrollerProxyDeployed(
-            fundCreator, expectedComptrollerProxy, expectedVaultProxyAddress, comptrollerConfig
-        );
+        emit ComptrollerProxyDeployed(fundCreator, expectedComptrollerProxy, denominationAsset, sharesActionTimelock);
 
         // TODO: Should this be tested in the protocol fee tracker tests?
         expectEmit(address(core.release.protocolFeeTracker));
@@ -103,12 +96,15 @@ contract FundDeployerTest is IntegrationTest {
             _fundOwner: fundOwner,
             _fundName: fundName,
             _fundSymbol: "",
-            _comptrollerConfig: comptrollerConfig
+            _denominationAsset: denominationAsset,
+            _sharesActionTimelock: sharesActionTimelock,
+            _feeManagerConfigData: "",
+            _policyManagerConfigData: ""
         });
 
         // Assert the correct ComptrollerProxy state values
-        assertEq(IComptrollerLib(comptrollerProxy).getDenominationAsset(), comptrollerConfig.denominationAsset);
-        assertEq(IComptrollerLib(comptrollerProxy).getSharesActionTimelock(), comptrollerConfig.sharesActionTimelock);
+        assertEq(IComptrollerLib(comptrollerProxy).getDenominationAsset(), denominationAsset);
+        assertEq(IComptrollerLib(comptrollerProxy).getSharesActionTimelock(), sharesActionTimelock);
         assertEq(IComptrollerLib(comptrollerProxy).getVaultProxy(), vaultProxy);
 
         // Assert the correct VaultProxy state values
@@ -116,9 +112,6 @@ contract FundDeployerTest is IntegrationTest {
         assertEq(IVaultLib(payable(vaultProxy)).getOwner(), fundOwner);
         assertEq(IERC20(vaultProxy).name(), fundName);
         assertEq(IERC20(vaultProxy).symbol(), "ENZF");
-
-        // Assert the correct FundDeployer state values
-        assertEq(core.release.fundDeployer.getVaultProxyForComptrollerProxy(address(comptrollerProxy)), vaultProxy);
 
         // TODO: calls the active() lifecycle function (?)
     }

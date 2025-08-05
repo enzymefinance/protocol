@@ -9,11 +9,13 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.8.19;
+pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
 
-import {AddressArrayLib} from "../../../utils/0.8.19/AddressArrayLib.sol";
+import {AddressArrayLib} from "../../../utils/0.6.12/AddressArrayLib.sol";
 import {IComptroller} from "../../core/fund/comptroller/IComptroller.sol";
 import {IVault} from "../../core/fund/vault/IVault.sol";
+import {GasRelayRecipientMixin} from "../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
 import {ExtensionBase} from "../utils/ExtensionBase.sol";
 import {IPolicy} from "./IPolicy.sol";
 import {IPolicyManager} from "./IPolicyManager.sol";
@@ -26,7 +28,7 @@ import {IPolicyManager} from "./IPolicyManager.sol";
 /// Policies that restrict current investors can only be added upon fund setup, migration, or reconfiguration.
 /// Policies that restrict new investors or asset management actions can be added at any time.
 /// Policies themselves specify whether or not they are allowed to be updated or removed.
-contract PolicyManager is IPolicyManager, ExtensionBase {
+contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin {
     using AddressArrayLib for address[];
 
     event PolicyDisabledOnHookForFund(
@@ -47,23 +49,26 @@ contract PolicyManager is IPolicyManager, ExtensionBase {
         _;
     }
 
-    constructor(address _fundDeployer) ExtensionBase(_fundDeployer) {}
-
-    // TODO: Temp placeholder; update when tx relaying is reinstated
-    function __msgSender() private view returns (address sender_) {
-        return msg.sender;
-    }
+    constructor(address _fundDeployer, address _gasRelayPaymasterFactory)
+        public
+        ExtensionBase(_fundDeployer)
+        GasRelayRecipientMixin(_gasRelayPaymasterFactory)
+    {}
 
     // EXTERNAL FUNCTIONS
 
     /// @notice Validates and initializes policies as necessary prior to fund activation
+    /// @param _isMigratedFund True if the fund is migrating to this release
     /// @dev There will be no enabledPolicies if the caller is not a valid ComptrollerProxy
-    function activateForFund() external override {
+    function activateForFund(bool _isMigratedFund) external override {
         address comptrollerProxy = msg.sender;
 
-        address[] memory enabledPolicies = getEnabledPoliciesForFund(comptrollerProxy);
-        for (uint256 i; i < enabledPolicies.length; i++) {
-            __activatePolicyForFund(comptrollerProxy, enabledPolicies[i]);
+        // Policies must assert that they are congruent with migrated vault state
+        if (_isMigratedFund) {
+            address[] memory enabledPolicies = getEnabledPoliciesForFund(comptrollerProxy);
+            for (uint256 i; i < enabledPolicies.length; i++) {
+                __activatePolicyForFund(comptrollerProxy, enabledPolicies[i]);
+            }
         }
     }
 
@@ -116,11 +121,15 @@ contract PolicyManager is IPolicyManager, ExtensionBase {
     }
 
     /// @notice Enable policies for use in a fund
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _vaultProxy The VaultProxy of the fund
     /// @param _configData Encoded config data
-    function setConfigForFund(bytes calldata _configData) external override {
-        address comptrollerProxy = msg.sender;
-
-        __setValidatedVaultProxy({_comptrollerProxy: comptrollerProxy});
+    function setConfigForFund(address _comptrollerProxy, address _vaultProxy, bytes calldata _configData)
+        external
+        override
+        onlyFundDeployer
+    {
+        __setValidatedVaultProxy(_comptrollerProxy, _vaultProxy);
 
         // In case there are no policies yet
         if (_configData.length == 0) {
@@ -137,7 +146,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase {
         // Enable each policy with settings
         for (uint256 i; i < policies.length; i++) {
             __enablePolicyForFund(
-                comptrollerProxy, policies[i], settingsData[i], IPolicy(policies[i]).implementedHooks()
+                _comptrollerProxy, policies[i], settingsData[i], IPolicy(policies[i]).implementedHooks()
             );
         }
     }
@@ -168,9 +177,10 @@ contract PolicyManager is IPolicyManager, ExtensionBase {
             return;
         }
 
-        // Limit calls to trusted components of the fund, in case policies update local storage upon runs
+        // Limit calls to trusted components, in case policies update local storage upon runs
         require(
-            msg.sender == _comptrollerProxy || IComptroller(_comptrollerProxy).isExtension(msg.sender),
+            msg.sender == _comptrollerProxy || msg.sender == IComptroller(_comptrollerProxy).getIntegrationManager()
+                || msg.sender == IComptroller(_comptrollerProxy).getExternalPositionManager(),
             "validatePolicies: Caller not allowed"
         );
 

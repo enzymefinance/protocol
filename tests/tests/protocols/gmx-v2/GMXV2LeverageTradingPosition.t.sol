@@ -10,6 +10,8 @@ import {IUintListRegistry as IUintListRegistryProd} from "contracts/persistent/u
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IGMXV2DataStore} from "tests/interfaces/external/IGMXV2DataStore.sol";
 import {IGMXV2ChainlinkPriceFeedProvider} from "tests/interfaces/external/IGMXV2ChainlinkPriceFeedProvider.sol";
@@ -77,11 +79,9 @@ abstract contract TestBase is IntegrationTest {
     IGMXV2Reader internal reader;
     IGMXV2RoleStore internal roleStore;
 
-    EnzymeVersion internal version;
     uint256 internal executionFee;
 
     function __initialize(
-        EnzymeVersion _version,
         uint256 _chainId,
         address _dataStoreAddress,
         IGMXV2ChainlinkPriceFeedProvider _chainlinkPriceFeedProvider,
@@ -92,7 +92,6 @@ abstract contract TestBase is IntegrationTest {
         address _referralStorageAddress,
         address _uiFeeReceiverAddress
     ) internal {
-        version = _version;
         exchangeRouter = _exchangerRouter;
         dataStoreAddress = _dataStoreAddress;
         roleStore = _roleStore;
@@ -116,16 +115,21 @@ abstract contract TestBase is IntegrationTest {
             })
         );
 
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         vm.prank(fundOwner);
         externalPosition = IGMXV2LeverageTradingPositionLib(
             payable(
-                createExternalPositionForVersion({
-                    _version: version,
-                    _comptrollerProxyAddress: comptrollerProxyAddress,
+                createExternalPosition({
+                    _externalPositionManager: core.release.externalPositionManager,
+                    _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
                     _typeId: typeId,
-                    _initializationData: ""
+                    _initializationData: "",
+                    _callOnExternalPositionCallArgs: ""
                 })
             )
         );
@@ -146,8 +150,8 @@ abstract contract TestBase is IntegrationTest {
     }
 
     function __deployPositionType(DeployPositionTypeArgs memory _args) public returns (uint256 typeId_) {
-        typeId_ = registerExternalPositionTypeForVersion({
-            _version: version,
+        typeId_ = registerExternalPositionType({
+            _externalPositionManager: core.release.externalPositionManager,
             _label: "GMXV2_V2_LEVERAGE_TRADING",
             _lib: __deployLib(_args),
             _parser: __deployParser({
@@ -214,9 +218,9 @@ abstract contract TestBase is IntegrationTest {
     function __createOrder(IGMXV2LeverageTradingPositionProd.CreateOrderActionArgs memory _args) internal {
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(externalPosition),
             _actionId: uint256(IGMXV2LeverageTradingPositionProd.Actions.CreateOrder),
             _actionArgs: abi.encode(_args)
@@ -226,9 +230,9 @@ abstract contract TestBase is IntegrationTest {
     function __updateOrder(IGMXV2LeverageTradingPositionProd.UpdateOrderActionArgs memory _args) internal {
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(externalPosition),
             _actionId: uint256(IGMXV2LeverageTradingPositionProd.Actions.UpdateOrder),
             _actionArgs: abi.encode(_args)
@@ -238,9 +242,9 @@ abstract contract TestBase is IntegrationTest {
     function __cancelOrder(IGMXV2LeverageTradingPositionProd.CancelOrderActionArgs memory _args) internal {
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(externalPosition),
             _actionId: uint256(IGMXV2LeverageTradingPositionProd.Actions.CancelOrder),
             _actionArgs: abi.encode(_args)
@@ -250,9 +254,9 @@ abstract contract TestBase is IntegrationTest {
     function __claimFundingFees(IGMXV2LeverageTradingPositionProd.ClaimFundingFeesActionArgs memory _args) internal {
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(externalPosition),
             _actionId: uint256(IGMXV2LeverageTradingPositionProd.Actions.ClaimFundingFees),
             _actionArgs: abi.encode(_args)
@@ -262,9 +266,9 @@ abstract contract TestBase is IntegrationTest {
     function __claimCollateral(IGMXV2LeverageTradingPositionProd.ClaimCollateralActionArgs memory _args) internal {
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(externalPosition),
             _actionId: uint256(IGMXV2LeverageTradingPositionProd.Actions.ClaimCollateral),
             _actionArgs: abi.encode(_args)
@@ -274,9 +278,9 @@ abstract contract TestBase is IntegrationTest {
     function __sweep() internal {
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(externalPosition),
             _actionId: uint256(IGMXV2LeverageTradingPositionProd.Actions.Sweep),
             _actionArgs: ""
@@ -592,7 +596,7 @@ abstract contract TestBase is IntegrationTest {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -749,7 +753,7 @@ abstract contract TestBase is IntegrationTest {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -922,7 +926,7 @@ abstract contract TestBase is IntegrationTest {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -992,7 +996,7 @@ abstract contract TestBase is IntegrationTest {
         );
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: toArray(address(wrappedNativeToken))
         });
 
@@ -1078,7 +1082,7 @@ abstract contract TestBase is IntegrationTest {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: isCollateralWrappedNativeToken
                 ? toArray(address(wrappedNativeToken))
                 : toArray(address(wrappedNativeToken), _initialCollateralToken)
@@ -1247,7 +1251,7 @@ abstract contract TestBase is IntegrationTest {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: _tokens
         });
 
@@ -1503,7 +1507,7 @@ abstract contract TestBase is IntegrationTest {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: toArray(_args.initialCollateralLongToken)
         });
 
@@ -1556,9 +1560,9 @@ abstract contract TestBase is IntegrationTest {
         vm.expectRevert(IGMXV2LeverageTradingPositionLib.InvalidActionId.selector);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(externalPosition),
             _actionId: 12,
             _actionArgs: ""
@@ -1903,7 +1907,7 @@ abstract contract TestBase is IntegrationTest {
 }
 
 abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         __initialize({
             _chainId: ARBITRUM_CHAIN_ID,
             _dataStoreAddress: ARBITRUM_GMXV2_DATA_STORE_ADDRESS,
@@ -1913,8 +1917,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _exchangerRouter: ARBITRUM_GMXV2_EXCHANGE_ROUTER,
             _referralStorageAddress: ARBITRUM_GMXV2_REFERRAL_STORAGE_ADDRESS,
             _uiFeeReceiverAddress: address(0),
-            _chainlinkPriceFeedProvider: ARBITRUM_GMXV2_CHAINLINK_PRICE_FEED_PROVIDER,
-            _version: _version
+            _chainlinkPriceFeedProvider: ARBITRUM_GMXV2_CHAINLINK_PRICE_FEED_PROVIDER
         });
     }
 
@@ -2272,7 +2275,7 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: toArray(ARBITRUM_WBTC, ARBITRUM_WETH, ARBITRUM_USDC)
         });
 
@@ -2364,12 +2367,12 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
 
 contract GMXV2LeverageTradingPositionArbitrumTest is GMXV2LeverageTradingPositionTestBaseArbitrum {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
+        __initialize();
     }
 }
 
 contract GMXV2LeverageTradingPositionArbitrumTestV4 is GMXV2LeverageTradingPositionTestBaseArbitrum {
     function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }

@@ -13,8 +13,10 @@ import {ITermFinanceV1OfferLocker} from "tests/interfaces/external/ITermFinanceV
 import {ITermFinanceV1RepoServicer} from "tests/interfaces/external/ITermFinanceV1RepoServicer.sol";
 import {ITermFinanceV1RepoToken} from "tests/interfaces/external/ITermFinanceV1RepoToken.sol";
 
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {ITermFinanceV1LendingPositionLib} from "tests/interfaces/internal/ITermFinanceV1LendingPositionLib.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {AddressArrayLib} from "tests/utils/libs/AddressArrayLib.sol";
 
 address constant TERM_FINANCE_CONTROLLER_ADDRESS = 0x62f476DBB9B60D9272e26994525F4Db80Fd543e4;
@@ -52,9 +54,6 @@ abstract contract TestBase is IntegrationTest {
     ITermFinanceV1Auction internal termFinanceAuction;
     IERC20 internal purchaseToken;
 
-    // Set by child contract
-    EnzymeVersion internal version;
-
     function setUp() public virtual override {
         termFinanceAuctions.push(ITermFinanceV1Auction(TERM_FINANCE_AUCTION_ADDRESS_1));
         termFinanceAuctions.push(ITermFinanceV1Auction(TERM_FINANCE_AUCTION_ADDRESS_2));
@@ -69,15 +68,20 @@ abstract contract TestBase is IntegrationTest {
         termFinanceAuction = termFinanceAuctions[0];
         purchaseToken = IERC20(purchaseTokens[0]);
 
-        // If v4, register purchaseTokens to pass the asset universe validation
-        if (version == EnzymeVersion.V4) {
-            for (uint256 i; i < purchaseTokens.length; i++) {
-                v4AddPrimitiveWithTestAggregator({_tokenAddress: purchaseTokens[i], _skipIfRegistered: true});
-            }
+        for (uint256 i; i < purchaseTokens.length; i++) {
+            addPrimitiveWithTestAggregator({
+                _valueInterpreter: core.release.valueInterpreter,
+                _tokenAddress: purchaseTokens[i],
+                _skipIfRegistered: true
+            });
         }
 
         // Create a fund
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         // Seed the vault with purchase tokens
         for (uint256 i; i < purchaseTokens.length; i++) {
@@ -94,11 +98,12 @@ abstract contract TestBase is IntegrationTest {
         // Create a TermFinanceV1LendingPosition for the fund
         vm.prank(fundOwner);
         termFinanceLendingPosition = ITermFinanceV1LendingPositionLib(
-            createExternalPositionForVersion({
-                _version: version,
-                _comptrollerProxyAddress: comptrollerProxyAddress,
+            createExternalPosition({
+                _externalPositionManager: core.release.externalPositionManager,
+                _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
                 _typeId: typeId,
-                _initializationData: ""
+                _initializationData: "",
+                _callOnExternalPositionCallArgs: ""
             })
         );
     }
@@ -123,11 +128,11 @@ abstract contract TestBase is IntegrationTest {
         address parserAddress = __deployParser();
 
         // Register position type
-        typeId_ = registerExternalPositionTypeForVersion({
-            _version: version,
-            _label: "TERM_FINANCE_V1_LENDING",
+        typeId_ = registerExternalPositionType({
+            _externalPositionManager: core.release.externalPositionManager,
             _lib: libAddress,
-            _parser: parserAddress
+            _parser: parserAddress,
+            _label: "TERM_FINANCE_V1_LENDING"
         });
 
         return typeId_;
@@ -145,9 +150,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_termFinanceAuction, _offerIds, offerPriceHashes, _amountsChange);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(termFinanceLendingPosition),
             _actionId: uint256(ITermFinanceV1LendingPositionProd.Actions.AddOrUpdateOffers),
             _actionArgs: actionArgs
@@ -158,9 +163,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_termFinanceAuction, _offerIds);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(termFinanceLendingPosition),
             _actionId: uint256(ITermFinanceV1LendingPositionProd.Actions.RemoveOffers),
             _actionArgs: actionArgs
@@ -171,9 +176,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_termFinanceAuction, _amount);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(termFinanceLendingPosition),
             _actionId: uint256(ITermFinanceV1LendingPositionProd.Actions.Redeem),
             _actionArgs: actionArgs
@@ -184,9 +189,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_termFinanceAuctions);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(termFinanceLendingPosition),
             _actionId: uint256(ITermFinanceV1LendingPositionProd.Actions.Sweep),
             _actionArgs: actionArgs
@@ -284,7 +289,7 @@ abstract contract AddReplaceAndRemoveOffersTest is TestBase {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -384,7 +389,7 @@ abstract contract AddReplaceAndRemoveOffersTest is TestBase {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: toArray(address(purchaseToken))
         });
 
@@ -485,7 +490,7 @@ abstract contract AddReplaceAndRemoveOffersTest is TestBase {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: toArray(address(purchaseToken))
         });
 
@@ -720,7 +725,7 @@ abstract contract RedeemTest is TestBase {
         // Assert that the assetsToReceive were formatted correctly
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: toArray(address(purchaseToken))
         });
 
@@ -841,7 +846,7 @@ abstract contract SweepTest is TestBase {
         // Assert that the assetsToReceive were formatted correctly
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: uniquePurchaseTokens
         });
 
@@ -981,14 +986,6 @@ abstract contract TermFinanceV1LendingPositionTest is
 contract TermFinanceV1LendingPositionTestEthereum is TermFinanceV1LendingPositionTest {
     function setUp() public virtual override {
         setUpMainnetEnvironment(ETHEREUM_BLOCK_TIME_SENSITIVE_TERM_FINANCE);
-        super.setUp();
-    }
-}
-
-contract TermFinanceV1LendingPositionTestEthereumV4 is TermFinanceV1LendingPositionTestEthereum {
-    function setUp() public override {
-        version = EnzymeVersion.V4;
-
         super.setUp();
     }
 }

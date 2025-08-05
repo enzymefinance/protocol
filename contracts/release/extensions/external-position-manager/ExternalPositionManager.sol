@@ -2,14 +2,14 @@
 
 /*
     This file is part of the Enzyme Protocol.
-
+    
     (c) Enzyme Foundation <security@enzyme.finance>
-
+    
     For the full license information, please view the LICENSE
     file that was distributed with this source code.
 */
 
-pragma solidity 0.8.19;
+pragma solidity 0.6.12;
 
 import {IExternalPositionFactory} from "../../../persistent/external-positions/IExternalPositionFactory.sol";
 import {IExternalPositionProxy} from "../../../persistent/external-positions/IExternalPositionProxy.sol";
@@ -52,6 +52,7 @@ contract ExternalPositionManager is IExternalPositionManager, ExtensionBase, Per
     mapping(uint256 => ExternalPositionTypeInfo) private typeIdToTypeInfo;
 
     constructor(address _fundDeployer, address _externalPositionFactory, address _policyManager)
+        public
         ExtensionBase(_fundDeployer)
     {
         EXTERNAL_POSITION_FACTORY = _externalPositionFactory;
@@ -63,8 +64,14 @@ contract ExternalPositionManager is IExternalPositionManager, ExtensionBase, Per
     /////////////
 
     /// @notice Enables the ExternalPositionManager to be used by a fund
-    function setConfigForFund(bytes calldata) external override {
-        __setValidatedVaultProxy({_comptrollerProxy: msg.sender});
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _vaultProxy The VaultProxy of the fund
+    function setConfigForFund(address _comptrollerProxy, address _vaultProxy, bytes calldata)
+        external
+        override
+        onlyFundDeployer
+    {
+        __setValidatedVaultProxy(_comptrollerProxy, _vaultProxy);
     }
 
     ///////////////////////////////

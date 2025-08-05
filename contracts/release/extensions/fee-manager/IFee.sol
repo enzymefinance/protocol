@@ -21,6 +21,8 @@ interface IFee {
 
     function addFundSettings(address _comptrollerProxy, bytes calldata _settingsData) external;
 
+    function payout(address _comptrollerProxy, address _vaultProxy) external returns (bool isPayable_);
+
     function getRecipientForFund(address _comptrollerProxy) external view returns (address recipient_);
 
     function settle(
@@ -42,7 +44,4 @@ interface IFee {
     ) external;
 
     function updatesOnHook(IFeeManager.FeeHook _hook) external view returns (bool updates_, bool usesGav_);
-
-    /// @dev This is legacy and no longer serves a purpose. Can be removed once fees are not meant to be backwards-compatible.
-    function payout(address _comptrollerProxy, address _vaultProxy) external returns (bool isPayable_);
 }

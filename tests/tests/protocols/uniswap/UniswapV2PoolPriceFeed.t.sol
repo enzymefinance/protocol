@@ -26,22 +26,17 @@ abstract contract UniswapV2PoolPriceFeedTestBase is IntegrationTest, UniswapV2Ut
     IERC20 internal token0;
     IERC20 internal token1;
 
-    EnzymeVersion internal version;
-
     function __initialize(
-        EnzymeVersion _version,
         uint256 _chainId,
         address _uniswapV2FactoryAddress,
         address _uniswapV2PoolAddress,
         uint256 _forkBlock
     ) internal {
-        version = _version;
-
         setUpNetworkEnvironment({_chainId: _chainId, _forkBlock: _forkBlock});
 
         uniswapV2PoolPriceFeed = __deployPriceFeed({
-            _fundDeployerAddress: getFundDeployerAddressForVersion({_version: version}),
-            _valueInterpreterAddress: getValueInterpreterAddressForVersion({_version: version}),
+            _fundDeployerAddress: address(core.release.fundDeployer),
+            _valueInterpreterAddress: address(core.release.valueInterpreter),
             _uniswapV2FactoryAddress: _uniswapV2FactoryAddress
         });
 
@@ -50,12 +45,12 @@ abstract contract UniswapV2PoolPriceFeedTestBase is IntegrationTest, UniswapV2Ut
         token1 = IERC20(uniswapV2Pool.token1());
 
         // Add poolTokens to price feed
-        vm.startPrank(IFundDeployer(getFundDeployerAddressForVersion({_version: version})).getOwner());
+        vm.startPrank(core.release.fundDeployer.getOwner());
         uniswapV2PoolPriceFeed.addPoolTokens({_poolTokens: toArray(address(uniswapV2Pool))});
 
         // Register derivatives
         addDerivative({
-            _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion({_version: _version})),
+            _valueInterpreter: core.release.valueInterpreter,
             _tokenAddress: address(uniswapV2Pool),
             _skipIfRegistered: true,
             _priceFeedAddress: address(uniswapV2PoolPriceFeed)
@@ -118,19 +113,6 @@ abstract contract UniswapV2PoolPriceFeedTestBase is IntegrationTest, UniswapV2Ut
 contract EthereumWethUsdcTest is UniswapV2PoolPriceFeedTestBase {
     function setUp() public override {
         __initialize({
-            _version: EnzymeVersion.Current,
-            _chainId: ETHEREUM_CHAIN_ID,
-            _uniswapV2FactoryAddress: ETHEREUM_UNISWAP_V2_FACTORY,
-            _uniswapV2PoolAddress: ETHEREUM_UNISWAP_V2_POOL_WETH_USDC,
-            _forkBlock: ETHEREUM_BLOCK_TIME_SENSITIVE
-        });
-    }
-}
-
-contract EthereumWethUsdcTestV4 is UniswapV2PoolPriceFeedTestBase {
-    function setUp() public override {
-        __initialize({
-            _version: EnzymeVersion.V4,
             _chainId: ETHEREUM_CHAIN_ID,
             _uniswapV2FactoryAddress: ETHEREUM_UNISWAP_V2_FACTORY,
             _uniswapV2PoolAddress: ETHEREUM_UNISWAP_V2_POOL_WETH_USDC,
@@ -142,35 +124,10 @@ contract EthereumWethUsdcTestV4 is UniswapV2PoolPriceFeedTestBase {
 contract PolygonWmaticUsdcTest is UniswapV2PoolPriceFeedTestBase {
     function setUp() public override {
         __initialize({
-            _version: EnzymeVersion.Current,
             _chainId: POLYGON_CHAIN_ID,
             _uniswapV2FactoryAddress: POLYGON_UNISWAP_V2_FACTORY,
             _uniswapV2PoolAddress: POLYGON_UNISWAP_V2_POOL_WMATIC_USDT,
             _forkBlock: POLYGON_BLOCK_TIME_SENSITIVE
-        });
-    }
-}
-
-contract PolygonWmaticUsdcTestV4 is UniswapV2PoolPriceFeedTestBase {
-    function setUp() public override {
-        __initialize({
-            _version: EnzymeVersion.V4,
-            _chainId: POLYGON_CHAIN_ID,
-            _uniswapV2FactoryAddress: POLYGON_UNISWAP_V2_FACTORY,
-            _uniswapV2PoolAddress: POLYGON_UNISWAP_V2_POOL_WMATIC_USDT,
-            _forkBlock: POLYGON_BLOCK_TIME_SENSITIVE
-        });
-    }
-}
-
-contract ArbitrumWethUsdcTestV4 is UniswapV2PoolPriceFeedTestBase {
-    function setUp() public override {
-        __initialize({
-            _version: EnzymeVersion.V4,
-            _chainId: ARBITRUM_CHAIN_ID,
-            _uniswapV2FactoryAddress: ARBITRUM_UNISWAP_V2_FACTORY,
-            _uniswapV2PoolAddress: ARBITRUM_UNISWAP_V2_POOL_WETH_USDC,
-            _forkBlock: ARBITRUM_BLOCK_LATEST
         });
     }
 }
@@ -178,7 +135,6 @@ contract ArbitrumWethUsdcTestV4 is UniswapV2PoolPriceFeedTestBase {
 contract ArbitrumWethUsdcTest is UniswapV2PoolPriceFeedTestBase {
     function setUp() public override {
         __initialize({
-            _version: EnzymeVersion.Current,
             _chainId: ARBITRUM_CHAIN_ID,
             _uniswapV2FactoryAddress: ARBITRUM_UNISWAP_V2_FACTORY,
             _uniswapV2PoolAddress: ARBITRUM_UNISWAP_V2_POOL_WETH_USDC,

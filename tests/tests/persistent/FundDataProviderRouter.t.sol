@@ -6,10 +6,9 @@ import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IFundDataProviderRouter} from "tests/interfaces/internal/IFundDataProviderRouter.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 contract FundDataProviderRouterTest is IntegrationTest {
-    EnzymeVersion internal version = EnzymeVersion.Current;
-
     address internal comptrollerProxyAddress;
     IERC20 internal denominationAsset;
     address internal fundOwner;
@@ -21,16 +20,19 @@ contract FundDataProviderRouterTest is IntegrationTest {
     function setUp() public override {
         setUpStandaloneEnvironment();
 
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion({_version: version});
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
         denominationAsset = IERC20(IComptrollerLib(comptrollerProxyAddress).getDenominationAsset());
 
         depositAmount = assetUnit(denominationAsset) * 21;
 
         // Buy some shares of the fund
-        buySharesForVersion({
-            _version: version,
+        buyShares({
             _sharesBuyer: fundOwner,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _amountToDeposit: depositAmount
         });
 

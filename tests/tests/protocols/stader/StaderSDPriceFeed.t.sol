@@ -14,11 +14,8 @@ address constant SD_TOKEN_ADDRESS = 0x30D20208d987713f46DFD34EF128Bb16C404D10f;
 abstract contract StaderSDPriceFeedTestBase is IntegrationTest {
     IStaderSDPriceFeed internal priceFeed;
 
-    EnzymeVersion internal version;
-
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         setUpMainnetEnvironment(ETHEREUM_BLOCK_TIME_SENSITIVE);
-        version = _version;
         priceFeed = __deployPriceFeed();
     }
 
@@ -35,7 +32,7 @@ abstract contract StaderSDPriceFeedTestBase is IntegrationTest {
 
     function __addDerivative() private {
         addDerivative({
-            _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion(version)),
+            _valueInterpreter: core.release.valueInterpreter,
             _tokenAddress: SD_TOKEN_ADDRESS,
             _skipIfRegistered: false,
             _priceFeedAddress: address(priceFeed)
@@ -48,8 +45,7 @@ abstract contract StaderSDPriceFeedTestBase is IntegrationTest {
         __addDerivative();
 
         // SD/USD price on Jan 26th 2025. https://www.coingecko.com/en/coins/stader/historical_data
-        assertValueInUSDForVersion({
-            _version: version,
+        assertValueInUSD({
             _asset: SD_TOKEN_ADDRESS,
             _amount: assetUnit(IERC20(SD_TOKEN_ADDRESS)),
             _expected: 935646379201838789 // 0.935646379201838789 USD
@@ -67,12 +63,12 @@ abstract contract StaderSDPriceFeedTestBase is IntegrationTest {
 
 contract StaderSDPriceFeedTestEthereum is StaderSDPriceFeedTestBase {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
+        __initialize();
     }
 }
 
 contract StaderSDPriceFeedTestEthereumV4 is StaderSDPriceFeedTestBase {
     function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }

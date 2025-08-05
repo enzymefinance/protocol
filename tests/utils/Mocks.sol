@@ -11,17 +11,21 @@ import {IPolicy} from "tests/interfaces/internal/IPolicy.sol";
 // Complete interface implementation without logic; simply returns all default values
 
 contract MockDefaultExtension is IExtension {
-    function activateForFund() external virtual override {}
+    function activateForFund(bool _isMigration) external virtual override {}
 
     function deactivateForFund() external virtual override {}
 
-    function receiveCallFromComptroller(address _caller, uint256 _actionId, bytes calldata _callArgs)
+    function receiveCallFromComptroller(address _caller, uint256 _actionId, bytes memory _callArgs)
         external
         virtual
         override
     {}
 
-    function setConfigForFund(bytes calldata _configData) external virtual override {}
+    function setConfigForFund(address _comptrollerProxy, address _vaultProxy, bytes memory _configData)
+        external
+        virtual
+        override
+    {}
 }
 
 contract MockDefaultFee is IFee {
@@ -158,7 +162,7 @@ contract MockDefaultFundValueCalculator is IFundValueCalculator {
 contract MockDefaultPolicy is IPolicy {
     function activateForFund(address _comptrollerProxy) external virtual override {}
 
-    function addFundSettings(address _comptrollerProxy, bytes calldata _encodedSettings) external virtual override {}
+    function addFundSettings(address _comptrollerProxy, bytes memory _encodedSettings) external virtual override {}
 
     function canDisable() external pure virtual override returns (bool canDisable_) {}
 
@@ -172,9 +176,9 @@ contract MockDefaultPolicy is IPolicy {
         returns (IPolicy.PolicyHook[] memory implementedHooks_)
     {}
 
-    function updateFundSettings(address _comptrollerProxy, bytes calldata _encodedSettings) external virtual override {}
+    function updateFundSettings(address _comptrollerProxy, bytes memory _encodedSettings) external virtual override {}
 
-    function validateRule(address _comptrollerProxy, IPolicy.PolicyHook _hook, bytes calldata _encodedArgs)
+    function validateRule(address _comptrollerProxy, IPolicy.PolicyHook _hook, bytes memory _encodedArgs)
         external
         virtual
         override

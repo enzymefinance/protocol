@@ -6,6 +6,8 @@ import {IMapleLiquidityPosition as IMapleLiquidityPositionProd} from
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IMapleV2Pool} from "tests/interfaces/external/IMapleV2Pool.sol";
 import {IMapleV2PoolManager} from "tests/interfaces/external/IMapleV2PoolManager.sol";
@@ -34,11 +36,14 @@ abstract contract TestBase is IntegrationTest {
     // Set by child contract
     address internal mapleV2GlobalsAddress;
     IMapleV2Pool internal pool;
-    EnzymeVersion internal version;
 
     function setUp() public virtual override {
         // Create a fund
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         // Deploy all dependencies
         uint256 typeId = __deployPositionType({_mapleV2GlobalsAddress: mapleV2GlobalsAddress});
@@ -46,11 +51,12 @@ abstract contract TestBase is IntegrationTest {
         // Create an empty external position for the fund
         vm.prank(fundOwner);
         position = IMapleLiquidityPositionLib(
-            createExternalPositionForVersion({
-                _version: version,
-                _comptrollerProxyAddress: comptrollerProxyAddress,
+            createExternalPosition({
+                _externalPositionManager: core.release.externalPositionManager,
+                _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
                 _typeId: typeId,
-                _initializationData: ""
+                _initializationData: "",
+                _callOnExternalPositionCallArgs: ""
             })
         );
 
@@ -78,8 +84,8 @@ abstract contract TestBase is IntegrationTest {
         address parserAddress = __deployParser({_mapleV2GlobalsAddress: _mapleV2GlobalsAddress});
 
         // Register type
-        typeId_ = registerExternalPositionTypeForVersion({
-            _version: version,
+        typeId_ = registerExternalPositionType({
+            _externalPositionManager: core.release.externalPositionManager,
             _label: "MAPLE_LIQUIDITY",
             _lib: libAddress,
             _parser: parserAddress
@@ -94,9 +100,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_poolAddress, _liquidityAssetAmount);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(position),
             _actionArgs: actionArgs,
             _actionId: uint256(IMapleLiquidityPositionProd.Actions.LendV2)
@@ -107,9 +113,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_poolAddress, _poolTokenAmount);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(position),
             _actionArgs: actionArgs,
             _actionId: uint256(IMapleLiquidityPositionProd.Actions.RequestRedeemV2)
@@ -120,9 +126,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_poolAddress, _poolTokenAmount);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(position),
             _actionArgs: actionArgs,
             _actionId: uint256(IMapleLiquidityPositionProd.Actions.RedeemV2)
@@ -133,9 +139,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_poolAddress, _poolTokenAmount);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(position),
             _actionArgs: actionArgs,
             _actionId: uint256(IMapleLiquidityPositionProd.Actions.CancelRedeemV2)
@@ -185,7 +191,7 @@ abstract contract LendTest is TestBase {
         // Assert assetsToReceive was correctly formatted (no assets in this case)
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -218,7 +224,7 @@ abstract contract RequestRedeemTest is TestBase {
         // Assert assetsToReceive was correctly formatted (no assets in this case)
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -270,7 +276,7 @@ abstract contract RedeemTest is TestBase {
         // Assert assetsToReceive was correctly formatted (liquidity asset in this case)
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: toArray(address(liquidityAsset))
         });
 
@@ -331,7 +337,7 @@ abstract contract CancelRedeemTest is TestBase {
         // Assert assetsToReceive was correctly formatted (no assets in this case)
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -444,11 +450,3 @@ contract MapleLiquidityPositionEthereum is PositionTest {
     }
 }
 //
-
-contract MapleLiquidityPositionEthereumV4 is MapleLiquidityPositionEthereum {
-    function setUp() public override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
-    }
-}

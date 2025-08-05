@@ -39,10 +39,7 @@ abstract contract UniswapV2LiquidityAdapterTestBase is IntegrationTest, UniswapV
     IERC20 internal token0;
     IERC20 internal token1;
 
-    EnzymeVersion internal version;
-
     function __initialize(
-        EnzymeVersion _version,
         uint256 _chainId,
         address _uniswapV2FactoryAddress,
         address _uniswapV2PoolAddress,
@@ -50,16 +47,14 @@ abstract contract UniswapV2LiquidityAdapterTestBase is IntegrationTest, UniswapV
     ) internal {
         setUpNetworkEnvironment({_chainId: _chainId});
 
-        version = _version;
-
         uniswapV2LiquidityAdapter = __deployAdapter({
-            _integrationManagerAddress: getIntegrationManagerAddressForVersion(version),
+            _integrationManagerAddress: address(core.release.integrationManager),
             _uniswapV2FactoryAddress: _uniswapV2FactoryAddress,
             _uniswapV2RouterAddress: _uniswapV2RouterAddress
         });
         uniswapV2PoolPriceFeed = __deployPriceFeed({
-            _fundDeployerAddress: getFundDeployerAddressForVersion(version),
-            _valueInterpreterAddress: getValueInterpreterAddressForVersion(version),
+            _fundDeployerAddress: address(core.release.fundDeployer),
+            _valueInterpreterAddress: address(core.release.valueInterpreter),
             _uniswapV2FactoryAddress: _uniswapV2FactoryAddress
         });
 
@@ -67,28 +62,33 @@ abstract contract UniswapV2LiquidityAdapterTestBase is IntegrationTest, UniswapV
         token0 = IERC20(uniswapV2Pool.token0());
         token1 = IERC20(uniswapV2Pool.token1());
 
-        // If v4, register incoming asset to pass the asset universe validation
-        if (version == EnzymeVersion.V4) {
-            address[] memory tokenAddresses = new address[](2);
-            tokenAddresses[0] = address(token0);
-            tokenAddresses[1] = address(token1);
-            v4AddPrimitivesWithTestAggregator({_tokenAddresses: tokenAddresses, _skipIfRegistered: true});
-        }
+        address[] memory tokenAddresses = new address[](2);
+        tokenAddresses[0] = address(token0);
+        tokenAddresses[1] = address(token1);
+        addPrimitivesWithTestAggregator({
+            _valueInterpreter: core.release.valueInterpreter,
+            _tokenAddresses: tokenAddresses,
+            _skipIfRegistered: true
+        });
 
         // Add poolTokens to price feed
-        vm.startPrank(IFundDeployer(getFundDeployerAddressForVersion({_version: version})).getOwner());
+        vm.startPrank(core.release.fundDeployer.getOwner());
         uniswapV2PoolPriceFeed.addPoolTokens({_poolTokens: toArray(address(uniswapV2Pool))});
 
         // Register derivatives
         addDerivative({
-            _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion({_version: _version})),
+            _valueInterpreter: core.release.valueInterpreter,
             _tokenAddress: address(uniswapV2Pool),
             _skipIfRegistered: true,
             _priceFeedAddress: address(uniswapV2PoolPriceFeed)
         });
         vm.stopPrank();
 
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         // Seed the vault with the underlying tokens
         increaseTokenBalance({_token: token0, _to: vaultProxyAddress, _amount: assetUnit(token0) * 31});
@@ -126,11 +126,11 @@ abstract contract UniswapV2LiquidityAdapterTestBase is IntegrationTest, UniswapV
             abi.encode(outgoingAssets, _maxOutgoingAssetAmounts, minOutgoingAssetAmounts, minIncomingAssetAmount);
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _actionArgs: actionArgs,
-            _adapterAddress: address(uniswapV2LiquidityAdapter),
+            _adapter: address(uniswapV2LiquidityAdapter),
             _selector: IUniswapV2LiquidityAdapter.lend.selector
         });
     }
@@ -141,11 +141,11 @@ abstract contract UniswapV2LiquidityAdapterTestBase is IntegrationTest, UniswapV
         bytes memory actionArgs = abi.encode(_outgoingAssetAmount, incomingAssets, minIncomingAssetAmounts);
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _actionArgs: actionArgs,
-            _adapterAddress: address(uniswapV2LiquidityAdapter),
+            _adapter: address(uniswapV2LiquidityAdapter),
             _selector: IUniswapV2LiquidityAdapter.redeem.selector
         });
     }
@@ -244,19 +244,6 @@ abstract contract UniswapV2LiquidityAdapterTestBase is IntegrationTest, UniswapV
 contract EthereumWethUsdcTest is UniswapV2LiquidityAdapterTestBase {
     function setUp() public override {
         __initialize({
-            _version: EnzymeVersion.Current,
-            _chainId: ETHEREUM_CHAIN_ID,
-            _uniswapV2FactoryAddress: ETHEREUM_UNISWAP_V2_FACTORY,
-            _uniswapV2RouterAddress: ETHEREUM_UNISWAP_V2_ROUTER,
-            _uniswapV2PoolAddress: ETHEREUM_UNISWAP_V2_POOL_WETH_USDC
-        });
-    }
-}
-
-contract EthereumWethUsdcTestV4 is UniswapV2LiquidityAdapterTestBase {
-    function setUp() public override {
-        __initialize({
-            _version: EnzymeVersion.V4,
             _chainId: ETHEREUM_CHAIN_ID,
             _uniswapV2FactoryAddress: ETHEREUM_UNISWAP_V2_FACTORY,
             _uniswapV2RouterAddress: ETHEREUM_UNISWAP_V2_ROUTER,
@@ -268,19 +255,6 @@ contract EthereumWethUsdcTestV4 is UniswapV2LiquidityAdapterTestBase {
 contract PolygonWmaticUsdcTest is UniswapV2LiquidityAdapterTestBase {
     function setUp() public override {
         __initialize({
-            _version: EnzymeVersion.Current,
-            _chainId: POLYGON_CHAIN_ID,
-            _uniswapV2FactoryAddress: POLYGON_UNISWAP_V2_FACTORY,
-            _uniswapV2RouterAddress: POLYGON_UNISWAP_V2_ROUTER,
-            _uniswapV2PoolAddress: POLYGON_UNISWAP_V2_POOL_WMATIC_USDT
-        });
-    }
-}
-
-contract PolygonWmaticUsdcTestV4 is UniswapV2LiquidityAdapterTestBase {
-    function setUp() public override {
-        __initialize({
-            _version: EnzymeVersion.V4,
             _chainId: POLYGON_CHAIN_ID,
             _uniswapV2FactoryAddress: POLYGON_UNISWAP_V2_FACTORY,
             _uniswapV2RouterAddress: POLYGON_UNISWAP_V2_ROUTER,
@@ -292,19 +266,6 @@ contract PolygonWmaticUsdcTestV4 is UniswapV2LiquidityAdapterTestBase {
 contract ArbitrumWmaticUsdcTest is UniswapV2LiquidityAdapterTestBase {
     function setUp() public override {
         __initialize({
-            _version: EnzymeVersion.Current,
-            _chainId: ARBITRUM_CHAIN_ID,
-            _uniswapV2FactoryAddress: ARBITRUM_UNISWAP_V2_FACTORY,
-            _uniswapV2RouterAddress: ARBITRUM_UNISWAP_V2_ROUTER,
-            _uniswapV2PoolAddress: ARBITRUM_UNISWAP_V2_POOL_WETH_USDC
-        });
-    }
-}
-
-contract ArbitrumWmaticUsdcTestV4 is UniswapV2LiquidityAdapterTestBase {
-    function setUp() public override {
-        __initialize({
-            _version: EnzymeVersion.V4,
             _chainId: ARBITRUM_CHAIN_ID,
             _uniswapV2FactoryAddress: ARBITRUM_UNISWAP_V2_FACTORY,
             _uniswapV2RouterAddress: ARBITRUM_UNISWAP_V2_ROUTER,

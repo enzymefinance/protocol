@@ -32,18 +32,10 @@ abstract contract CurvePriceFeedTestBase is CurveUtils, IntegrationTest {
     address internal addressProvider;
     address internal poolOwner;
 
-    EnzymeVersion internal version;
-
-    function __initialize(
-        EnzymeVersion _version,
-        uint256 _chainId,
-        address _addressProviderAddress,
-        address _poolOwnerAddress
-    ) internal {
+    function __initialize(uint256 _chainId, address _addressProviderAddress, address _poolOwnerAddress) internal {
         setUpNetworkEnvironment(_chainId);
-        version = _version;
         priceFeed = deployPriceFeed({
-            _fundDeployer: IFundDeployer(getFundDeployerAddressForVersion(version)),
+            _fundDeployer: IFundDeployer(address(core.release.fundDeployer)),
             _addressProviderAddress: _addressProviderAddress,
             _poolOwnerAddress: _poolOwnerAddress,
             _virtualPriceDeviationThreshold: BPS_ONE_PERCENT
@@ -53,7 +45,7 @@ abstract contract CurvePriceFeedTestBase is CurveUtils, IntegrationTest {
     // TEST HELPERS
 
     function __prankFundDeployerOwner() internal {
-        vm.prank(IFundDeployer(getFundDeployerAddressForVersion({_version: version})).getOwner());
+        vm.prank(core.release.fundDeployer.getOwner());
     }
 
     // TESTS
@@ -76,13 +68,13 @@ abstract contract CurvePriceFeedTestBase is CurveUtils, IntegrationTest {
         });
 
         addDerivative({
-            _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion(version)),
+            _valueInterpreter: core.release.valueInterpreter,
             _tokenAddress: _lpToken,
             _skipIfRegistered: false,
             _priceFeedAddress: address(priceFeed)
         });
 
-        uint256 lpTokenValue = IValueInterpreter(getValueInterpreterAddressForVersion(version)).calcCanonicalAssetValue({
+        uint256 lpTokenValue = core.release.valueInterpreter.calcCanonicalAssetValue({
             _baseAsset: _lpToken,
             _amount: assetUnit(IERC20(_lpToken)),
             _quoteAsset: address(wethToken)
@@ -90,14 +82,13 @@ abstract contract CurvePriceFeedTestBase is CurveUtils, IntegrationTest {
 
         if (_gaugeToken != address(0)) {
             addDerivative({
-                _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion(version)),
+                _valueInterpreter: core.release.valueInterpreter,
                 _tokenAddress: _gaugeToken,
                 _skipIfRegistered: false,
                 _priceFeedAddress: address(priceFeed)
             });
 
-            uint256 gaugeTokenValue = IValueInterpreter(getValueInterpreterAddressForVersion(version))
-                .calcCanonicalAssetValue({
+            uint256 gaugeTokenValue = core.release.valueInterpreter.calcCanonicalAssetValue({
                 _baseAsset: _gaugeToken,
                 _amount: assetUnit(IERC20(_gaugeToken)),
                 _quoteAsset: address(wethToken)
@@ -106,8 +97,7 @@ abstract contract CurvePriceFeedTestBase is CurveUtils, IntegrationTest {
             assertEq(lpTokenValue, gaugeTokenValue, "LP token and gauge token values don't match");
         }
 
-        uint256 invariantProxyAssetValue = IValueInterpreter(getValueInterpreterAddressForVersion(version))
-            .calcCanonicalAssetValue({
+        uint256 invariantProxyAssetValue = core.release.valueInterpreter.calcCanonicalAssetValue({
             _baseAsset: _invariantProxyAsset,
             _amount: assetUnit(IERC20(_invariantProxyAsset)),
             _quoteAsset: address(wethToken)
@@ -468,9 +458,8 @@ abstract contract CurvePriceFeedTestBase is CurveUtils, IntegrationTest {
 }
 
 abstract contract CurvePriceFeedTestEthereumBase is CurvePriceFeedTestBase {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         __initialize({
-            _version: _version,
             _chainId: ETHEREUM_CHAIN_ID,
             _addressProviderAddress: ADDRESS_PROVIDER_ADDRESS,
             _poolOwnerAddress: ETHEREUM_POOL_OWNER_ADDRESS
@@ -491,7 +480,7 @@ abstract contract CurvePriceFeedTestEthereumBase is CurvePriceFeedTestBase {
     function test_calcUnderlyingValues_successAaveUSDPool() public {
         __test_calcUnderlyingValues_success({
             _pool: ETHEREUM_AAVE_POOL_ADDRESS,
-            _invariantProxyAsset: getUsdEthSimulatedAggregatorForVersion(version),
+            _invariantProxyAsset: address(getCoreToken("USD")),
             _lpToken: ETHEREUM_AAVE_POOL_LP_TOKEN_ADDRESS,
             _gaugeToken: ETHEREUM_AAVE_POOL_GAUGE_TOKEN_ADDRESS,
             _allowedDeviationPer365DaysInBps: 15 * BPS_ONE_PERCENT,
@@ -607,9 +596,8 @@ abstract contract CurvePriceFeedTestEthereumBase is CurvePriceFeedTestBase {
 }
 
 abstract contract CurvePriceFeedTestPolygonBase is CurvePriceFeedTestBase {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         __initialize({
-            _version: _version,
             _chainId: POLYGON_CHAIN_ID,
             _addressProviderAddress: ADDRESS_PROVIDER_ADDRESS,
             _poolOwnerAddress: POLYGON_POOL_OWNER_ADDRESS
@@ -619,7 +607,7 @@ abstract contract CurvePriceFeedTestPolygonBase is CurvePriceFeedTestBase {
     function test_calcUnderlyingValues_successAaveUSDPool() public {
         __test_calcUnderlyingValues_success({
             _pool: POLYGON_AAVE_POOL_ADDRESS,
-            _invariantProxyAsset: getUsdEthSimulatedAggregatorForVersion(version),
+            _invariantProxyAsset: address(getCoreToken("USD")),
             _lpToken: POLYGON_AAVE_POOL_LP_TOKEN_ADDRESS,
             _gaugeToken: POLYGON_AAVE_POOL_GAUGE_TOKEN_ADDRESS,
             _poolCreationTimestamp: 1618858763,
@@ -675,9 +663,8 @@ abstract contract CurvePriceFeedTestPolygonBase is CurvePriceFeedTestBase {
 }
 
 abstract contract CurvePriceFeedTestArbitrumBase is CurvePriceFeedTestBase {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         __initialize({
-            _version: _version,
             _chainId: ARBITRUM_CHAIN_ID,
             _addressProviderAddress: ADDRESS_PROVIDER_ADDRESS,
             _poolOwnerAddress: ARBITRUM_POOL_OWNER_ADDRESS
@@ -718,36 +705,36 @@ abstract contract CurvePriceFeedTestArbitrumBase is CurvePriceFeedTestBase {
 
 contract CurvePriceFeedTestEthereum is CurvePriceFeedTestEthereumBase {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
+        __initialize();
     }
 }
 
 contract CurvePriceFeedTestEthereumV4 is CurvePriceFeedTestEthereumBase {
     function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }
 
 contract CurvePriceFeedPolygon is CurvePriceFeedTestPolygonBase {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
+        __initialize();
     }
 }
 
 contract CurvePriceFeedTestPolygonV4 is CurvePriceFeedTestPolygonBase {
     function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }
 
 contract CurvePriceFeedTestArbitrum is CurvePriceFeedTestArbitrumBase {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
+        __initialize();
     }
 }
 
 contract CurvePriceFeedTestArbitrumV4 is CurvePriceFeedTestArbitrumBase {
     function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }

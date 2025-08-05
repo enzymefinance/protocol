@@ -7,7 +7,9 @@ import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IUniswapV3Adapter} from "tests/interfaces/internal/IUniswapV3Adapter.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 import {ETHEREUM_SWAP_ROUTER, POLYGON_SWAP_ROUTER, ARBITRUM_SWAP_ROUTER} from "./UniswapV3Utils.sol";
 
@@ -18,22 +20,22 @@ abstract contract TestBase is IntegrationTest {
 
     IUniswapV3Adapter internal adapter;
 
-    EnzymeVersion internal version;
-
-    function __initialize(EnzymeVersion _version, uint256 _chainId, address _routerAddress) internal {
+    function __initialize(uint256 _chainId, address _routerAddress) internal {
         setUpNetworkEnvironment({_chainId: _chainId});
-
-        version = _version;
 
         adapter = __deployAdapter(_routerAddress);
 
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
     }
 
     // DEPLOYMENT HELPERS
 
     function __deployAdapter(address _routerAddress) private returns (IUniswapV3Adapter) {
-        bytes memory args = abi.encode(getIntegrationManagerAddressForVersion(version), _routerAddress);
+        bytes memory args = abi.encode(address(core.release.integrationManager), _routerAddress);
         address addr = deployCode("UniswapV3Adapter.sol", args);
         return IUniswapV3Adapter(addr);
     }
@@ -49,12 +51,12 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_pathAddresses, _pathFees, _outgoingAssetAmount, _minIncomingAssetAmount);
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _actionArgs: actionArgs,
-            _adapterAddress: address(adapter),
-            _selector: IUniswapV3Adapter.takeOrder.selector
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
+            _selector: IUniswapV3Adapter.takeOrder.selector,
+            _actionArgs: actionArgs
         });
     }
 
@@ -124,9 +126,9 @@ abstract contract TestBase is IntegrationTest {
     }
 }
 
-abstract contract TestBaseEthereum is TestBase {
-    function __initialize(EnzymeVersion _version) internal {
-        __initialize({_chainId: ETHEREUM_CHAIN_ID, _version: _version, _routerAddress: ETHEREUM_SWAP_ROUTER});
+contract UniswapV3AdapterEthereumTest is TestBase {
+    function setUp() public override {
+        __initialize({_chainId: ETHEREUM_CHAIN_ID, _routerAddress: ETHEREUM_SWAP_ROUTER});
     }
 
     function test_takeOrder_success() public {
@@ -153,9 +155,9 @@ abstract contract TestBaseEthereum is TestBase {
     }
 }
 
-abstract contract TestBasePolygon is TestBase {
-    function __initialize(EnzymeVersion _version) internal {
-        __initialize({_chainId: POLYGON_CHAIN_ID, _version: _version, _routerAddress: POLYGON_SWAP_ROUTER});
+contract UniswapV3AdapterPolygonTest is TestBase {
+    function setUp() public override {
+        __initialize({_chainId: POLYGON_CHAIN_ID, _routerAddress: POLYGON_SWAP_ROUTER});
     }
 
     function test_takeOrder_success() public {
@@ -182,9 +184,9 @@ abstract contract TestBasePolygon is TestBase {
     }
 }
 
-abstract contract TestBaseArbitrum is TestBase {
-    function __initialize(EnzymeVersion _version) internal {
-        __initialize({_chainId: ARBITRUM_CHAIN_ID, _version: _version, _routerAddress: ARBITRUM_SWAP_ROUTER});
+contract UniswapV3AdapterArbitrumTest is TestBase {
+    function setUp() public override {
+        __initialize({_chainId: ARBITRUM_CHAIN_ID, _routerAddress: ARBITRUM_SWAP_ROUTER});
     }
 
     function test_takeOrder_success() public {
@@ -208,41 +210,5 @@ abstract contract TestBaseArbitrum is TestBase {
             _pathFees: pathFees,
             _outgoingAssetAmount: 13 * assetUnit(IERC20(ARBITRUM_WETH))
         });
-    }
-}
-
-contract UniswapV3AdapterEthereumTest is TestBaseEthereum {
-    function setUp() public override {
-        __initialize(EnzymeVersion.Current);
-    }
-}
-
-contract UniswapV3AdapterEthereumTestV4 is TestBaseEthereum {
-    function setUp() public override {
-        __initialize(EnzymeVersion.V4);
-    }
-}
-
-contract UniswapV3AdapterPolygonTest is TestBasePolygon {
-    function setUp() public override {
-        __initialize(EnzymeVersion.Current);
-    }
-}
-
-contract UniswapV3AdapterPolygonTestV4 is TestBasePolygon {
-    function setUp() public override {
-        __initialize(EnzymeVersion.V4);
-    }
-}
-
-contract UniswapV3AdapterArbitrumTest is TestBaseArbitrum {
-    function setUp() public override {
-        __initialize(EnzymeVersion.Current);
-    }
-}
-
-contract UniswapV3AdapterArbitrumTestV4 is TestBaseArbitrum {
-    function setUp() public override {
-        __initialize(EnzymeVersion.V4);
     }
 }

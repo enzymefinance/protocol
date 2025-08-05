@@ -16,11 +16,8 @@ abstract contract CompoundV2PriceFeedTestBase is IntegrationTest {
 
     ICompoundPriceFeed internal priceFeed;
 
-    EnzymeVersion internal version;
-
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         setUpMainnetEnvironment();
-        version = _version;
         priceFeed = __deployPriceFeed();
     }
 
@@ -29,7 +26,7 @@ abstract contract CompoundV2PriceFeedTestBase is IntegrationTest {
     function __deployPriceFeed() private returns (ICompoundPriceFeed priceFeed_) {
         address addr = deployCode(
             "CompoundPriceFeed.sol",
-            abi.encode(getFundDeployerAddressForVersion(version), ETHEREUM_WETH, ETHEREUM_COMPOUND_V2_CETH)
+            abi.encode(address(core.release.fundDeployer), ETHEREUM_WETH, ETHEREUM_COMPOUND_V2_CETH)
         );
         return ICompoundPriceFeed(addr);
     }
@@ -69,7 +66,7 @@ abstract contract CompoundV2PriceFeedTestBase is IntegrationTest {
     }
 
     function test_calcUnderlyingValues_successRegularAsset() public {
-        vm.prank(IFundDeployer(getFundDeployerAddressForVersion({_version: version})).getOwner());
+        vm.prank(core.release.fundDeployer.getOwner());
         priceFeed.addCTokens(toArray(ETHEREUM_COMPOUND_V2_CUSDC));
 
         __test_calcUnderlyingValues_success({
@@ -90,7 +87,7 @@ abstract contract CompoundV2PriceFeedTestBase is IntegrationTest {
     function test_isSupportedAsset_successRegularAssets() public {
         assertFalse(priceFeed.isSupportedAsset({_asset: ETHEREUM_COMPOUND_V2_CUSDC}), "Supported token");
 
-        vm.prank(IFundDeployer(getFundDeployerAddressForVersion({_version: version})).getOwner());
+        vm.prank(core.release.fundDeployer.getOwner());
 
         expectEmit(address(priceFeed));
         emit CTokenAdded(ETHEREUM_COMPOUND_V2_CUSDC, ETHEREUM_USDC);
@@ -101,14 +98,14 @@ abstract contract CompoundV2PriceFeedTestBase is IntegrationTest {
     }
 
     function test_addCTokens_failsEmptyArray() public {
-        vm.prank(IFundDeployer(getFundDeployerAddressForVersion({_version: version})).getOwner());
+        vm.prank(core.release.fundDeployer.getOwner());
 
         vm.expectRevert("addCTokens: Empty _cTokens");
         priceFeed.addCTokens(new address[](0));
     }
 
     function test_addCTokens_failsValueAlreadySet() public {
-        vm.prank(IFundDeployer(getFundDeployerAddressForVersion({_version: version})).getOwner());
+        vm.prank(core.release.fundDeployer.getOwner());
 
         vm.expectRevert("addCTokens: Value already set");
         priceFeed.addCTokens(toArray(ETHEREUM_COMPOUND_V2_CETH));
@@ -117,12 +114,12 @@ abstract contract CompoundV2PriceFeedTestBase is IntegrationTest {
 
 contract CompoundV2PriceFeedTestEthereum is CompoundV2PriceFeedTestBase {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
+        __initialize();
     }
 }
 
 contract CompoundV2PriceFeedTestEthereumV4 is CompoundV2PriceFeedTestBase {
     function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }

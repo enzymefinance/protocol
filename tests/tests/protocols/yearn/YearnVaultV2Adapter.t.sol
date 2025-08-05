@@ -9,8 +9,10 @@ import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IYearnVaultV2Vault} from "tests/interfaces/external/IYearnVaultV2Vault.sol";
 
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {IYearnVaultV2Adapter} from "tests/interfaces/internal/IYearnVaultV2Adapter.sol";
 import {IYearnVaultV2PriceFeed} from "tests/interfaces/internal/IYearnVaultV2PriceFeed.sol";
 
@@ -28,21 +30,22 @@ abstract contract YearnVaultV2AdapterTestBase is IntegrationTest {
     IYearnVaultV2Adapter internal adapter;
     IYearnVaultV2PriceFeed internal priceFeed;
 
-    EnzymeVersion internal version;
-
-    function __initialize(EnzymeVersion _version, address _yearnVaultV2RegistryAddress, uint256 _chainId) internal {
-        version = _version;
+    function __initialize(address _yearnVaultV2RegistryAddress, uint256 _chainId) internal {
         setUpNetworkEnvironment({_chainId: _chainId});
 
-        (comptrollerProxyAddress, vaultProxyAddress, vaultOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, vaultOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         priceFeed = __deployYearnVaultV2PriceFeed({
-            _fundDeployerAddress: getFundDeployerAddressForVersion(version),
+            _fundDeployerAddress: address(core.release.fundDeployer),
             _yearnVaultV2RegistryAddress: _yearnVaultV2RegistryAddress
         });
 
         adapter = __deployAdapter({
-            _integrationManagerAddress: getIntegrationManagerAddressForVersion(version),
+            _integrationManagerAddress: address(core.release.integrationManager),
             _priceFeed: priceFeed
         });
     }
@@ -72,10 +75,10 @@ abstract contract YearnVaultV2AdapterTestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_yVaultAddress, _outgoingUnderlyingAmount, _minIncomingYVaultSharesAmount);
 
         vm.prank(vaultOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: IYearnVaultV2Adapter.lend.selector,
             _actionArgs: actionArgs
         });
@@ -92,10 +95,10 @@ abstract contract YearnVaultV2AdapterTestBase is IntegrationTest {
         );
 
         vm.prank(vaultOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: IYearnVaultV2Adapter.redeem.selector,
             _actionArgs: actionArgs
         });
@@ -104,7 +107,7 @@ abstract contract YearnVaultV2AdapterTestBase is IntegrationTest {
     // MISC HELPERS
 
     function __registerYVault(address _yVaultAddress) internal {
-        vm.startPrank(IFundDeployer(getFundDeployerAddressForVersion(version)).getOwner());
+        vm.startPrank(IFundDeployer(address(core.release.fundDeployer)).getOwner());
         priceFeed.addDerivatives({
             _derivatives: toArray(_yVaultAddress),
             _underlyings: toArray(address(IYearnVaultV2Vault(_yVaultAddress).token()))
@@ -112,7 +115,7 @@ abstract contract YearnVaultV2AdapterTestBase is IntegrationTest {
         vm.stopPrank();
 
         addDerivative({
-            _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion(version)),
+            _valueInterpreter: core.release.valueInterpreter,
             _tokenAddress: _yVaultAddress,
             _skipIfRegistered: true,
             _priceFeedAddress: address(priceFeed)
@@ -246,12 +249,8 @@ abstract contract YearnVaultV2AdapterTestBase is IntegrationTest {
 }
 
 abstract contract YearnVaultV2AdapterTestBaseEthereum is YearnVaultV2AdapterTestBase {
-    function __initialize(EnzymeVersion _version) internal {
-        __initialize({
-            _version: _version,
-            _yearnVaultV2RegistryAddress: ETHEREUM_YEARN_VAULT_V2_REGISTRY,
-            _chainId: ETHEREUM_CHAIN_ID
-        });
+    function __initialize() internal {
+        __initialize({_yearnVaultV2RegistryAddress: ETHEREUM_YEARN_VAULT_V2_REGISTRY, _chainId: ETHEREUM_CHAIN_ID});
     }
 
     function test_lend_success() public {
@@ -285,12 +284,6 @@ abstract contract YearnVaultV2AdapterTestBaseEthereum is YearnVaultV2AdapterTest
 
 contract YearnVaultV2AdapterTestEthereum is YearnVaultV2AdapterTestBaseEthereum {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
-    }
-}
-
-contract YearnVaultV2AdapterTestEthereumV4 is YearnVaultV2AdapterTestBaseEthereum {
-    function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }

@@ -16,19 +16,12 @@ import {
 } from "tests/utils/core/deployment/PersistentContracts.sol";
 import {ReleaseConfig} from "tests/utils/core/deployment/DeploymentUtils.sol";
 import {
-    Contracts as V4ReleaseContracts,
-    getMainnetDeployment as getV4MainnetReleaseContracts,
-    getPolygonDeployment as getV4PolygonReleaseContracts,
-    getArbitrumDeployment as getV4ArbitrumReleaseContracts,
-    getBaseChainDeployment as getV4BaseChainReleaseContracts
-} from "tests/utils/core/deployment/V4ReleaseContracts.sol";
-import {
     Contracts as ReleaseContracts,
     getMainnetDeployment as getMainnetReleaseContracts,
     getPolygonDeployment as getPolygonReleaseContracts,
     getArbitrumDeployment as getArbitrumReleaseContracts,
-    getBaseChainDeployment as getBaseReleaseContracts
-} from "tests/utils/core/deployment/V5ReleaseContracts.sol";
+    getBaseChainDeployment as getBaseChainReleaseContracts
+} from "tests/utils/core/deployment/V4ReleaseContracts.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
@@ -38,10 +31,6 @@ import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IIntegrationManager} from "tests/interfaces/internal/IIntegrationManager.sol";
 import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
-
-// v4 interfaces
-import {IComptrollerLib as IV4ComptrollerLib} from "tests/interfaces/internal/v4/IComptrollerLib.sol";
-import {IFundDeployer as IV4FundDeployer} from "tests/interfaces/internal/v4/IFundDeployer.sol";
 
 struct CorePrimitiveInput {
     string symbol;
@@ -65,7 +54,6 @@ abstract contract IntegrationTest is CoreUtils {
     IERC20 internal nonStandardPrimitive;
 
     Deployment internal core;
-    V4ReleaseContracts internal v4ReleaseContracts;
     // Don't allow access outside of this contract
     mapping(string => IERC20) private symbolToCoreToken;
     mapping(IERC20 => bool) private tokenToIsCore;
@@ -98,7 +86,7 @@ abstract contract IntegrationTest is CoreUtils {
         vm.createSelectFork("mainnet", _forkBlock);
 
         core.persistent = getMainnetPersistentContracts();
-        v4ReleaseContracts = getV4MainnetReleaseContracts();
+        core.release = getMainnetReleaseContracts();
 
         // No v5 release live
         // core.release = getMainnetReleaseContracts();
@@ -108,7 +96,7 @@ abstract contract IntegrationTest is CoreUtils {
         vm.createSelectFork("polygon", _forkBlock);
 
         core.persistent = getPolygonPersistentContracts();
-        v4ReleaseContracts = getV4PolygonReleaseContracts();
+        core.release = getPolygonReleaseContracts();
 
         // No v5 release live
         // core.release = getPolygonReleaseContracts();
@@ -118,7 +106,7 @@ abstract contract IntegrationTest is CoreUtils {
         vm.createSelectFork("arbitrum", _forkBlock);
 
         core.persistent = getArbitrumPersistentContracts();
-        v4ReleaseContracts = getV4ArbitrumReleaseContracts();
+        core.release = getArbitrumReleaseContracts();
 
         // No v5 release live
         // core.release = getArbitrumReleaseContracts();
@@ -128,7 +116,7 @@ abstract contract IntegrationTest is CoreUtils {
         vm.createSelectFork("base", _forkBlock);
 
         core.persistent = getBaseChainPersistentContracts();
-        v4ReleaseContracts = getV4BaseChainReleaseContracts();
+        core.release = getBaseChainReleaseContracts();
 
         // No v5 release live
         // core.release = getBaseReleaseContracts();
@@ -216,8 +204,6 @@ abstract contract IntegrationTest is CoreUtils {
     function setUpMainnetEnvironment(uint256 _forkBlock) internal {
         vm.createSelectFork({urlOrAlias: "mainnet", blockNumber: _forkBlock});
 
-        v4ReleaseContracts = getV4MainnetReleaseContracts();
-
         ReleaseConfig memory config = getDefaultMainnetConfig();
 
         __setUpEnvironment({_config: config, _persistentContractsAlreadySet: false});
@@ -275,8 +261,6 @@ abstract contract IntegrationTest is CoreUtils {
 
     function setUpPolygonEnvironment(uint256 _forkBlock) internal {
         vm.createSelectFork("polygon", _forkBlock);
-
-        v4ReleaseContracts = getV4PolygonReleaseContracts();
 
         ReleaseConfig memory config = getDefaultPolygonConfig();
 
@@ -349,8 +333,6 @@ abstract contract IntegrationTest is CoreUtils {
             returnData: abi.encode(_forkBlock)
         });
 
-        v4ReleaseContracts = getV4ArbitrumReleaseContracts();
-
         ReleaseConfig memory config = getDefaultArbitrumConfig();
 
         __setUpEnvironment({_config: config, _persistentContractsAlreadySet: false});
@@ -408,8 +390,6 @@ abstract contract IntegrationTest is CoreUtils {
 
     function setUpBaseChainEnvironment(uint256 _forkBlock) internal {
         vm.createSelectFork("base", _forkBlock);
-
-        v4ReleaseContracts = getV4BaseChainReleaseContracts();
 
         ReleaseConfig memory config = getDefaultBaseChainConfig();
 
@@ -696,305 +676,15 @@ abstract contract IntegrationTest is CoreUtils {
         return tokenToIsCore[_token];
     }
 
-    // VERSIONED CONVENIENCE FUNCTIONS
-    // Not the most ideal place to dump all this stuff, but it's convenient for now
+    // VALUE HELPERS
 
-    // Sorted descending, so default is most current version in the repo.
-    // V3 and earlier not supported.
-    // Version numbers refer to live contracts, not the contracts in this repo.
-    enum EnzymeVersion {
-        Current,
-        V4
-    }
-
-    // Versioned routers: fund
-
-    function createTradingFundForVersion(EnzymeVersion _version)
-        internal
-        returns (address comptrollerProxyAddress_, address vaultProxyAddress_, address fundOwner_)
-    {
-        return createTradingFundForVersion({
-            _version: _version,
-            _denominationAsset: createTestToken() // Use arbitrary test token as denomination asset
-        });
-    }
-
-    function createTradingFundForVersion(EnzymeVersion _version, IERC20 _denominationAsset)
-        internal
-        returns (address comptrollerProxyAddress_, address vaultProxyAddress_, address fundOwner_)
-    {
-        if (_version == EnzymeVersion.V4) {
-            // Add the denom asset as primitive
-            v4AddPrimitiveWithTestAggregator({_tokenAddress: address(_denominationAsset), _skipIfRegistered: false});
-
-            return v4CreateFundSimple({
-                _fundDeployer: v4ReleaseContracts.fundDeployer,
-                _denominationAsset: _denominationAsset
-            });
-        } else {
-            // Add the denom asset as primitive
-            addPrimitiveWithTestAggregator({
-                _valueInterpreter: core.release.valueInterpreter,
-                _tokenAddress: address(_denominationAsset),
-                _skipIfRegistered: false
-            });
-
-            IFundDeployer.ConfigInput memory comptrollerConfig;
-            comptrollerConfig.denominationAsset = address(_denominationAsset);
-            comptrollerConfig.extensionsConfig = new IFundDeployer.ExtensionConfigInput[](2);
-            comptrollerConfig.extensionsConfig[0].extension = address(core.release.integrationManager);
-            comptrollerConfig.extensionsConfig[1].extension = address(core.release.externalPositionManager);
-
-            IComptrollerLib comptrollerProxy;
-            IVaultLib vaultProxy;
-            (comptrollerProxy, vaultProxy, fundOwner_) =
-                createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
-
-            comptrollerProxyAddress_ = address(comptrollerProxy);
-            vaultProxyAddress_ = address(vaultProxy);
-        }
-    }
-
-    // Versioned routers: fund participation
-
-    function buySharesForVersion(
-        EnzymeVersion _version,
-        address _sharesBuyer,
-        address _comptrollerProxyAddress,
-        uint256 _amountToDeposit
-    ) internal returns (uint256 sharesReceived_) {
-        if (_version == EnzymeVersion.V4) {
-            return v4BuyShares({
-                _sharesBuyer: _sharesBuyer,
-                _comptrollerProxy: IV4ComptrollerLib(_comptrollerProxyAddress),
-                _amountToDeposit: _amountToDeposit
-            });
-        } else if (_version == EnzymeVersion.Current) {
-            return buyShares({
-                _sharesBuyer: _sharesBuyer,
-                _comptrollerProxy: IComptrollerLib(_comptrollerProxyAddress),
-                _amountToDeposit: _amountToDeposit
-            });
-        } else {
-            revert("buySharesForVersion: Unsupported version");
-        }
-    }
-
-    // Versioned routers: integrations
-
-    function callOnIntegrationForVersion(
-        EnzymeVersion _version,
-        address _comptrollerProxyAddress,
-        address _adapterAddress,
-        bytes4 _selector,
-        bytes memory _actionArgs
-    ) internal {
-        // Only difference currently is the integration manager address
-        address integrationManagerAddress = getIntegrationManagerAddressForVersion(_version);
-
-        callOnIntegration({
-            _integrationManager: IIntegrationManager(integrationManagerAddress),
-            _comptrollerProxy: IComptrollerLib(_comptrollerProxyAddress),
-            _adapter: _adapterAddress,
-            _selector: _selector,
-            _actionArgs: _actionArgs
-        });
-    }
-
-    // Versioned routers: external positions
-
-    function callOnExternalPositionForVersion(
-        EnzymeVersion _version,
-        address _comptrollerProxyAddress,
-        address _externalPositionAddress,
-        uint256 _actionId,
-        bytes memory _actionArgs
-    ) internal {
-        // Only difference currently is the ExternalPositionManager address
-        address externalPositionManagerAddress = getExternalPositionManagerAddressForVersion(_version);
-
-        callOnExternalPosition({
-            _externalPositionManager: IExternalPositionManager(externalPositionManagerAddress),
-            _comptrollerProxy: IComptrollerLib(_comptrollerProxyAddress),
-            _externalPositionAddress: _externalPositionAddress,
-            _actionId: _actionId,
-            _actionArgs: _actionArgs
-        });
-    }
-
-    function createExternalPositionForVersion(
-        EnzymeVersion _version,
-        address _comptrollerProxyAddress,
-        uint256 _typeId,
-        bytes memory _initializationData
-    ) internal returns (address externalPositionAddress_) {
-        // Only difference currently is the ExternalPositionManager address
-        address externalPositionManagerAddress = getExternalPositionManagerAddressForVersion(_version);
-
-        return createExternalPosition({
-            _externalPositionManager: IExternalPositionManager(externalPositionManagerAddress),
-            _comptrollerProxy: IComptrollerLib(_comptrollerProxyAddress),
-            _typeId: _typeId,
-            _initializationData: _initializationData,
-            _callOnExternalPositionCallArgs: ""
-        });
-    }
-
-    function registerExternalPositionTypeForVersion(
-        EnzymeVersion _version,
-        string memory _label,
-        address _lib,
-        address _parser
-    ) internal returns (uint256 typeId_) {
-        // Only difference currently is the ExternalPositionManager address
-        address externalPositionManagerAddress = getExternalPositionManagerAddressForVersion(_version);
-
-        return registerExternalPositionType({
-            _externalPositionManager: IExternalPositionManager(externalPositionManagerAddress),
-            _label: _label,
-            _lib: _lib,
-            _parser: _parser
-        });
-    }
-
-    // Versioned routers: helpers
-
-    function getExternalPositionManagerAddressForVersion(EnzymeVersion _version)
-        internal
-        view
-        returns (address externalPositionManagerAddress_)
-    {
-        if (_version == EnzymeVersion.V4) {
-            return address(v4ReleaseContracts.externalPositionManager);
-        } else {
-            return address(core.release.externalPositionManager);
-        }
-    }
-
-    function getFundDeployerAddressForVersion(EnzymeVersion _version)
-        internal
-        view
-        returns (address fundDeployerAddress_)
-    {
-        if (_version == EnzymeVersion.V4) {
-            return address(v4ReleaseContracts.fundDeployer);
-        } else {
-            return address(core.release.fundDeployer);
-        }
-    }
-
-    function getIntegrationManagerAddressForVersion(EnzymeVersion _version)
-        internal
-        view
-        returns (address integrationManagerAddress_)
-    {
-        if (_version == EnzymeVersion.V4) {
-            return address(v4ReleaseContracts.integrationManager);
-        } else {
-            return address(core.release.integrationManager);
-        }
-    }
-
-    function getValueInterpreterAddressForVersion(EnzymeVersion _version)
-        internal
-        view
-        returns (address valueInterpreterAddress_)
-    {
-        if (_version == EnzymeVersion.V4) {
-            return address(v4ReleaseContracts.valueInterpreter);
-        } else {
-            return address(core.release.valueInterpreter);
-        }
-    }
-
-    function getUsdEthSimulatedAggregatorForVersion(EnzymeVersion _version)
-        internal
-        view
-        returns (address usdEthSimulatedAggregator_)
-    {
-        if (_version == EnzymeVersion.V4) {
-            return address(v4ReleaseContracts.usdEthSimulatedAggregator);
-        }
-
-        return address(symbolToCoreToken["USD"]);
-    }
-
-    // v4 actions: fund creation
-
-    // Create simple fund that can trade, but no fees or policies
-    function v4CreateFundSimple(IV4FundDeployer _fundDeployer, IERC20 _denominationAsset)
-        internal
-        returns (address comptrollerProxyAddress_, address vaultProxyAddress_, address fundOwner_)
-    {
-        fundOwner_ = makeAddr("createFund: FundOwner");
-
-        (comptrollerProxyAddress_, vaultProxyAddress_) = _fundDeployer.createNewFund({
-            _fundOwner: fundOwner_,
-            _fundName: "Test Fund",
-            _fundSymbol: "TEST",
-            _denominationAsset: address(_denominationAsset),
-            _sharesActionTimelock: 0,
-            _feeManagerConfigData: "",
-            _policyManagerConfigData: ""
-        });
-    }
-
-    // v4 actions: fund participation
-
-    function v4BuyShares(address _sharesBuyer, IV4ComptrollerLib _comptrollerProxy, uint256 _amountToDeposit)
-        internal
-        returns (uint256 sharesReceived_)
-    {
-        IERC20 denominationAsset = IERC20(_comptrollerProxy.getDenominationAsset());
-        increaseTokenBalance({_token: denominationAsset, _to: _sharesBuyer, _amount: _amountToDeposit});
-
-        vm.startPrank(_sharesBuyer);
-        denominationAsset.approve(address(_comptrollerProxy), _amountToDeposit);
-        sharesReceived_ = _comptrollerProxy.buyShares({_investmentAmount: _amountToDeposit, _minSharesQuantity: 1});
-        vm.stopPrank();
-    }
-
-    // v4 actions: system
-
-    // Where the interfaces/logic remain the same, we can reuse the current convenience functions for v4 (e.g., ValueInterpreter).
-    // By defining pass-through helpers in such a way, we can avoid more heavy refactoring later if we can no longer use the current convenience functions
-
-    function v4AddPrimitiveWithTestAggregator(address _tokenAddress, bool _skipIfRegistered)
-        internal
-        returns (TestChainlinkAggregator aggregator_)
-    {
-        return addPrimitiveWithTestAggregator({
-            _valueInterpreter: IValueInterpreter(address(v4ReleaseContracts.valueInterpreter)),
-            _tokenAddress: _tokenAddress,
-            _skipIfRegistered: _skipIfRegistered
-        });
-    }
-
-    function v4AddPrimitivesWithTestAggregator(address[] memory _tokenAddresses, bool _skipIfRegistered)
-        internal
-        returns (TestChainlinkAggregator[] memory aggregators_)
-    {
-        aggregators_ = new TestChainlinkAggregator[](_tokenAddresses.length);
-        for (uint256 i; i < _tokenAddresses.length; i++) {
-            aggregators_[i] = v4AddPrimitiveWithTestAggregator(_tokenAddresses[i], _skipIfRegistered);
-        }
-
-        return aggregators_;
-    }
-
-    // Versioned routers: value interpreter helpers
-
-    function assertValueInUSDForVersion(EnzymeVersion _version, address _asset, uint256 _amount, uint256 _expected)
-        internal
-    {
-        IValueInterpreter valueInterpreter = IValueInterpreter(getValueInterpreterAddressForVersion(_version));
-
-        uint256 actual = valueInterpreter.calcCanonicalAssetValue({
+    function assertValueInUSD(address _asset, uint256 _amount, uint256 _expected) internal {
+        uint256 actual = core.release.valueInterpreter.calcCanonicalAssetValue({
             _baseAsset: _asset,
             _amount: _amount,
-            _quoteAsset: getUsdEthSimulatedAggregatorForVersion(_version)
+            _quoteAsset: address(getCoreToken("USD"))
         });
 
-        assertEq(actual, _expected, "assertValueInUSDForVersion: Value not equal");
+        assertEq(actual, _expected, "assertValueInUSD: Value not equal");
     }
 }

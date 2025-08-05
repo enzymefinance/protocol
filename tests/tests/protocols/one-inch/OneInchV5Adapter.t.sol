@@ -8,7 +8,9 @@ import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IOneInchV5AggregationRouter} from "tests/interfaces/external/IOneInchV5AggregationRouter.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IOneInchV5Adapter} from "tests/interfaces/internal/IOneInchV5Adapter.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 address constant ETHEREUM_ONE_INCH_V5_AGGREGATION_ROUTER_ADDRESS = 0x1111111254EEB25477B68fb85Ed929f73A960582;
 address constant ETHEREUM_ONE_INCH_EXECUTOR = 0xE37e799D5077682FA0a244D46E5649F71457BD09;
@@ -34,8 +36,6 @@ abstract contract TestBase is IntegrationTest {
 
     IOneInchV5Adapter internal adapter;
 
-    EnzymeVersion internal version;
-
     struct TakeOrder {
         address executor;
         IOneInchV5AggregationRouter.SwapDescription swapDescription;
@@ -55,24 +55,35 @@ abstract contract TestBase is IntegrationTest {
     }
 
     function __initialize(
-        EnzymeVersion _version,
         uint256 _chainId,
         uint256 _forkBlock,
-        address _oneInchV5ExchangeAddress
+        address _oneInchV5ExchangeAddress,
+        address[] memory _tokensToRegister
     ) internal {
         setUpNetworkEnvironment({_chainId: _chainId, _forkBlock: _forkBlock});
 
-        version = _version;
-
         adapter = __deployAdapter(_oneInchV5ExchangeAddress);
 
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
+
+        // Register tokens in the asset universe
+        if (_tokensToRegister.length > 0) {
+            addPrimitivesWithTestAggregator({
+                _valueInterpreter: core.release.valueInterpreter,
+                _tokenAddresses: _tokensToRegister,
+                _skipIfRegistered: true
+            });
+        }
     }
 
     // DEPLOYMENT HELPERS
 
     function __deployAdapter(address _oneInchV5ExchangeAddress) private returns (IOneInchV5Adapter) {
-        bytes memory args = abi.encode(getIntegrationManagerAddressForVersion(version), _oneInchV5ExchangeAddress);
+        bytes memory args = abi.encode(address(core.release.integrationManager), _oneInchV5ExchangeAddress);
         address addr = deployCode("OneInchV5Adapter.sol", args);
         return IOneInchV5Adapter(addr);
     }
@@ -87,12 +98,12 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_executor, _swapDescription, _data);
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _actionArgs: actionArgs,
-            _adapterAddress: address(adapter),
-            _selector: IOneInchV5Adapter.takeOrder.selector
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
+            _selector: IOneInchV5Adapter.takeOrder.selector,
+            _actionArgs: actionArgs
         });
     }
 
@@ -100,12 +111,12 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_ordersData, _allowOrdersToFail);
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _actionArgs: actionArgs,
-            _adapterAddress: address(adapter),
-            _selector: IOneInchV5Adapter.takeMultipleOrders.selector
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
+            _selector: IOneInchV5Adapter.takeMultipleOrders.selector,
+            _actionArgs: actionArgs
         });
     }
 
@@ -444,12 +455,18 @@ abstract contract TestBase is IntegrationTest {
 }
 
 abstract contract TestBaseEthereum is TestBase {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initializeEthereum() internal {
+        address[] memory tokensToRegister = new address[](4);
+        tokensToRegister[0] = ETHEREUM_WETH;
+        tokensToRegister[1] = ETHEREUM_USDC;
+        tokensToRegister[2] = ETHEREUM_DAI;
+        tokensToRegister[3] = ETHEREUM_STETH;
+
         __initialize({
             _chainId: ETHEREUM_CHAIN_ID,
-            _version: _version,
             _oneInchV5ExchangeAddress: ETHEREUM_ONE_INCH_V5_AGGREGATION_ROUTER_ADDRESS,
-            _forkBlock: ETHEREUM_BLOCK_TIME_SENSITIVE_ONE_INCH_V5
+            _forkBlock: ETHEREUM_BLOCK_TIME_SENSITIVE_ONE_INCH_V5,
+            _tokensToRegister: tokensToRegister
         });
     }
 
@@ -589,12 +606,19 @@ abstract contract TestBaseEthereum is TestBase {
 }
 
 abstract contract TestBasePolygon is TestBase {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initializePolygon() internal {
+        address[] memory tokensToRegister = new address[](5);
+        tokensToRegister[0] = POLYGON_WETH;
+        tokensToRegister[1] = POLYGON_WBTC;
+        tokensToRegister[2] = POLYGON_WMATIC;
+        tokensToRegister[3] = POLYGON_LINK;
+        tokensToRegister[4] = POLYGON_MLN;
+
         __initialize({
             _chainId: POLYGON_CHAIN_ID,
-            _version: _version,
             _oneInchV5ExchangeAddress: POLYGON_ONE_INCH_V5_AGGREGATION_ROUTER_ADDRESS,
-            _forkBlock: POLYGON_BLOCK_TIME_SENSITIVE_ONE_INCH_V5
+            _forkBlock: POLYGON_BLOCK_TIME_SENSITIVE_ONE_INCH_V5,
+            _tokensToRegister: tokensToRegister
         });
     }
 
@@ -734,12 +758,18 @@ abstract contract TestBasePolygon is TestBase {
 
 // TODO: Replace the payloads with actual arbitrum payloads
 abstract contract TestBaseArbitrum is TestBase {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initializeArbitrum() internal {
+        address[] memory tokensToRegister = new address[](4);
+        tokensToRegister[0] = ARBITRUM_WETH;
+        tokensToRegister[1] = ARBITRUM_WBTC;
+        tokensToRegister[2] = ARBITRUM_LINK;
+        tokensToRegister[3] = ARBITRUM_MLN;
+
         __initialize({
             _chainId: ARBITRUM_CHAIN_ID,
-            _version: _version,
             _oneInchV5ExchangeAddress: ARBITRUM_ONE_INCH_V5_AGGREGATION_ROUTER_ADDRESS,
-            _forkBlock: 55_136_740 // TODO: REPLACE THIS, and assign this value into the ARBITRUM_BLOCK_TIME_SENSITIVE_ONE_INCH_V5 in Constants.sol
+            _forkBlock: 55_136_740, // TODO: REPLACE THIS, and assign this value into the ARBITRUM_BLOCK_TIME_SENSITIVE_ONE_INCH_V5 in Constants.sol
+            _tokensToRegister: tokensToRegister
         });
     }
 
@@ -878,12 +908,17 @@ abstract contract TestBaseArbitrum is TestBase {
 }
 
 abstract contract TestBaseBaseChain is TestBase {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initializeBaseChain() internal {
+        address[] memory tokensToRegister = new address[](3);
+        tokensToRegister[0] = BASE_WETH;
+        tokensToRegister[1] = BASE_USDC;
+        tokensToRegister[2] = BASE_DAI;
+
         __initialize({
             _chainId: BASE_CHAIN_ID,
-            _version: _version,
             _oneInchV5ExchangeAddress: BASE_ONE_INCH_V5_AGGREGATION_ROUTER_ADDRESS,
-            _forkBlock: BASE_CHAIN_BLOCK_TIME_SENSITIVE_ONE_INCH_V5
+            _forkBlock: BASE_CHAIN_BLOCK_TIME_SENSITIVE_ONE_INCH_V5,
+            _tokensToRegister: tokensToRegister
         });
     }
 
@@ -996,27 +1031,16 @@ abstract contract TestBaseBaseChain is TestBase {
 
 contract OneInchV5AdapterEthereumTest is TestBaseEthereum {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
-    }
-}
-
-contract OneInchV5AdapterEthereumTestV4 is TestBaseEthereum {
-    function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initializeEthereum();
     }
 }
 
 contract OneInchV5AdapterPolygonTest is TestBasePolygon {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
+        __initializePolygon();
     }
 }
 
-contract OneInchV5AdapterPolygonTestV4 is TestBasePolygon {
-    function setUp() public override {
-        __initialize(EnzymeVersion.V4);
-    }
-}
 // TODO: Uncomment once we have retrieved payloads from arbitrum and adjusted the TestBaseArbitrum
 // contract OneInchV5AdapterArbitrumTest is TestBaseArbitrum {
 //     function setUp() public override {
@@ -1024,21 +1048,10 @@ contract OneInchV5AdapterPolygonTestV4 is TestBasePolygon {
 //     }
 // }
 
-// contract OneInchV5AdapterArbitrumTestV4 is TestBaseArbitrum {
-//     function setUp() public override {
-//         __initialize(EnzymeVersion.V4);
-//     }
-// }
-
 contract OneInchV5AdapterBaseTest is TestBaseBaseChain {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
+        __initializeBaseChain();
     }
 }
 
 // TODO: uncomment when the Base asset universe will be registered, and bump the test block number
-// contract OneInchV5AdapterBaseTestV4 is TestBaseBaseChain {
-//     function setUp() public override {
-//         __initialize(EnzymeVersion.V4);
-//     }
-// }

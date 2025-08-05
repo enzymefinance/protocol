@@ -8,6 +8,8 @@ import {IConvexVotingPosition as IConvexVotingPositionProd} from
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {IConvexBaseRewardPool} from "tests/interfaces/external/IConvexBaseRewardPool.sol";
 import {IConvexCvxLockerV2} from "tests/interfaces/external/IConvexCvxLockerV2.sol";
 import {IConvexVlCvxExtraRewardDistribution} from "tests/interfaces/external/IConvexVlCvxExtraRewardDistribution.sol";
@@ -46,15 +48,15 @@ abstract contract TestBase is IntegrationTest {
     address internal comptrollerProxyAddress;
     address internal vaultProxyAddress;
 
-    EnzymeVersion internal version;
-
-    function __initialize(EnzymeVersion _version) internal {
-        version = _version;
-
+    function __initialize() internal {
         setUpMainnetEnvironment();
 
         // Create a fund
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         // Deploy all position dependencies
         uint256 typeId = __deployPositionType({
@@ -68,11 +70,12 @@ abstract contract TestBase is IntegrationTest {
 
         vm.prank(fundOwner);
         convexVotingPosition = IConvexVotingPositionLib(
-            createExternalPositionForVersion({
-                _version: version,
-                _comptrollerProxyAddress: comptrollerProxyAddress,
+            createExternalPosition({
+                _externalPositionManager: core.release.externalPositionManager,
+                _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
                 _typeId: typeId,
-                _initializationData: ""
+                _initializationData: "",
+                _callOnExternalPositionCallArgs: ""
             })
         );
     }
@@ -121,8 +124,8 @@ abstract contract TestBase is IntegrationTest {
         address parserAddress = __deployParser(_cvxToken);
 
         // Register position type
-        typeId_ = registerExternalPositionTypeForVersion({
-            _version: version,
+        typeId_ = registerExternalPositionType({
+            _externalPositionManager: core.release.externalPositionManager,
             _label: "CONVEX_VOTING",
             _lib: libAddress,
             _parser: parserAddress
@@ -137,9 +140,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_amount, _spendRatio);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(convexVotingPosition),
             _actionId: uint256(IConvexVotingPositionProd.Actions.Lock),
             _actionArgs: actionArgs
@@ -148,9 +151,9 @@ abstract contract TestBase is IntegrationTest {
 
     function __relock() internal {
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(convexVotingPosition),
             _actionId: uint256(IConvexVotingPositionProd.Actions.Relock),
             _actionArgs: ""
@@ -159,9 +162,9 @@ abstract contract TestBase is IntegrationTest {
 
     function __withdraw() internal {
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(convexVotingPosition),
             _actionId: uint256(IConvexVotingPositionProd.Actions.Withdraw),
             _actionArgs: ""
@@ -172,9 +175,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_delegatee);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(convexVotingPosition),
             _actionId: uint256(IConvexVotingPositionProd.Actions.Delegate),
             _actionArgs: actionArgs
@@ -192,9 +195,9 @@ abstract contract TestBase is IntegrationTest {
             abi.encode(_allTokensToTransfer, _claimLockerRewards, _extraRewardTokens, _votiumClaims, _unstakeCvxCrv);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(convexVotingPosition),
             _actionId: uint256(IConvexVotingPositionProd.Actions.ClaimRewards),
             _actionArgs: actionArgs
@@ -259,7 +262,7 @@ abstract contract TestBase is IntegrationTest {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -293,7 +296,7 @@ abstract contract TestBase is IntegrationTest {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -328,7 +331,7 @@ abstract contract TestBase is IntegrationTest {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: toArray(ETHEREUM_CVX_TOKEN_CONTRACT)
         });
 
@@ -357,7 +360,7 @@ abstract contract TestBase is IntegrationTest {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -405,7 +408,7 @@ abstract contract TestBase is IntegrationTest {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -459,7 +462,7 @@ abstract contract TestBase is IntegrationTest {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -497,7 +500,7 @@ abstract contract TestBase is IntegrationTest {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -558,7 +561,7 @@ abstract contract TestBase is IntegrationTest {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -573,12 +576,6 @@ abstract contract TestBase is IntegrationTest {
 
 contract ConvexVotingPositionTestEthereum is TestBase {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
-    }
-}
-
-contract ConvexVotingPositionTestEthereumV4 is TestBase {
-    function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }

@@ -20,12 +20,9 @@ abstract contract ERC4626PriceFeedTestBase is IntegrationTest {
     IERC4626 internal erc4626Vault;
     IERC20 internal underlying;
 
-    EnzymeVersion internal version;
-
-    function __initialize(EnzymeVersion _version, uint256 _chainId) internal {
+    function __initialize(uint256 _chainId) internal {
         setUpNetworkEnvironment(_chainId);
         priceFeed = __deployPriceFeed();
-        version = _version;
     }
 
     // DEPLOYMENT HELPERS
@@ -43,7 +40,7 @@ abstract contract ERC4626PriceFeedTestBase is IntegrationTest {
         uint256 _poolCreationTimestamp
     ) internal {
         addDerivative({
-            _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion(version)),
+            _valueInterpreter: IValueInterpreter(address(core.release.valueInterpreter)),
             _tokenAddress: _erc4626VaultAddress,
             _skipIfRegistered: false,
             _priceFeedAddress: address(priceFeed)
@@ -51,8 +48,7 @@ abstract contract ERC4626PriceFeedTestBase is IntegrationTest {
 
         address underlyingAddress = IERC4626(_erc4626VaultAddress).asset();
 
-        uint256 erc4626VaultValue = IValueInterpreter(getValueInterpreterAddressForVersion(version))
-            .calcCanonicalAssetValue({
+        uint256 erc4626VaultValue = IValueInterpreter(address(core.release.valueInterpreter)).calcCanonicalAssetValue({
             _baseAsset: _erc4626VaultAddress,
             _amount: assetUnit(IERC20(_erc4626VaultAddress)),
             _quoteAsset: underlyingAddress
@@ -82,8 +78,8 @@ abstract contract ERC4626PriceFeedTestBase is IntegrationTest {
 }
 
 abstract contract ERC4626PriceFeedTestEthereumBase is ERC4626PriceFeedTestBase {
-    function __initialize(EnzymeVersion _version) internal {
-        __initialize({_version: _version, _chainId: ETHEREUM_CHAIN_ID});
+    function __initialize() internal {
+        __initialize({_chainId: ETHEREUM_CHAIN_ID});
     }
 
     function test_calcUnderlyingValues_successMetaMorpho() public {
@@ -105,12 +101,12 @@ abstract contract ERC4626PriceFeedTestEthereumBase is ERC4626PriceFeedTestBase {
 
 contract ERC4626PriceFeedTestEthereum is ERC4626PriceFeedTestEthereumBase {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
+        __initialize();
     }
 }
 
 contract ERC4626PriceFeedTestEthereumV4 is ERC4626PriceFeedTestEthereumBase {
     function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }

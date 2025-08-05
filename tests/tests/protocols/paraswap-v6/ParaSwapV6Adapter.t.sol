@@ -10,8 +10,10 @@ import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IParaSwapV6FeeVault} from "tests/interfaces/external/IParaSwapV6FeeVault.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IParaSwapV6Adapter} from "tests/interfaces/internal/IParaSwapV6Adapter.sol";
 import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 address constant ETHEREUM_PARASWAP_V6_AUGUSTUS_SWAPPER = 0x6A000F20005980200259B80c5102003040001068;
 address constant ETHEREUM_PARASWAP_V6_FEE_VAULT = 0x00700052c0608F670705380a4900e0a8080010CC;
@@ -34,22 +36,21 @@ abstract contract ParaSwapV6AdapterTestBase is IntegrationTest {
 
     IParaSwapV6FeeVault internal feeVault;
 
-    EnzymeVersion internal version;
-
     function __initialize(
         uint256 _chainId,
-        EnzymeVersion _version,
         uint256 _forkBlock,
         address _augustusSwapperAddress,
         address _feeVaultAddress
     ) internal {
         setUpNetworkEnvironment({_chainId: _chainId, _forkBlock: _forkBlock});
 
-        version = _version;
-
         adapter = __deployAdapter({_augustusSwapper: _augustusSwapperAddress});
 
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
         feeRecipientAddress = makeAddr("FeeRecipientAddress");
 
         if (_feeVaultAddress != address(0)) {
@@ -60,7 +61,7 @@ abstract contract ParaSwapV6AdapterTestBase is IntegrationTest {
     // DEPLOYMENT HELPERS
 
     function __deployAdapter(address _augustusSwapper) private returns (IParaSwapV6Adapter) {
-        bytes memory args = abi.encode(getIntegrationManagerAddressForVersion(version), _augustusSwapper);
+        bytes memory args = abi.encode(address(core.release.integrationManager), _augustusSwapper);
         address addr = deployCode("ParaSwapV6Adapter.sol", args);
         return IParaSwapV6Adapter(addr);
     }
@@ -71,10 +72,10 @@ abstract contract ParaSwapV6AdapterTestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_actionId, _encodedActionArgs);
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: IParaSwapV6Adapter.action.selector,
             _actionArgs: actionArgs
         });
@@ -105,7 +106,7 @@ abstract contract ParaSwapV6AdapterTestBase is IntegrationTest {
     function __registerAssetsAndSeedOutgoing(address _outgoingAssetAddress, address _incomingAssetAddress) private {
         // Ensure that all assets are registered
         addPrimitivesWithTestAggregator({
-            _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion(version)),
+            _valueInterpreter: core.release.valueInterpreter,
             _tokenAddresses: (toArray(_outgoingAssetAddress, _incomingAssetAddress)),
             _skipIfRegistered: true
         });
@@ -236,10 +237,9 @@ abstract contract ParaSwapV6AdapterEthereumTestBase is ParaSwapV6AdapterTestBase
         return abi.encode(_swapData);
     }
 
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         __initialize({
             _chainId: ETHEREUM_CHAIN_ID,
-            _version: _version,
             _forkBlock: ETHEREUM_BLOCK_TIME_SENSITIVE_PARASWAP_V6,
             _augustusSwapperAddress: ETHEREUM_PARASWAP_V6_AUGUSTUS_SWAPPER,
             _feeVaultAddress: ETHEREUM_PARASWAP_V6_FEE_VAULT
@@ -355,12 +355,12 @@ abstract contract ParaSwapV6AdapterEthereumTestBase is ParaSwapV6AdapterTestBase
 
 contract ParaSwapV6AdapterEthereumTest is ParaSwapV6AdapterEthereumTestBase {
     function setUp() public override {
-        __initialize({_version: EnzymeVersion.Current});
+        __initialize();
     }
 }
 
 contract ParaSwapV6AdapterEthereumTestV4 is ParaSwapV6AdapterEthereumTestBase {
     function setUp() public override {
-        __initialize({_version: EnzymeVersion.V4});
+        __initialize();
     }
 }

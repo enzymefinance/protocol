@@ -15,26 +15,22 @@ abstract contract PeggedDerivativesPriceFeedTestBase is IntegrationTest {
 
     IPeggedDerivativesPriceFeed internal priceFeed;
 
-    EnzymeVersion internal version;
-
-    function __initialize(EnzymeVersion _version, uint256 _chainId) internal {
+    function __initialize(uint256 _chainId) internal {
         setUpNetworkEnvironment(_chainId);
-        version = _version;
         priceFeed = __deployPriceFeed();
     }
 
     // DEPLOYMENT HELPERS
 
     function __deployPriceFeed() private returns (IPeggedDerivativesPriceFeed priceFeed_) {
-        address addr =
-            deployCode("PeggedDerivativesPriceFeed.sol", abi.encode(getFundDeployerAddressForVersion(version)));
+        address addr = deployCode("PeggedDerivativesPriceFeed.sol", abi.encode(address(core.release.fundDeployer)));
         return IPeggedDerivativesPriceFeed(addr);
     }
 
     // TEST HELPERS
 
     function __prankFundDeployerOwner() internal {
-        vm.prank(IFundDeployer(getFundDeployerAddressForVersion({_version: version})).getOwner());
+        vm.prank(core.release.fundDeployer.getOwner());
     }
 
     // TESTS
@@ -178,24 +174,12 @@ abstract contract PeggedDerivativesPriceFeedTestBase is IntegrationTest {
 
 contract PeggedDerivativesPriceFeedTestEthereum is PeggedDerivativesPriceFeedTestBase {
     function setUp() public override {
-        __initialize({_version: EnzymeVersion.Current, _chainId: ETHEREUM_CHAIN_ID});
-    }
-}
-
-contract PeggedDerivativesPriceFeedTestEthereumV4 is PeggedDerivativesPriceFeedTestBase {
-    function setUp() public override {
-        __initialize({_version: EnzymeVersion.V4, _chainId: ETHEREUM_CHAIN_ID});
+        __initialize({_chainId: ETHEREUM_CHAIN_ID});
     }
 }
 
 contract PeggedDerivativesPriceFeedTestPolygon is PeggedDerivativesPriceFeedTestBase {
     function setUp() public override {
-        __initialize({_version: EnzymeVersion.Current, _chainId: POLYGON_CHAIN_ID});
-    }
-}
-
-contract PeggedDerivativesPriceFeedTestPolygonV4 is PeggedDerivativesPriceFeedTestBase {
-    function setUp() public override {
-        __initialize({_version: EnzymeVersion.V4, _chainId: POLYGON_CHAIN_ID});
+        __initialize({_chainId: POLYGON_CHAIN_ID});
     }
 }

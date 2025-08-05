@@ -26,11 +26,8 @@ abstract contract YearnVaultV2PriceFeedTestBase is IntegrationTest {
 
     IYearnVaultV2PriceFeed internal priceFeed;
 
-    EnzymeVersion internal version;
-
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         setUpMainnetEnvironment();
-        version = _version;
         priceFeed = __deployPriceFeed();
     }
 
@@ -44,7 +41,7 @@ abstract contract YearnVaultV2PriceFeedTestBase is IntegrationTest {
     function __deployPriceFeed() private returns (IYearnVaultV2PriceFeed priceFeed_) {
         address addr = deployCode(
             "YearnVaultV2PriceFeed.sol",
-            abi.encode(getFundDeployerAddressForVersion(version), ETHEREUM_YEARN_VAULT_V2_REGISTRY)
+            abi.encode(address(core.release.fundDeployer), ETHEREUM_YEARN_VAULT_V2_REGISTRY)
         );
         return IYearnVaultV2PriceFeed(addr);
     }
@@ -52,7 +49,7 @@ abstract contract YearnVaultV2PriceFeedTestBase is IntegrationTest {
     // TEST HELPERS
 
     function __prankFundDeployerOwner() internal {
-        vm.prank(IFundDeployer(getFundDeployerAddressForVersion({_version: version})).getOwner());
+        vm.prank(core.release.fundDeployer.getOwner());
     }
 
     // TESTS
@@ -67,15 +64,14 @@ abstract contract YearnVaultV2PriceFeedTestBase is IntegrationTest {
         });
 
         addDerivative({
-            _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion(version)),
+            _valueInterpreter: core.release.valueInterpreter,
             _tokenAddress: ETHEREUM_YEARN_VAULT_V2_WETH_VAULT,
             _skipIfRegistered: false,
             _priceFeedAddress: address(priceFeed)
         });
 
         // Yearn WETH Vault/USD price Jan 26th 2025, check WETH price https://www.coingecko.com/en/coins/weth/historical_data and multiply pricePerShare https://etherscan.io/address/0xa258C4606Ca8206D8aA700cE2143D7db854D168c#readContract#F4
-        assertValueInUSDForVersion({
-            _version: version,
+        assertValueInUSD({
             _asset: ETHEREUM_YEARN_VAULT_V2_WETH_VAULT,
             _amount: assetUnit(IERC20(ETHEREUM_YEARN_VAULT_V2_WETH_VAULT)),
             _expected: 3605615423963814449274 // 3605.615423963814449274 USD
@@ -92,14 +88,13 @@ abstract contract YearnVaultV2PriceFeedTestBase is IntegrationTest {
         });
 
         addDerivative({
-            _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion(version)),
+            _valueInterpreter: core.release.valueInterpreter,
             _tokenAddress: ETHEREUM_YEARN_VAULT_V2_USDT_VAULT,
             _skipIfRegistered: false,
             _priceFeedAddress: address(priceFeed)
         });
 
-        assertValueInUSDForVersion({
-            _version: version,
+        assertValueInUSD({
             _asset: ETHEREUM_YEARN_VAULT_V2_USDT_VAULT,
             _amount: assetUnit(IERC20(ETHEREUM_YEARN_VAULT_V2_USDT_VAULT)),
             _expected: 1097273252900143697 // 1.097273252900143697 USD
@@ -114,13 +109,13 @@ abstract contract YearnVaultV2PriceFeedTestBase is IntegrationTest {
         });
 
         addDerivative({
-            _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion(version)),
+            _valueInterpreter: core.release.valueInterpreter,
             _tokenAddress: ETHEREUM_YEARN_VAULT_V2_USDT_VAULT,
             _skipIfRegistered: false,
             _priceFeedAddress: address(priceFeed)
         });
 
-        uint256 value = IValueInterpreter(getValueInterpreterAddressForVersion(version)).calcCanonicalAssetValue({
+        uint256 value = core.release.valueInterpreter.calcCanonicalAssetValue({
             _baseAsset: ETHEREUM_YEARN_VAULT_V2_USDT_VAULT,
             _amount: assetUnit(IERC20(ETHEREUM_YEARN_VAULT_V2_USDT_VAULT)),
             _quoteAsset: ETHEREUM_USDT
@@ -187,6 +182,6 @@ abstract contract YearnVaultV2PriceFeedTestBase is IntegrationTest {
 
 contract YearnVaultV2PriceFeedTestEthereum is YearnVaultV2PriceFeedTestBase {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
+        __initialize();
     }
 }

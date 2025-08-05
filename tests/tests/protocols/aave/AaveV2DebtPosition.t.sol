@@ -45,7 +45,6 @@ abstract contract TestBase is AaveV2Utils, IntegrationTest {
     IAaveV2LendingPool internal lendingPool;
 
     // Set by child contract
-    EnzymeVersion internal version;
     IAaveV2IncentivesController internal incentivesController;
     IAaveV2LendingPoolAddressProvider internal poolAddressProvider;
     IAaveV2ProtocolDataProvider internal protocolDataProvider;
@@ -54,23 +53,28 @@ abstract contract TestBase is AaveV2Utils, IntegrationTest {
         lendingPool = poolAddressProvider.getLendingPool();
 
         // Create a fund
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         // Deploy all AaveV2Debt dependencies
         uint256 typeId = __deployPositionType({
             _poolAddressProvider: poolAddressProvider,
             _protocolDataProvider: protocolDataProvider,
-            _valueInterpreter: IValueInterpreter(address(getValueInterpreterAddressForVersion(version)))
+            _valueInterpreter: core.release.valueInterpreter
         });
 
         // Create an empty AaveV2Debt for the fund
         vm.prank(fundOwner);
         aaveDebtPosition = IAaveDebtPositionLib(
-            createExternalPositionForVersion({
-                _version: version,
-                _comptrollerProxyAddress: comptrollerProxyAddress,
+            createExternalPosition({
+                _externalPositionManager: core.release.externalPositionManager,
+                _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
                 _typeId: typeId,
-                _initializationData: ""
+                _initializationData: "",
+                _callOnExternalPositionCallArgs: ""
             })
         );
     }
@@ -108,8 +112,8 @@ abstract contract TestBase is AaveV2Utils, IntegrationTest {
         address aaveDebtPositionParser = address(__deployParser({_valueInterpreter: _valueInterpreter}));
 
         // Register AaveV2Debt type
-        typeId_ = registerExternalPositionTypeForVersion({
-            _version: version,
+        typeId_ = registerExternalPositionType({
+            _externalPositionManager: core.release.externalPositionManager,
             _label: "AAVE_V2_DEBT",
             _lib: aaveDebtPositionLibAddress,
             _parser: aaveDebtPositionParser
@@ -124,9 +128,9 @@ abstract contract TestBase is AaveV2Utils, IntegrationTest {
         bytes memory actionArgs = abi.encode(_aTokens, _amounts);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(aaveDebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IAaveDebtPositionProd.Actions.AddCollateral)
@@ -137,9 +141,9 @@ abstract contract TestBase is AaveV2Utils, IntegrationTest {
         bytes memory actionArgs = abi.encode(_aTokens, _amounts);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(aaveDebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IAaveDebtPositionProd.Actions.RemoveCollateral)
@@ -150,9 +154,9 @@ abstract contract TestBase is AaveV2Utils, IntegrationTest {
         bytes memory actionArgs = abi.encode(_underlyings, _amounts);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(aaveDebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IAaveDebtPositionProd.Actions.Borrow)
@@ -163,9 +167,9 @@ abstract contract TestBase is AaveV2Utils, IntegrationTest {
         bytes memory actionArgs = abi.encode(_underlyings, _amounts);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(aaveDebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IAaveDebtPositionProd.Actions.RepayBorrow)
@@ -176,9 +180,9 @@ abstract contract TestBase is AaveV2Utils, IntegrationTest {
         bytes memory actionArgs = abi.encode(_assets);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(aaveDebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IAaveDebtPositionProd.Actions.ClaimRewards)
@@ -202,7 +206,7 @@ abstract contract TestBase is AaveV2Utils, IntegrationTest {
 
     function __registerUnderlyingsAndATokensForThem(address[] memory _underlyingAddresses) internal {
         registerUnderlyingsAndATokensForThem({
-            _valueInterpreter: IValueInterpreter(address(getValueInterpreterAddressForVersion(version))),
+            _valueInterpreter: core.release.valueInterpreter,
             _underlyings: _underlyingAddresses,
             _lendingPool: address(lendingPool)
         });
@@ -725,21 +729,5 @@ contract AaveV2DebtPositionTestPolygon is AaveV2DebtPositionTest {
             ),
             _rewardToken: POLYGON_WMATIC
         });
-    }
-}
-
-contract AaveV2DebtPositionTestEthereumV4 is AaveV2DebtPositionTestEthereum {
-    function setUp() public override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
-    }
-}
-
-contract AaveV2DebtPositionTestPolygonV4 is AaveV2DebtPositionTestPolygon {
-    function setUp() public override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
     }
 }

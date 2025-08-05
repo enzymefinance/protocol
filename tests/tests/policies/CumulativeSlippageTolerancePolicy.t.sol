@@ -83,19 +83,12 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
             _pricelessAssetBypassTimeLimit: _pricelessAssetBypassTimeLimit
         });
 
-        // Create fund with policy and integration extensions
-        IComptrollerLib.ConfigInput memory comptrollerConfig;
-        comptrollerConfig.denominationAsset = address(fakeToken0);
-        comptrollerConfig.policyManagerConfigData = encodePolicyManagerConfigData({
-            _policies: toArray(address(cumulativeSlippageTolerancePolicy)),
-            _settingsData: toArray(encodeCumulativeSlippageTolerancePolicySettings({_tolerance: _tolerance}))
-        });
-        comptrollerConfig.extensionsConfig = new IComptrollerLib.ExtensionConfigInput[](1);
-        comptrollerConfig.extensionsConfig[0].extension = address(core.release.integrationManager);
-
-        (comptrollerProxy, vaultProxy, vaultOwner) = createFund({
+        // Create fund with policy
+        (comptrollerProxy, vaultProxy, vaultOwner) = createFundWithPolicy({
             _fundDeployer: core.release.fundDeployer,
-            _comptrollerConfig: formatComptrollerConfigInputForFundDeployer(comptrollerConfig)
+            _denominationAsset: fakeToken0,
+            _policyAddress: address(cumulativeSlippageTolerancePolicy),
+            _policySettings: encodeCumulativeSlippageTolerancePolicySettings({_tolerance: _tolerance})
         });
 
         buyShares({

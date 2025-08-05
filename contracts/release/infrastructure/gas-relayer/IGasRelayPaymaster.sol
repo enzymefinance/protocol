@@ -17,6 +17,8 @@ import {IGsnPaymaster} from "../../../external-interfaces/IGsnPaymaster.sol";
 /// @title IGasRelayPaymaster Interface
 /// @author Enzyme Foundation <security@enzyme.finance>
 interface IGasRelayPaymaster is IGsnPaymaster {
+    function addAdditionalRelayUsers(address[] calldata _usersToAdd) external;
+
     function deposit() external;
 
     function getLastDepositTimestamp() external view returns (uint256 lastDepositTimestamp_);
@@ -28,6 +30,10 @@ interface IGasRelayPaymaster is IGsnPaymaster {
     function getWethToken() external view returns (address wethToken_);
 
     function init(address _vault) external;
+
+    function isAdditionalRelayUser(address _who) external view returns (bool isAdditionalRelayUser_);
+
+    function removeAdditionalRelayUsers(address[] calldata _usersToRemove) external;
 
     function withdrawBalance() external;
 }

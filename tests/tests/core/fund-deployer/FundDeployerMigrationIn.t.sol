@@ -38,7 +38,7 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
     event MigrationRequestCreated(address indexed creator, address indexed vaultProxy, address comptrollerProxy);
 
     // TODO: use newFundDeployer instead of core.release.fundDeployer
-    // function test_failsWithNonLiveRelease() public {
+    // function test_failWithNonLiveRelease() public {
     //     vm.expectRevert("Release is not yet live");
     //     vm.prank(vaultOwner);
 
@@ -52,23 +52,18 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
     //     });
     // }
 
-    function test_failsWithNonMigrator() public {
+    function test_failWithNonMigrator() public {
         address randomSigner = makeAddr("RandomSigner");
 
         vm.expectRevert("Only a permissioned migrator can call this function");
         vm.prank(randomSigner);
 
-        IFundDeployer.ExtensionConfigInput[] memory extensionsConfig;
-
         core.release.fundDeployer.createMigrationRequest({
             _vaultProxy: address(vaultProxyCore),
-            _comptrollerConfig: IFundDeployer.ConfigInput({
-                denominationAsset: address(standardPrimitive),
-                sharesActionTimelock: 123,
-                feeManagerConfigData: "",
-                policyManagerConfigData: "",
-                extensionsConfig: extensionsConfig
-            }),
+            _denominationAsset: address(standardPrimitive),
+            _sharesActionTimelock: 123,
+            _feeManagerConfigData: "",
+            _policyManagerConfigData: "",
             _bypassPrevReleaseFailure: bypassPrevReleaseFailure
         });
     }
@@ -86,18 +81,14 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
         emit MigrationRequestCreated(migrationRequestCaller, address(vaultProxyCore), address(expectedComptrollerProxy));
 
         // Create migration request
-        IFundDeployer.ExtensionConfigInput[] memory extensionsConfig;
         vm.prank(migrationRequestCaller);
         IComptrollerLib comptrollerProxy = IComptrollerLib(
             core.release.fundDeployer.createMigrationRequest({
                 _vaultProxy: address(vaultProxyCore),
-                _comptrollerConfig: IFundDeployer.ConfigInput({
-                    denominationAsset: denominationAsset,
-                    sharesActionTimelock: sharesActionTimelock,
-                    feeManagerConfigData: "",
-                    policyManagerConfigData: "",
-                    extensionsConfig: extensionsConfig
-                }),
+                _denominationAsset: denominationAsset,
+                _sharesActionTimelock: sharesActionTimelock,
+                _feeManagerConfigData: "",
+                _policyManagerConfigData: "",
                 _bypassPrevReleaseFailure: bypassPrevReleaseFailure
             })
         );
@@ -115,12 +106,6 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
         assertEq(comptrollerProxy.getDenominationAsset(), denominationAsset);
         assertEq(comptrollerProxy.getSharesActionTimelock(), sharesActionTimelock);
 
-        // Assert the correct FundDeployer state values
-        assertEq(
-            core.release.fundDeployer.getVaultProxyForComptrollerProxy(address(comptrollerProxy)),
-            address(vaultProxyCore)
-        );
-
         // TODO: Assert the extensions were called correctly
     }
 
@@ -132,17 +117,13 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
         emit MigrationRequestCreated(migrator, address(vaultProxyCore), address(expectedComptrollerProxy));
 
         // Create migration request
-        IFundDeployer.ExtensionConfigInput[] memory extensionsConfig;
         vm.prank(migrator);
         core.release.fundDeployer.createMigrationRequest({
             _vaultProxy: address(vaultProxyCore),
-            _comptrollerConfig: IFundDeployer.ConfigInput({
-                denominationAsset: address(standardPrimitive),
-                sharesActionTimelock: 123,
-                feeManagerConfigData: "",
-                policyManagerConfigData: "",
-                extensionsConfig: extensionsConfig
-            }),
+            _denominationAsset: address(standardPrimitive),
+            _sharesActionTimelock: 123,
+            _feeManagerConfigData: "",
+            _policyManagerConfigData: "",
             _bypassPrevReleaseFailure: bypassPrevReleaseFailure
         });
     }
@@ -155,22 +136,18 @@ contract FundDeployerCancelMigrationTest is FundDeployerMigrationInTest {
         super.setUp();
 
         // Create migration request
-        IFundDeployer.ExtensionConfigInput[] memory extensionsConfig;
         vm.prank(vaultOwner);
         nextComptrollerProxyAddress = core.release.fundDeployer.createMigrationRequest({
             _vaultProxy: address(vaultProxyCore),
-            _comptrollerConfig: IFundDeployer.ConfigInput({
-                denominationAsset: address(standardPrimitive),
-                sharesActionTimelock: 123,
-                feeManagerConfigData: "",
-                policyManagerConfigData: "",
-                extensionsConfig: extensionsConfig
-            }),
+            _denominationAsset: address(standardPrimitive),
+            _sharesActionTimelock: 123,
+            _feeManagerConfigData: "",
+            _policyManagerConfigData: "",
             _bypassPrevReleaseFailure: bypassPrevReleaseFailure
         });
     }
 
-    function test_failsWithNonMigrator() public {
+    function test_failWithNonMigrator() public {
         address randomSigner = makeAddr("RandomSigner");
 
         vm.expectRevert("Only a permissioned migrator can call this function");
@@ -191,8 +168,10 @@ contract FundDeployerCancelMigrationTest is FundDeployerMigrationInTest {
                 core.persistent.dispatcher.cancelMigration.selector, address(vaultProxyCore), bypassPrevReleaseFailure
             )
         );
-
+        // Assert ComptrollerProxy.destructUnactivated() will be called
+        vm.expectCall(nextComptrollerProxyAddress, abi.encodeWithSelector(IComptrollerLib.destructUnactivated.selector));
         vm.prank(vaultOwner);
+
         core.release.fundDeployer.cancelMigration({
             _vaultProxy: address(vaultProxyCore),
             _bypassPrevReleaseFailure: bypassPrevReleaseFailure
@@ -234,17 +213,13 @@ contract FundDeployerExecuteMigrationTest is FundDeployerMigrationInTest {
         super.setUp();
 
         // Create migration request
-        IFundDeployer.ExtensionConfigInput[] memory extensionsConfig;
         vm.prank(vaultOwner);
         nextComptrollerProxyAddress = core.release.fundDeployer.createMigrationRequest({
             _vaultProxy: address(vaultProxyCore),
-            _comptrollerConfig: IFundDeployer.ConfigInput({
-                denominationAsset: address(standardPrimitive),
-                sharesActionTimelock: 123,
-                feeManagerConfigData: "",
-                policyManagerConfigData: "",
-                extensionsConfig: extensionsConfig
-            }),
+            _denominationAsset: address(standardPrimitive),
+            _sharesActionTimelock: 123,
+            _feeManagerConfigData: "",
+            _policyManagerConfigData: "",
             _bypassPrevReleaseFailure: bypassPrevReleaseFailure
         });
 
@@ -254,7 +229,7 @@ contract FundDeployerExecuteMigrationTest is FundDeployerMigrationInTest {
         vm.warp(executionTimestamp + 1);
     }
 
-    function test_failsWithNonMigrator() public {
+    function test_failWithNonMigrator() public {
         address randomSigner = makeAddr("RandomSigner");
 
         vm.expectRevert("Only a permissioned migrator can call this function");
@@ -279,8 +254,8 @@ contract FundDeployerExecuteMigrationTest is FundDeployerMigrationInTest {
             address(core.release.protocolFeeTracker),
             abi.encodeWithSelector(core.release.protocolFeeTracker.initializeForVault.selector, address(vaultProxyCore))
         );
-        // Assert ComptrollerProxy.activate() will be called
-        vm.expectCall(nextComptrollerProxyAddress, abi.encodeWithSelector(IComptrollerLib.activate.selector));
+        // Assert ComptrollerProxy.activate() will be called correctly
+        vm.expectCall(nextComptrollerProxyAddress, abi.encodeWithSelector(IComptrollerLib.activate.selector, true));
 
         vm.prank(vaultOwner);
 

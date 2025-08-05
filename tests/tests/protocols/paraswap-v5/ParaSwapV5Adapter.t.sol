@@ -8,6 +8,8 @@ import {IParaSwapV5Adapter as IParaSwapV5AdapterProd} from
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IUniswapV2Pair} from "tests/interfaces/external/IUniswapV2Pair.sol";
 import {IParaSwapV5AugustusSwapper} from "tests/interfaces/external/IParaSwapV5AugustusSwapper.sol";
@@ -44,15 +46,12 @@ abstract contract ParaSwapV5AdapterBaseTest is IntegrationTest {
     UniswapV2Payload internal uniswapPayload2;
     UniswapV2Payload internal sushiPayload1;
 
-    EnzymeVersion internal version;
-
     struct UniswapV2Payload {
         address weth;
         uint256[] pools;
     }
 
     function __initialize(
-        EnzymeVersion _version,
         uint256 _chainId,
         address _augustSwapperAddress,
         address _tokenTransferProxyAddress,
@@ -62,8 +61,6 @@ abstract contract ParaSwapV5AdapterBaseTest is IntegrationTest {
     ) internal {
         setUpNetworkEnvironment({_chainId: _chainId});
 
-        version = _version;
-
         adapter = __deployAdapter({
             _augustusSwapper: _augustSwapperAddress,
             _tokenTransferProxy: _tokenTransferProxyAddress,
@@ -71,7 +68,11 @@ abstract contract ParaSwapV5AdapterBaseTest is IntegrationTest {
             _feePercent: 0
         });
 
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         uniswapPool1 = IUniswapV2Pair(_uniswapPoolAddress1);
         uniswapPool2 = IUniswapV2Pair(_uniswapPoolAddress2);
@@ -109,11 +110,7 @@ abstract contract ParaSwapV5AdapterBaseTest is IntegrationTest {
         uint256 _feePercent
     ) private returns (IParaSwapV5Adapter) {
         bytes memory args = abi.encode(
-            getIntegrationManagerAddressForVersion(version),
-            _augustusSwapper,
-            _tokenTransferProxy,
-            _feePartner,
-            _feePercent
+            address(core.release.integrationManager), _augustusSwapper, _tokenTransferProxy, _feePartner, _feePercent
         );
         address addr = deployCode("ParaSwapV5Adapter.sol", args);
         return IParaSwapV5Adapter(addr);
@@ -139,11 +136,11 @@ abstract contract ParaSwapV5AdapterBaseTest is IntegrationTest {
         });
         vm.prank(fundOwner);
 
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _actionArgs: actionArgs,
-            _adapterAddress: address(adapter),
             _selector: IParaSwapV5Adapter.takeOrder.selector
         });
     }
@@ -152,11 +149,11 @@ abstract contract ParaSwapV5AdapterBaseTest is IntegrationTest {
         bytes memory actionArgs = abi.encode(_ordersData, _allowOrdersToFail);
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _actionArgs: actionArgs,
-            _adapterAddress: address(adapter),
             _selector: IParaSwapV5Adapter.takeMultipleOrders.selector
         });
     }
@@ -591,21 +588,6 @@ abstract contract ParaSwapV5AdapterBaseTest is IntegrationTest {
 contract ParaSwapV5AdapterEthereumTest is ParaSwapV5AdapterBaseTest {
     function setUp() public override {
         __initialize({
-            _version: EnzymeVersion.Current,
-            _chainId: ETHEREUM_CHAIN_ID,
-            _augustSwapperAddress: ETHEREUM_PARASWAP_V5_AUGUSTUS_SWAPPER,
-            _tokenTransferProxyAddress: ETHEREUM_PARASWAP_V5_TOKEN_TRANSFER_PROXY,
-            _uniswapPoolAddress1: ETHEREUM_UNISWAP_DAI_WETH_POOL_ADDRESS,
-            _uniswapPoolAddress2: ETHEREUM_UNISWAP_USDC_USDT_POOL_ADDRESS,
-            _sushiPoolAddress1: ETHEREUM_SUSHI_DAI_WETH_POOL_ADDRESS
-        });
-    }
-}
-
-contract ParaSwapV5AdapterEthereumTestV4 is ParaSwapV5AdapterBaseTest {
-    function setUp() public override {
-        __initialize({
-            _version: EnzymeVersion.V4,
             _chainId: ETHEREUM_CHAIN_ID,
             _augustSwapperAddress: ETHEREUM_PARASWAP_V5_AUGUSTUS_SWAPPER,
             _tokenTransferProxyAddress: ETHEREUM_PARASWAP_V5_TOKEN_TRANSFER_PROXY,

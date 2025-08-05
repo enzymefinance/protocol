@@ -33,8 +33,6 @@ abstract contract ZeroExV4AdapterTestBase is IntegrationTest {
     IERC20 internal takerAsset;
     IERC20 internal makerAsset;
 
-    EnzymeVersion internal version;
-
     function setUp(address _zeroExV4Exchange, address _takerAsset, address _makerAsset) internal {
         zeroExV4Exchange = IZeroExV4(_zeroExV4Exchange);
         (maker, makerKey) = makeAddrAndKey("Maker");
@@ -47,7 +45,11 @@ abstract contract ZeroExV4AdapterTestBase is IntegrationTest {
 
         // Create a fund
 
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         // Seed the fund with some takerAsset
         increaseTokenBalance({_token: takerAsset, _to: vaultProxyAddress, _amount: assetUnit(takerAsset) * 123});
@@ -71,7 +73,7 @@ abstract contract ZeroExV4AdapterTestBase is IntegrationTest {
         });
 
         bytes memory args = abi.encode(
-            getIntegrationManagerAddressForVersion(version),
+            address(core.release.integrationManager),
             zeroExV4Exchange,
             core.persistent.addressListRegistry,
             allowedMakersListId
@@ -214,12 +216,12 @@ abstract contract ZeroExV4AdapterTestBase is IntegrationTest {
 
         vm.prank(fundOwner, fundOwner);
 
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(zeroExV4Adapter),
             _selector: IZeroExV4Adapter.takeOrder.selector,
-            _actionArgs: actionArgs,
-            _adapterAddress: address(zeroExV4Adapter)
+            _actionArgs: actionArgs
         });
     }
 
@@ -388,13 +390,5 @@ contract ZeroExV4TestEthereum is ZeroExV4AdapterTestBase {
     function setUp() public virtual override {
         setUpMainnetEnvironment();
         setUp({_zeroExV4Exchange: ETHEREUM_ZERO_EX_V4_EXCHANGE, _takerAsset: ETHEREUM_USDC, _makerAsset: ETHEREUM_WETH});
-    }
-}
-
-contract ZeroExV4EthereumTestV4 is ZeroExV4TestEthereum {
-    function setUp() public override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
     }
 }

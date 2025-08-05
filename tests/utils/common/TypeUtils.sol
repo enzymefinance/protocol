@@ -60,31 +60,6 @@ abstract contract TypeUtils is CommonUtilsBase {
         return IComptrollerLib.VaultAction.wrap(uint8(_vaultAction));
     }
 
-    // TYPE FORMATTERS: test interface structs
-
-    function formatComptrollerConfigInputForFundDeployer(IComptrollerLib.ConfigInput memory _config)
-        internal
-        pure
-        returns (IFundDeployer.ConfigInput memory formattedConfig_)
-    {
-        IFundDeployer.ExtensionConfigInput[] memory extensionsConfig =
-            new IFundDeployer.ExtensionConfigInput[](_config.extensionsConfig.length);
-        for (uint256 i; i < _config.extensionsConfig.length; i++) {
-            extensionsConfig[i] = IFundDeployer.ExtensionConfigInput({
-                extension: _config.extensionsConfig[i].extension,
-                configData: _config.extensionsConfig[i].configData
-            });
-        }
-
-        return IFundDeployer.ConfigInput({
-            denominationAsset: _config.denominationAsset,
-            sharesActionTimelock: _config.sharesActionTimelock,
-            feeManagerConfigData: _config.feeManagerConfigData,
-            policyManagerConfigData: _config.policyManagerConfigData,
-            extensionsConfig: extensionsConfig
-        });
-    }
-
     // toArray() - bool
 
     function toArray(bool _0) internal pure returns (bool[] memory array_) {

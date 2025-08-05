@@ -23,6 +23,7 @@ import {IAaveV3DebtPositionLib} from "tests/interfaces/internal/IAaveV3DebtPosit
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
 
 import {AaveV3Utils} from "./AaveV3Utils.sol";
@@ -37,7 +38,6 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
     address vaultProxyAddress;
     address comptrollerProxyAddress;
 
-    EnzymeVersion version;
     IAaveV3DebtPositionLib aaveV3DebtPosition;
     IAaveV3PoolAddressProvider poolAddressProvider;
     IAaveV3ProtocolDataProvider protocolDataProvider;
@@ -51,7 +51,6 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
     address rewardedCollateralUnderlyingAddress;
 
     function __initialize(
-        EnzymeVersion _version,
         uint256 _chainId,
         IMerklDistributor _merklDistributor,
         IAaveV3PoolAddressProvider _poolAddressProvider,
@@ -63,7 +62,6 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
     ) internal {
         setUpNetworkEnvironment({_chainId: _chainId});
 
-        version = _version;
         merklDistributor = _merklDistributor;
         poolAddressProvider = _poolAddressProvider;
         protocolDataProvider = _protocolDataProvider;
@@ -79,7 +77,11 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         __registerUnderlyingsAndATokensForThem(_collateralUnderlyingAddresses);
 
         // Create a fund
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         // Deploy all AaveV3Debt dependencies
         uint256 typeId = __deployPositionType({
@@ -93,11 +95,12 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         // Create an empty AaveV3Debt for the fund
         vm.prank(fundOwner);
         aaveV3DebtPosition = IAaveV3DebtPositionLib(
-            createExternalPositionForVersion({
-                _version: version,
-                _comptrollerProxyAddress: comptrollerProxyAddress,
+            createExternalPosition({
+                _externalPositionManager: core.release.externalPositionManager,
+                _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
                 _typeId: typeId,
-                _initializationData: ""
+                _initializationData: "",
+                _callOnExternalPositionCallArgs: ""
             })
         );
     }
@@ -153,8 +156,8 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
             address(__deployParser({_addressListRegistry: _addressListRegistry, _aTokenListId: aTokenListId}));
 
         // Register AaveV3Debt type
-        typeId_ = registerExternalPositionTypeForVersion({
-            _version: version,
+        typeId_ = registerExternalPositionType({
+            _externalPositionManager: core.release.externalPositionManager,
             _label: "AAVE_V3_DEBT",
             _lib: aaveV3DebtPositionLibAddress,
             _parser: aaveV3DebtPositionParser
@@ -169,9 +172,9 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         bytes memory actionArgs = abi.encode(_aTokens, _amounts, _fromUnderlying);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IAaveV3DebtPositionProd.Actions.AddCollateral)
@@ -182,9 +185,9 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         bytes memory actionArgs = abi.encode(_aTokens, _amounts, _toUnderlying);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IAaveV3DebtPositionProd.Actions.RemoveCollateral)
@@ -195,9 +198,9 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         bytes memory actionArgs = abi.encode(_underlyings, _amounts);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IAaveV3DebtPositionProd.Actions.Borrow)
@@ -208,9 +211,9 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         bytes memory actionArgs = abi.encode(_underlyings, _amounts);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IAaveV3DebtPositionProd.Actions.RepayBorrow)
@@ -221,9 +224,9 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         bytes memory actionArgs = abi.encode(_categoryId);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IAaveV3DebtPositionProd.Actions.SetEMode)
@@ -234,9 +237,9 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         bytes memory actionArgs = abi.encode(_underlying, _useAsCollateral);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IAaveV3DebtPositionProd.Actions.SetUseReserveAsCollateral)
@@ -247,9 +250,9 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         bytes memory actionArgs = abi.encode(_assets, _amount, _rewardToken);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IAaveV3DebtPositionProd.Actions.ClaimRewards)
@@ -260,9 +263,9 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         bytes memory actionArgs = abi.encode(_assets);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IAaveV3DebtPositionProd.Actions.Sweep)
@@ -275,9 +278,9 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         bytes memory actionArgs = abi.encode(_tokens, _amounts, _proofs);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(IAaveV3DebtPositionProd.Actions.ClaimMerklRewards)
@@ -325,7 +328,7 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
 
     function __registerUnderlyingsAndATokensForThem(address[] memory _underlyingAddresses) internal {
         registerUnderlyingsAndATokensForThem({
-            _valueInterpreter: IValueInterpreter(address(getValueInterpreterAddressForVersion(version))),
+            _valueInterpreter: IValueInterpreter(address(core.release.valueInterpreter)),
             _underlyings: _underlyingAddresses,
             _lendingPool: address(lendingPool)
         });
@@ -384,7 +387,7 @@ abstract contract AddCollateralTest is TestBase {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: IExternalPositionManager(core.release.externalPositionManager),
             _assets: new address[](0)
         });
 
@@ -492,7 +495,7 @@ abstract contract RemoveCollateralTest is TestBase {
         }
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: IExternalPositionManager(core.release.externalPositionManager),
             _assets: assetsToReceive
         });
 
@@ -601,7 +604,7 @@ abstract contract BorrowTest is TestBase {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: IExternalPositionManager(core.release.externalPositionManager),
             _assets: underlyingsToBorrow
         });
 
@@ -694,7 +697,7 @@ abstract contract RepayBorrowTest is TestBase {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: IExternalPositionManager(core.release.externalPositionManager),
             _assets: new address[](0)
         });
 
@@ -751,7 +754,7 @@ abstract contract SetEModeTest is TestBase {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: IExternalPositionManager(core.release.externalPositionManager),
             _assets: new address[](0)
         });
 
@@ -787,7 +790,7 @@ abstract contract SetUseReserveAsCollateral is TestBase {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: IExternalPositionManager(core.release.externalPositionManager),
             _assets: new address[](0)
         });
 
@@ -863,7 +866,7 @@ abstract contract ClaimRewardsTest is TestBase {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: IExternalPositionManager(core.release.externalPositionManager),
             _assets: toArray(rewardToken)
         });
 
@@ -894,7 +897,7 @@ abstract contract SweepTest is TestBase {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: IExternalPositionManager(core.release.externalPositionManager),
             _assets: new address[](0)
         });
 
@@ -985,7 +988,7 @@ abstract contract ClaimMerklRewardsTest is TestBase {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: IExternalPositionManager(core.release.externalPositionManager),
             _assets: toArray(_tokenToClaim)
         });
 

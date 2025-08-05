@@ -13,6 +13,8 @@ import {ILidoWithdrawalQueue} from "tests/interfaces/external/ILidoWithdrawalQue
 
 import {ILidoWithdrawalsPositionLib} from "tests/interfaces/internal/ILidoWithdrawalsPositionLib.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 address constant WITHDRAWAL_QUEUE_ADDRESS = 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1;
 
@@ -33,14 +35,15 @@ abstract contract TestBase is IntegrationTest {
     address internal comptrollerProxyAddress;
     address internal vaultProxyAddress;
 
-    // Set by child contract
-    EnzymeVersion internal version;
-
     function setUp() public virtual override {
         setUpMainnetEnvironment();
 
         // Create a fund
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         // Seed with stETH
         increaseTokenBalance({_token: stethToken, _to: vaultProxyAddress, _amount: 1000 ether});
@@ -51,11 +54,12 @@ abstract contract TestBase is IntegrationTest {
         // Create an empty LidoStakingPosition for the fund
         vm.prank(fundOwner);
         lidoWithdrawalsPosition = ILidoWithdrawalsPositionLib(
-            createExternalPositionForVersion({
-                _version: version,
-                _comptrollerProxyAddress: comptrollerProxyAddress,
+            createExternalPosition({
+                _externalPositionManager: core.release.externalPositionManager,
+                _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
                 _typeId: typeId,
-                _initializationData: ""
+                _initializationData: "",
+                _callOnExternalPositionCallArgs: ""
             })
         );
     }
@@ -80,8 +84,8 @@ abstract contract TestBase is IntegrationTest {
         address parserAddress = __deployParser();
 
         // Register position type
-        typeId_ = registerExternalPositionTypeForVersion({
-            _version: version,
+        typeId_ = registerExternalPositionType({
+            _externalPositionManager: core.release.externalPositionManager,
             _label: "LIDO_WITHDRAWALS",
             _lib: libAddress,
             _parser: parserAddress
@@ -96,9 +100,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_requestIds, _hints);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(lidoWithdrawalsPosition),
             _actionId: uint256(ILidoWithdrawalsPositionProd.Actions.ClaimWithdrawals),
             _actionArgs: actionArgs
@@ -109,9 +113,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_amounts);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(lidoWithdrawalsPosition),
             _actionId: uint256(ILidoWithdrawalsPositionProd.Actions.RequestWithdrawals),
             _actionArgs: actionArgs
@@ -204,7 +208,7 @@ abstract contract RequestWithdrawalsTest is TestBase {
         // Assert assetsToReceive was correctly formatted (no assets in this case)
         assertExternalPositionAssetsToReceive({
             _logs: logs,
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -266,7 +270,7 @@ abstract contract ClaimWithdrawalsTest is TestBase {
         // Assert assetsToReceive was correctly formatted
         assertExternalPositionAssetsToReceive({
             _logs: logs,
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: toArray(address(wethToken))
         });
 
@@ -316,11 +320,3 @@ abstract contract GetManagedAssetsTest is TestBase {
 }
 
 contract LidoWithdrawalsPositionTest is RequestWithdrawalsTest, ClaimWithdrawalsTest, GetManagedAssetsTest {}
-
-contract LidoWithdrawalsPositionTestV4 is LidoWithdrawalsPositionTest {
-    function setUp() public override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
-    }
-}

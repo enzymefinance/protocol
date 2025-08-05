@@ -15,9 +15,11 @@ import {BytesArrayLib} from "tests/utils/libs/BytesArrayLib.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IKilnStakingContract} from "tests/interfaces/external/IKilnStakingContract.sol";
 
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IKilnStakingPositionLib} from "tests/interfaces/internal/IKilnStakingPositionLib.sol";
 import {IKilnStakingPositionParser} from "tests/interfaces/internal/IKilnStakingPositionParser.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 address constant STAKING_CONTRACT_ADDRESS_ETHEREUM = 0x0816DF553a89c4bFF7eBfD778A9706a989Dd3Ce3;
 
@@ -50,7 +52,6 @@ abstract contract TestBase is IntegrationTest {
     address internal vaultProxyAddress;
 
     // Set by child contract
-    EnzymeVersion internal version;
 
     function setUp() public virtual override {
         // Must be a block when there are enough validators provisioned in StakingContract.
@@ -58,7 +59,11 @@ abstract contract TestBase is IntegrationTest {
         setUpMainnetEnvironment();
 
         // Create a fund
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         // Seed with wETH
         increaseTokenBalance({_token: wethToken, _to: vaultProxyAddress, _amount: 1000 ether});
@@ -70,11 +75,12 @@ abstract contract TestBase is IntegrationTest {
         // Create an empty KilnStakingPosition for the fund
         vm.prank(fundOwner);
         kilnStakingPosition = IKilnStakingPositionLib(
-            createExternalPositionForVersion({
-                _version: version,
-                _comptrollerProxyAddress: comptrollerProxyAddress,
+            createExternalPosition({
+                _externalPositionManager: core.release.externalPositionManager,
+                _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
                 _typeId: typeId,
-                _initializationData: ""
+                _initializationData: "",
+                _callOnExternalPositionCallArgs: ""
             })
         );
     }
@@ -109,8 +115,8 @@ abstract contract TestBase is IntegrationTest {
         address kilnStakingPositionParserAddress = __deployKilnStakingPositionParser(stakingPositionsListId_);
 
         // Register KilnStakingPosition type
-        typeId_ = registerExternalPositionTypeForVersion({
-            _version: version,
+        typeId_ = registerExternalPositionType({
+            _externalPositionManager: core.release.externalPositionManager,
             _label: "KILN_STAKING",
             _lib: kilnStakingPositionLibAddress,
             _parser: kilnStakingPositionParserAddress
@@ -129,9 +135,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_stakingContractAddress, _publicKeys, _claimFeesType);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(kilnStakingPosition),
             _actionId: uint256(IKilnStakingPositionProd.Actions.ClaimFees),
             _actionArgs: actionArgs
@@ -140,9 +146,9 @@ abstract contract TestBase is IntegrationTest {
 
     function __pausePositionValue() internal {
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(kilnStakingPosition),
             _actionId: uint256(IKilnStakingPositionProd.Actions.PausePositionValue),
             _actionArgs: ""
@@ -153,9 +159,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_stakingContractAddress, _validatorAmount);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(kilnStakingPosition),
             _actionId: uint256(IKilnStakingPositionProd.Actions.Stake),
             _actionArgs: actionArgs
@@ -164,9 +170,9 @@ abstract contract TestBase is IntegrationTest {
 
     function __sweepEth() internal {
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(kilnStakingPosition),
             _actionId: uint256(IKilnStakingPositionProd.Actions.SweepEth),
             _actionArgs: ""
@@ -175,9 +181,9 @@ abstract contract TestBase is IntegrationTest {
 
     function __unpausePositionValue() internal {
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(kilnStakingPosition),
             _actionId: uint256(IKilnStakingPositionProd.Actions.UnpausePositionValue),
             _actionArgs: ""
@@ -189,9 +195,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_stakingContractAddress, packedPublicKeys);
 
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(kilnStakingPosition),
             _actionId: uint256(IKilnStakingPositionProd.Actions.Unstake),
             _actionArgs: actionArgs
@@ -297,7 +303,7 @@ contract StakeTest is TestBase {
         // Assert assetsToReceive was correctly formatted (no assets in this case)
         assertExternalPositionAssetsToReceive({
             _logs: logs,
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -331,7 +337,7 @@ contract SweepEthTest is TestBase {
         // Assert assetsToReceive was correctly formatted (ETH only)
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: toArray(address(wethToken))
         });
 
@@ -362,7 +368,7 @@ contract PausePositionValueTest is TestBase {
         // Assert assetsToReceive was correctly formatted (no assets in this case)
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -390,7 +396,7 @@ contract UnpausePositionValueTest is TestBase {
         // Assert assetsToReceive was correctly formatted (no assets in this case)
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -449,7 +455,7 @@ contract ClaimFeesTest is PostStakeTestBase {
         // No need to test in subsequent success tests
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: toArray(address(wethToken))
         });
 
@@ -553,7 +559,7 @@ contract UnstakeTest is PostStakeTestBase {
         // Assert assetsToReceive was correctly formatted (No assets)
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: core.release.externalPositionManager,
             _assets: new address[](0)
         });
 
@@ -626,56 +632,42 @@ contract GetManagedAssetsTest is TestBase {
 
 contract StakeTestV4 is StakeTest {
     function setUp() public override {
-        version = EnzymeVersion.V4;
-
         super.setUp();
     }
 }
 
 contract SweepEthTestV4 is SweepEthTest {
     function setUp() public override {
-        version = EnzymeVersion.V4;
-
         super.setUp();
     }
 }
 
 contract PausePositionValueTestV4 is PausePositionValueTest {
     function setUp() public override {
-        version = EnzymeVersion.V4;
-
         super.setUp();
     }
 }
 
 contract UnpausePositionValueTestV4 is UnpausePositionValueTest {
     function setUp() public override {
-        version = EnzymeVersion.V4;
-
         super.setUp();
     }
 }
 
 contract ClaimFeesTestV4 is ClaimFeesTest {
     function setUp() public override {
-        version = EnzymeVersion.V4;
-
         super.setUp();
     }
 }
 
 contract UnstakeTestV4 is UnstakeTest {
     function setUp() public override {
-        version = EnzymeVersion.V4;
-
         super.setUp();
     }
 }
 
 contract GetManagedAssetsTestV4 is GetManagedAssetsTest {
     function setUp() public override {
-        version = EnzymeVersion.V4;
-
         super.setUp();
     }
 }

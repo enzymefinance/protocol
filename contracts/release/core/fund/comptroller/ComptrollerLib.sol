@@ -9,17 +9,21 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.8.19;
+pragma solidity 0.6.12;
 
-import {IERC20} from "../../../../external-interfaces/IERC20.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
 import {IDispatcher} from "../../../../persistent/dispatcher/IDispatcher.sol";
-import {IBeaconProxyFactory} from "../../../../utils/0.8.19/deprecated/beacon-proxy/IBeaconProxyFactory.sol";
-import {WrappedSafeERC20 as SafeERC20} from "../../../../utils/0.8.19/open-zeppelin/WrappedSafeERC20.sol";
-import {AddressArrayLib} from "../../../../utils/0.8.19/AddressArrayLib.sol";
+import {IBeaconProxyFactory} from "../../../../utils/0.6.12/beacon-proxy/IBeaconProxyFactory.sol";
+import {AddressArrayLib} from "../../../../utils/0.6.12/AddressArrayLib.sol";
 import {IExtension} from "../../../extensions/IExtension.sol";
 import {IExternalPosition} from "../../../extensions/external-position-manager/IExternalPosition.sol";
 import {IFeeManager} from "../../../extensions/fee-manager/IFeeManager.sol";
 import {IPolicyManager} from "../../../extensions/policy-manager/IPolicyManager.sol";
+import {GasRelayRecipientMixin} from "../../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
+import {IGasRelayPaymaster} from "../../../infrastructure/gas-relayer/IGasRelayPaymaster.sol";
+import {IGasRelayPaymasterDepositor} from "../../../infrastructure/gas-relayer/IGasRelayPaymasterDepositor.sol";
 import {IValueInterpreter} from "../../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import {IFundDeployer} from "../../fund-deployer/IFundDeployer.sol";
 import {IVault} from "../vault/IVault.sol";
@@ -28,19 +32,19 @@ import {IComptroller} from "./IComptroller.sol";
 /// @title ComptrollerLib Contract
 /// @author Enzyme Foundation <security@enzyme.finance>
 /// @notice The core logic library shared by all funds
-contract ComptrollerLib is IComptroller {
+contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRecipientMixin {
     using AddressArrayLib for address[];
-    using SafeERC20 for IERC20;
+    using SafeMath for uint256;
+    using SafeERC20 for ERC20;
 
     event AutoProtocolFeeSharesBuybackSet(bool autoProtocolFeeSharesBuyback);
 
     event BuyBackMaxProtocolFeeSharesFailed(
         bytes indexed failureReturnData, uint256 sharesAmount, uint256 buybackValueInMln, uint256 gav
     );
+    event DeactivateFeeManagerFailed();
 
-    event ExtensionEnabled(address indexed extension, bytes configData);
-
-    event Initialized(address vaultProxy, ConfigInput config);
+    event GasRelayPaymasterSet(address gasRelayPaymaster);
 
     event MigratedSharesDuePaid(uint256 sharesDue);
 
@@ -60,14 +64,18 @@ contract ComptrollerLib is IComptroller {
         uint256[] receivedAssetAmounts
     );
 
+    event VaultProxySet(address vaultProxy);
+
     // Constants and immutables - shared by all proxies
     uint256 private constant ONE_HUNDRED_PERCENT = 10000;
     uint256 private constant SHARES_UNIT = 10 ** 18;
     address private constant SPECIFIC_ASSET_REDEMPTION_DUMMY_FORFEIT_ADDRESS =
         0x000000000000000000000000000000000000aaaa;
     address private immutable DISPATCHER;
+    address private immutable EXTERNAL_POSITION_MANAGER;
     address private immutable FUND_DEPLOYER;
     address private immutable FEE_MANAGER;
+    address private immutable INTEGRATION_MANAGER;
     address private immutable MLN_TOKEN;
     address private immutable POLICY_MANAGER;
     address private immutable PROTOCOL_FEE_RESERVE;
@@ -78,24 +86,34 @@ contract ComptrollerLib is IComptroller {
 
     address internal denominationAsset;
     address internal vaultProxy;
+    // True only for the one non-proxy
+    bool internal isLib;
 
     // Storage
 
     // Attempts to buy back protocol fee shares immediately after collection
     bool internal autoProtocolFeeSharesBuyback;
+    // A reverse-mutex, granting atomic permission for particular contracts to make vault calls
+    bool internal permissionedVaultActionAllowed;
     // A mutex to protect against reentrancy
     bool internal reentranceLocked;
     // A timelock after the last time shares were bought for an account
     // that must expire before that account transfers or redeems their shares
     uint256 internal sharesActionTimelock;
     mapping(address => uint256) internal acctToLastSharesBoughtTimestamp;
-    // The active arbitrary extensions for the fund
-    mapping(address => bool) internal accountToIsExtension;
-    address[] internal extensions;
+    // The contract which manages paying gas relayers
+    address private gasRelayPaymaster;
 
     ///////////////
     // MODIFIERS //
     ///////////////
+
+    modifier allowsPermissionedVaultAction() {
+        __assertPermissionedVaultActionNotAllowed();
+        permissionedVaultActionAllowed = true;
+        _;
+        permissionedVaultActionAllowed = false;
+    }
 
     modifier locksReentrance() {
         __assertNotReentranceLocked();
@@ -106,6 +124,11 @@ contract ComptrollerLib is IComptroller {
 
     modifier onlyFundDeployer() {
         __assertIsFundDeployer();
+        _;
+    }
+
+    modifier onlyGasRelayPaymaster() {
+        __assertIsGasRelayPaymaster();
         _;
     }
 
@@ -128,6 +151,10 @@ contract ComptrollerLib is IComptroller {
         require(msg.sender == getFundDeployer(), "Only FundDeployer callable");
     }
 
+    function __assertIsGasRelayPaymaster() private view {
+        require(msg.sender == getGasRelayPaymaster(), "Only Gas Relay Paymaster callable");
+    }
+
     function __assertIsOwner(address _who) private view {
         require(_who == IVault(getVaultProxy()).getOwner(), "Only fund owner callable");
     }
@@ -136,11 +163,16 @@ contract ComptrollerLib is IComptroller {
         require(!reentranceLocked, "Re-entrance");
     }
 
+    function __assertPermissionedVaultActionNotAllowed() private view {
+        require(!permissionedVaultActionAllowed, "Vault action re-entrance");
+    }
+
     function __assertSharesActionNotTimelocked(address _vaultProxy, address _account) private view {
         uint256 lastSharesBoughtTimestamp = getLastSharesBoughtTimestampForAccount(_account);
 
         require(
-            lastSharesBoughtTimestamp == 0 || block.timestamp - lastSharesBoughtTimestamp >= getSharesActionTimelock()
+            lastSharesBoughtTimestamp == 0
+                || block.timestamp.sub(lastSharesBoughtTimestamp) >= getSharesActionTimelock()
                 || __hasPendingMigrationOrReconfiguration(_vaultProxy),
             "Shares action timelocked"
         );
@@ -151,24 +183,52 @@ contract ComptrollerLib is IComptroller {
         address _protocolFeeReserve,
         address _fundDeployer,
         address _valueInterpreter,
+        address _externalPositionManager,
         address _feeManager,
+        address _integrationManager,
         address _policyManager,
+        address _gasRelayPaymasterFactory,
         address _mlnToken,
         address _wethToken
-    ) {
+    ) public GasRelayRecipientMixin(_gasRelayPaymasterFactory) {
         DISPATCHER = _dispatcher;
+        EXTERNAL_POSITION_MANAGER = _externalPositionManager;
         FEE_MANAGER = _feeManager;
         FUND_DEPLOYER = _fundDeployer;
+        INTEGRATION_MANAGER = _integrationManager;
         MLN_TOKEN = _mlnToken;
         POLICY_MANAGER = _policyManager;
         PROTOCOL_FEE_RESERVE = _protocolFeeReserve;
         VALUE_INTERPRETER = _valueInterpreter;
         WETH_TOKEN = _wethToken;
+        isLib = true;
     }
 
     /////////////
     // GENERAL //
     /////////////
+
+    /// @notice Calls a specified action on an Extension
+    /// @param _extension The Extension contract to call (e.g., FeeManager)
+    /// @param _actionId An ID representing the action to take on the extension (see extension)
+    /// @param _callArgs The encoded data for the call
+    /// @dev Used to route arbitrary calls, so that msg.sender is the ComptrollerProxy
+    /// (for access control). Uses a mutex of sorts that allows "permissioned vault actions"
+    /// during calls originating from this function.
+    function callOnExtension(address _extension, uint256 _actionId, bytes calldata _callArgs)
+        external
+        override
+        locksReentrance
+        allowsPermissionedVaultAction
+    {
+        require(
+            _extension == getFeeManager() || _extension == getIntegrationManager()
+                || _extension == getExternalPositionManager(),
+            "callOnExtension: _extension invalid"
+        );
+
+        IExtension(_extension).receiveCallFromComptroller(__msgSender(), _actionId, _callArgs);
+    }
 
     /// @notice Makes an arbitrary call with the VaultProxy contract as the sender
     /// @param _contract The contract to call
@@ -199,11 +259,6 @@ contract ComptrollerLib is IComptroller {
             || IFundDeployer(getFundDeployer()).hasReconfigurationRequest(_vaultProxy);
     }
 
-    // TODO: Temp placeholder; update when tx relaying is reinstated
-    function __msgSender() private view returns (address sender_) {
-        return msg.sender;
-    }
-
     //////////////////
     // PROTOCOL FEE //
     //////////////////
@@ -232,7 +287,7 @@ contract ComptrollerLib is IComptroller {
 
     /// @dev Helper to buyback the max available protocol fee shares, during an auto-buyback
     function __buyBackMaxProtocolFeeShares(address _vaultProxy, uint256 _gav) private {
-        uint256 sharesAmount = IERC20(_vaultProxy).balanceOf(getProtocolFeeReserve());
+        uint256 sharesAmount = ERC20(_vaultProxy).balanceOf(getProtocolFeeReserve());
         uint256 buybackValueInMln = __getBuybackValueInMln(_vaultProxy, sharesAmount, _gav);
 
         try IVault(_vaultProxy).buyBackProtocolFeeShares(sharesAmount, buybackValueInMln, _gav) {}
@@ -249,41 +304,25 @@ contract ComptrollerLib is IComptroller {
         address denominationAssetCopy = getDenominationAsset();
 
         uint256 grossShareValue = __calcGrossShareValue(
-            _gav, IERC20(_vaultProxy).totalSupply(), 10 ** uint256(IERC20(denominationAssetCopy).decimals())
+            _gav, ERC20(_vaultProxy).totalSupply(), 10 ** uint256(ERC20(denominationAssetCopy).decimals())
         );
 
-        uint256 buybackValueInDenominationAsset = grossShareValue * _sharesAmount / SHARES_UNIT;
+        uint256 buybackValueInDenominationAsset = grossShareValue.mul(_sharesAmount).div(SHARES_UNIT);
 
         return IValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
             denominationAssetCopy, buybackValueInDenominationAsset, getMlnToken()
         );
     }
 
-    ////////////////
-    // EXTENSIONS //
-    ////////////////
-
-    /// @notice Calls a specified action on an Extension
-    /// @param _extension The Extension contract to call (e.g., FeeManager)
-    /// @param _actionId An ID representing the action to take on the extension (see extension)
-    /// @param _callArgs The encoded data for the call
-    /// @dev Used to route arbitrary calls, so that msg.sender is the ComptrollerProxy (for access control)
-    function callOnExtension(address _extension, uint256 _actionId, bytes calldata _callArgs)
-        external
-        override
-        locksReentrance
-    {
-        require(_extension == FEE_MANAGER || isExtension(_extension), "callOnExtension: _extension invalid");
-
-        IExtension(_extension).receiveCallFromComptroller(__msgSender(), _actionId, _callArgs);
-    }
+    ////////////////////////////////
+    // PERMISSIONED VAULT ACTIONS //
+    ////////////////////////////////
 
     /// @notice Makes a permissioned, state-changing call on the VaultProxy contract
     /// @param _action The enum representing the VaultAction to perform on the VaultProxy
     /// @param _actionData The call data for the action to perform
     function permissionedVaultAction(IVault.VaultAction _action, bytes calldata _actionData) external override {
-        // Validate caller
-        require(msg.sender == FEE_MANAGER || isExtension(msg.sender), "permissionedVaultAction: Unauthorized caller");
+        __assertPermissionedVaultAction(msg.sender, _action);
 
         // Validate action as needed
         if (_action == IVault.VaultAction.RemoveTrackedAsset) {
@@ -296,19 +335,39 @@ contract ComptrollerLib is IComptroller {
         IVault(getVaultProxy()).receiveValidatedVaultAction(_action, _actionData);
     }
 
-    // EXTENSION REGISTRATION
+    /// @dev Helper to assert that a caller is allowed to perform a particular VaultAction.
+    /// Uses this pattern rather than multiple `require` statements to save on contract size.
+    function __assertPermissionedVaultAction(address _caller, IVault.VaultAction _action) private view {
+        bool validAction;
+        if (permissionedVaultActionAllowed) {
+            // Calls are roughly ordered by likely frequency
+            if (_caller == getIntegrationManager()) {
+                if (
+                    _action == IVault.VaultAction.AddTrackedAsset || _action == IVault.VaultAction.RemoveTrackedAsset
+                        || _action == IVault.VaultAction.WithdrawAssetTo
+                        || _action == IVault.VaultAction.ApproveAssetSpender
+                ) {
+                    validAction = true;
+                }
+            } else if (_caller == getFeeManager()) {
+                if (
+                    _action == IVault.VaultAction.MintShares || _action == IVault.VaultAction.BurnShares
+                        || _action == IVault.VaultAction.TransferShares
+                ) {
+                    validAction = true;
+                }
+            } else if (_caller == getExternalPositionManager()) {
+                if (
+                    _action == IVault.VaultAction.CallOnExternalPosition
+                        || _action == IVault.VaultAction.AddExternalPosition
+                        || _action == IVault.VaultAction.RemoveExternalPosition
+                ) {
+                    validAction = true;
+                }
+            }
+        }
 
-    /// @dev Helper to enable an extension
-    function __enableExtension(ExtensionConfigInput calldata _extensionConfig) private {
-        require(!isExtension(_extensionConfig.extension), "__enableExtension: Already enabled");
-
-        accountToIsExtension[_extensionConfig.extension] = true;
-        extensions.push(_extensionConfig.extension);
-
-        IExtension(_extensionConfig.extension).setConfigForFund(_extensionConfig.configData);
-        // TODO: if allowing enablement post-creation, conditionally run activateForFund() if Comptroller already active
-
-        emit ExtensionEnabled(_extensionConfig.extension, _extensionConfig.configData);
+        require(validAction, "__assertPermissionedVaultAction: Action not allowed");
     }
 
     ///////////////
@@ -318,64 +377,74 @@ contract ComptrollerLib is IComptroller {
     // Ordered by execution in the lifecycle
 
     /// @notice Initializes a fund with its core config
-    /// @param _vaultProxy The VaultProxy contract
-    /// @param _config The configuration object
+    /// @param _denominationAsset The asset in which the fund's value should be denominated
+    /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
+    /// (buying or selling shares) by the same user
     /// @dev Pseudo-constructor per proxy.
     /// No need to assert access because this is called atomically on deployment,
-    /// and once it's called, it cannot be called again
-    function init(address _vaultProxy, ConfigInput calldata _config) external override {
-        // 1. Comptroller config
-        // This must be set before Extensions are initialized, as they may rely on it
-
-        require(getVaultProxy() == address(0), "init: Already initialized");
+    /// and once it's called, it cannot be called again.
+    function init(address _denominationAsset, uint256 _sharesActionTimelock) external override {
+        require(getDenominationAsset() == address(0), "init: Already initialized");
         require(
-            IValueInterpreter(getValueInterpreter()).isSupportedPrimitiveAsset(_config.denominationAsset),
+            IValueInterpreter(getValueInterpreter()).isSupportedPrimitiveAsset(_denominationAsset),
             "init: Bad denomination asset"
         );
 
+        denominationAsset = _denominationAsset;
+        sharesActionTimelock = _sharesActionTimelock;
+    }
+
+    /// @notice Sets the VaultProxy
+    /// @param _vaultProxy The VaultProxy contract
+    /// @dev No need to assert anything beyond FundDeployer access.
+    /// Called atomically with init(), but after ComptrollerProxy has been deployed.
+    function setVaultProxy(address _vaultProxy) external override onlyFundDeployer {
         vaultProxy = _vaultProxy;
-        denominationAsset = _config.denominationAsset;
-        sharesActionTimelock = _config.sharesActionTimelock;
 
-        // 2. Extensions config
-
-        // Core extensions
-        // Since fees can only be set in this step, if there are no fees, there is no need to set the validated VaultProxy
-        if (_config.feeManagerConfigData.length > 0) {
-            IExtension(getFeeManager()).setConfigForFund(_config.feeManagerConfigData);
-        }
-        IExtension(getPolicyManager()).setConfigForFund(_config.policyManagerConfigData);
-
-        // Arbitrary extensions
-        uint256 extensionsLength = _config.extensionsConfig.length;
-        for (uint256 i; i < extensionsLength; i++) {
-            __enableExtension(_config.extensionsConfig[i]);
-        }
-
-        emit Initialized(_vaultProxy, _config);
+        emit VaultProxySet(_vaultProxy);
     }
 
     /// @notice Runs atomic logic after a ComptrollerProxy has become its vaultProxy's `accessor`
+    /// @param _isMigration True if a migrated fund is being activated
     /// @dev No need to assert anything beyond FundDeployer access.
-    function activate() external override onlyFundDeployer {
-        IVault(getVaultProxy()).addTrackedAsset(getDenominationAsset());
+    function activate(bool _isMigration) external override onlyFundDeployer {
+        address vaultProxyCopy = getVaultProxy();
 
-        // Activate hardcoded extensions
-        IExtension(FEE_MANAGER).activateForFund();
-        IExtension(POLICY_MANAGER).activateForFund();
+        if (_isMigration) {
+            // Distribute any shares in the VaultProxy to the fund owner.
+            // This is a mechanism to ensure that even in the edge case of a fund being unable
+            // to payout fee shares owed during migration, these shares are not lost.
+            uint256 sharesDue = ERC20(vaultProxyCopy).balanceOf(vaultProxyCopy);
+            if (sharesDue > 0) {
+                IVault(vaultProxyCopy).transferShares(vaultProxyCopy, IVault(vaultProxyCopy).getOwner(), sharesDue);
 
-        // Activate arbitrary extensions
-        uint256 extensionsLength = extensions.length;
-        for (uint256 i; i < extensionsLength; i++) {
-            IExtension(extensions[i]).activateForFund();
+                emit MigratedSharesDuePaid(sharesDue);
+            }
         }
+
+        IVault(vaultProxyCopy).addTrackedAsset(getDenominationAsset());
+
+        // Activate extensions
+        IExtension(getFeeManager()).activateForFund(_isMigration);
+        IExtension(getPolicyManager()).activateForFund(_isMigration);
     }
 
     /// @notice Wind down and destroy a ComptrollerProxy that is active
+    /// @param _deactivateFeeManagerGasLimit The amount of gas to forward to deactivate the FeeManager
+    /// @param _payProtocolFeeGasLimit The amount of gas to forward to pay the protocol fee
     /// @dev No need to assert anything beyond FundDeployer access.
     /// Uses the try/catch pattern throughout out of an abundance of caution for the function's success.
-    function deactivate() external override onlyFundDeployer {
-        try IVault(getVaultProxy()).payProtocolFee() {}
+    /// All external calls must use limited forwarded gas to ensure that a migration to another release
+    /// does not get bricked by logic that consumes too much gas for the block limit.
+    function destructActivated(uint256 _deactivateFeeManagerGasLimit, uint256 _payProtocolFeeGasLimit)
+        external
+        override
+        onlyFundDeployer
+        allowsPermissionedVaultAction
+    {
+        // Forwarding limited gas here also protects fee recipients by guaranteeing that fee payout logic
+        // will run in the next function call
+        try IVault(getVaultProxy()).payProtocolFee{gas: _payProtocolFeeGasLimit}() {}
         catch {
             emit PayProtocolFeeDuringDestructFailed();
         }
@@ -383,13 +452,30 @@ contract ComptrollerLib is IComptroller {
         // Do not attempt to auto-buyback protocol fee shares in this case,
         // as the call is gav-dependent and can consume too much gas
 
-        // Deactivate arbitrary extensions
-        uint256 extensionsLength = extensions.length;
-        for (uint256 i; i < extensionsLength; i++) {
-            IExtension(extensions[i]).deactivateForFund();
+        // Deactivate extensions only as-necessary
+
+        // Pays out shares outstanding for fees
+        try IExtension(getFeeManager()).deactivateForFund{gas: _deactivateFeeManagerGasLimit}() {}
+        catch {
+            emit DeactivateFeeManagerFailed();
         }
 
-        // TODO: clean up storage for refund?
+        __selfDestruct();
+    }
+
+    /// @notice Destroy a ComptrollerProxy that has not been activated
+    function destructUnactivated() external override onlyFundDeployer {
+        __selfDestruct();
+    }
+
+    /// @dev Helper to self-destruct the contract.
+    /// There should never be ETH in the ComptrollerLib,
+    /// so no need to waste gas to get the fund owner
+    function __selfDestruct() private {
+        // Not necessary, but failsafe to protect the lib against selfdestruct
+        require(!isLib, "__selfDestruct: Only delegate callable");
+
+        selfdestruct(payable(address(this)));
     }
 
     ////////////////
@@ -409,7 +495,7 @@ contract ComptrollerLib is IComptroller {
 
         uint256[] memory balances = new uint256[](assets.length);
         for (uint256 i; i < assets.length; i++) {
-            balances[i] = IERC20(assets[i]).balanceOf(vaultProxyAddress);
+            balances[i] = ERC20(assets[i]).balanceOf(vaultProxyAddress);
         }
 
         gav_ = IValueInterpreter(getValueInterpreter()).calcCanonicalAssetsTotalValue(
@@ -420,7 +506,7 @@ contract ComptrollerLib is IComptroller {
             for (uint256 i; i < externalPositions.length; i++) {
                 uint256 externalPositionValue = __calcExternalPositionValue(externalPositions[i]);
 
-                gav_ += externalPositionValue;
+                gav_ = gav_.add(externalPositionValue);
             }
         }
 
@@ -434,7 +520,7 @@ contract ComptrollerLib is IComptroller {
         uint256 gav = calcGav();
 
         grossShareValue_ = __calcGrossShareValue(
-            gav, IERC20(getVaultProxy()).totalSupply(), 10 ** uint256(IERC20(getDenominationAsset()).decimals())
+            gav, ERC20(getVaultProxy()).totalSupply(), 10 ** uint256(ERC20(getDenominationAsset()).decimals())
         );
 
         return grossShareValue_;
@@ -457,7 +543,7 @@ contract ComptrollerLib is IComptroller {
         );
 
         if (managedValue > debtValue) {
-            value_ = managedValue - debtValue;
+            value_ = managedValue.sub(debtValue);
         }
 
         return value_;
@@ -473,7 +559,7 @@ contract ComptrollerLib is IComptroller {
             return _denominationAssetUnit;
         }
 
-        return _gav * SHARES_UNIT / _sharesSupply;
+        return _gav.mul(SHARES_UNIT).div(_sharesSupply);
     }
 
     ///////////////////
@@ -532,7 +618,7 @@ contract ComptrollerLib is IComptroller {
         uint256 _minSharesQuantity,
         bool _hasSharesActionTimelock,
         address _canonicalSender
-    ) private locksReentrance returns (uint256 sharesReceived_) {
+    ) private locksReentrance allowsPermissionedVaultAction returns (uint256 sharesReceived_) {
         // Enforcing a _minSharesQuantity also validates `_investmentAmount > 0`
         // and guarantees the function cannot succeed while minting 0 shares
         require(_minSharesQuantity > 0, "__buyShares: _minSharesQuantity must be >0");
@@ -566,12 +652,12 @@ contract ComptrollerLib is IComptroller {
 
         // Calculate the amount of shares to issue with the investment amount
         uint256 sharePrice = __calcGrossShareValue(
-            gav, IERC20(vaultProxyCopy).totalSupply(), 10 ** uint256(IERC20(getDenominationAsset()).decimals())
+            gav, ERC20(vaultProxyCopy).totalSupply(), 10 ** uint256(ERC20(getDenominationAsset()).decimals())
         );
-        uint256 sharesIssued = receivedInvestmentAmount * SHARES_UNIT / sharePrice;
+        uint256 sharesIssued = receivedInvestmentAmount.mul(SHARES_UNIT).div(sharePrice);
 
         // Mint shares to the buyer
-        uint256 prevBuyerShares = IERC20(vaultProxyCopy).balanceOf(_buyer);
+        uint256 prevBuyerShares = ERC20(vaultProxyCopy).balanceOf(_buyer);
         IVault(vaultProxyCopy).mintShares(_buyer, sharesIssued);
 
         // Gives Extensions a chance to run logic after shares are issued
@@ -579,7 +665,7 @@ contract ComptrollerLib is IComptroller {
 
         // The number of actual shares received may differ from shares issued due to
         // how the PostBuyShares hooks are invoked by Extensions (i.e., fees)
-        sharesReceived_ = IERC20(vaultProxyCopy).balanceOf(_buyer) - prevBuyerShares;
+        sharesReceived_ = ERC20(vaultProxyCopy).balanceOf(_buyer).sub(prevBuyerShares);
         require(sharesReceived_ >= _minSharesQuantity, "__buyShares: Shares received < _minSharesQuantity");
 
         if (_hasSharesActionTimelock) {
@@ -608,7 +694,7 @@ contract ComptrollerLib is IComptroller {
         uint256 _sharesIssued,
         uint256 _preBuySharesGav
     ) private {
-        uint256 gav = _preBuySharesGav + _investmentAmount;
+        uint256 gav = _preBuySharesGav.add(_investmentAmount);
         IFeeManager(getFeeManager()).invokeHook(
             IFeeManager.FeeHook.PostBuyShares, abi.encode(_buyer, _investmentAmount, _sharesIssued), gav
         );
@@ -620,18 +706,18 @@ contract ComptrollerLib is IComptroller {
         );
     }
 
-    /// @dev Helper to execute IERC20.transferFrom() while calculating the actual amount received
+    /// @dev Helper to execute ERC20.transferFrom() while calculating the actual amount received
     function __transferFromWithReceivedAmount(
         address _asset,
         address _sender,
         address _recipient,
         uint256 _transferAmount
     ) private returns (uint256 receivedAmount_) {
-        uint256 preTransferRecipientBalance = IERC20(_asset).balanceOf(_recipient);
+        uint256 preTransferRecipientBalance = ERC20(_asset).balanceOf(_recipient);
 
-        IERC20(_asset).safeTransferFrom(_sender, _recipient, _transferAmount);
+        ERC20(_asset).safeTransferFrom(_sender, _recipient, _transferAmount);
 
-        return IERC20(_asset).balanceOf(_recipient) - preTransferRecipientBalance;
+        return ERC20(_asset).balanceOf(_recipient).sub(preTransferRecipientBalance);
     }
 
     // REDEEM SHARES
@@ -663,7 +749,11 @@ contract ComptrollerLib is IComptroller {
             __redeemSharesSetup(vaultProxyContract, canonicalSender, _sharesQuantity, true, gav);
 
         payoutAmounts_ = __payoutSpecifiedAssetPercentages(
-            vaultProxyContract, _recipient, _payoutAssets, _payoutAssetPercentages, gav * sharesToRedeem / sharesSupply
+            vaultProxyContract,
+            _recipient,
+            _payoutAssets,
+            _payoutAssetPercentages,
+            gav.mul(sharesToRedeem).div(sharesSupply)
         );
 
         // Run post-redemption in order to have access to the payoutAmounts
@@ -732,7 +822,7 @@ contract ComptrollerLib is IComptroller {
         // Calculate and transfer payout asset amounts due to _recipient
         payoutAmounts_ = new uint256[](payoutAssets_.length);
         for (uint256 i; i < payoutAssets_.length; i++) {
-            payoutAmounts_[i] = IERC20(payoutAssets_[i]).balanceOf(vaultProxy) * sharesToRedeem / sharesSupply;
+            payoutAmounts_[i] = ERC20(payoutAssets_[i]).balanceOf(vaultProxy).mul(sharesToRedeem).div(sharesSupply);
 
             // Transfer payout asset to _recipient
             if (payoutAmounts_[i] > 0) {
@@ -771,7 +861,7 @@ contract ComptrollerLib is IComptroller {
             return trackedAssetsToPayout;
         }
 
-        payoutAssets_ = new address[](trackedAssetsToPayout.length + additionalItemsCount);
+        payoutAssets_ = new address[](trackedAssetsToPayout.length.add(additionalItemsCount));
         for (uint256 i; i < trackedAssetsToPayout.length; i++) {
             payoutAssets_[i] = trackedAssetsToPayout[i];
         }
@@ -798,7 +888,7 @@ contract ComptrollerLib is IComptroller {
         uint256 percentagesTotal;
         payoutAmounts_ = new uint256[](_payoutAssets.length);
         for (uint256 i; i < _payoutAssets.length; i++) {
-            percentagesTotal += _payoutAssetPercentages[i];
+            percentagesTotal = percentagesTotal.add(_payoutAssetPercentages[i]);
 
             // Used to explicitly specify less than 100% in total _payoutAssetPercentages
             if (_payoutAssets[i] == SPECIFIC_ASSET_REDEMPTION_DUMMY_FORFEIT_ADDRESS) {
@@ -806,7 +896,9 @@ contract ComptrollerLib is IComptroller {
             }
 
             payoutAmounts_[i] = IValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
-                denominationAssetCopy, _owedGav * _payoutAssetPercentages[i] / ONE_HUNDRED_PERCENT, _payoutAssets[i]
+                denominationAssetCopy,
+                _owedGav.mul(_payoutAssetPercentages[i]).div(ONE_HUNDRED_PERCENT),
+                _payoutAssets[i]
             );
             // Guards against corner case of primitive-to-derivative asset conversion that floors to 0,
             // or redeeming a very low shares amount and/or percentage where asset value owed is 0
@@ -827,7 +919,7 @@ contract ComptrollerLib is IComptroller {
         uint256 _sharesToRedeem,
         bool _forSpecifiedAssets,
         uint256 _gavIfCalculated
-    ) private {
+    ) private allowsPermissionedVaultAction {
         try IFeeManager(getFeeManager()).invokeHook(
             IFeeManager.FeeHook.PreRedeemShares,
             abi.encode(_redeemer, _sharesToRedeem, _forSpecifiedAssets),
@@ -864,7 +956,7 @@ contract ComptrollerLib is IComptroller {
     ) private returns (uint256 sharesToRedeem_, uint256 sharesSupply_) {
         __assertSharesActionNotTimelocked(address(vaultProxyContract), _redeemer);
 
-        IERC20 sharesContract = IERC20(address(vaultProxyContract));
+        ERC20 sharesContract = ERC20(address(vaultProxyContract));
 
         uint256 preFeesRedeemerSharesBalance = sharesContract.balanceOf(_redeemer);
 
@@ -882,7 +974,7 @@ contract ComptrollerLib is IComptroller {
         if (_sharesQuantityInput == type(uint256).max) {
             sharesToRedeem_ = postFeesRedeemerSharesBalance;
         } else if (postFeesRedeemerSharesBalance < preFeesRedeemerSharesBalance) {
-            sharesToRedeem_ -= preFeesRedeemerSharesBalance - postFeesRedeemerSharesBalance;
+            sharesToRedeem_ = sharesToRedeem_.sub(preFeesRedeemerSharesBalance.sub(postFeesRedeemerSharesBalance));
         }
 
         // Pay the protocol fee after running other fees, but before burning shares
@@ -922,6 +1014,63 @@ contract ComptrollerLib is IComptroller {
         __assertSharesActionNotTimelocked(getVaultProxy(), _sender);
     }
 
+    /////////////////
+    // GAS RELAYER //
+    /////////////////
+
+    /// @notice Deploys a paymaster contract and deposits WETH, enabling gas relaying
+    function deployGasRelayPaymaster() external override onlyOwnerNotRelayable {
+        require(getGasRelayPaymaster() == address(0), "deployGasRelayPaymaster: Paymaster already deployed");
+
+        bytes memory constructData = abi.encodeWithSignature("init(address)", getVaultProxy());
+        address paymaster = IBeaconProxyFactory(getGasRelayPaymasterFactory()).deployProxy(constructData);
+
+        __setGasRelayPaymaster(paymaster);
+
+        __depositToGasRelayPaymaster(paymaster);
+    }
+
+    /// @notice Tops up the gas relay paymaster deposit
+    function depositToGasRelayPaymaster() external override onlyOwner {
+        __depositToGasRelayPaymaster(getGasRelayPaymaster());
+    }
+
+    /// @notice Pull WETH from vault to gas relay paymaster
+    /// @param _amount Amount of the WETH to pull from the vault
+    function pullWethForGasRelayer(uint256 _amount) external override onlyGasRelayPaymaster {
+        IVault(getVaultProxy()).withdrawAssetTo(getWethToken(), getGasRelayPaymaster(), _amount);
+    }
+
+    /// @notice Sets the gasRelayPaymaster variable value
+    /// @param _nextGasRelayPaymaster The next gasRelayPaymaster value
+    function setGasRelayPaymaster(address _nextGasRelayPaymaster) external override onlyFundDeployer {
+        __setGasRelayPaymaster(_nextGasRelayPaymaster);
+    }
+
+    /// @notice Removes the gas relay paymaster, withdrawing the remaining WETH balance
+    /// and disabling gas relaying
+    function shutdownGasRelayPaymaster() external override onlyOwnerNotRelayable {
+        IGasRelayPaymaster(gasRelayPaymaster).withdrawBalance();
+
+        IVault(vaultProxy).addTrackedAsset(getWethToken());
+
+        delete gasRelayPaymaster;
+
+        emit GasRelayPaymasterSet(address(0));
+    }
+
+    /// @dev Helper to deposit to the gas relay paymaster
+    function __depositToGasRelayPaymaster(address _paymaster) private {
+        IGasRelayPaymaster(_paymaster).deposit();
+    }
+
+    /// @dev Helper to set the next `gasRelayPaymaster` variable
+    function __setGasRelayPaymaster(address _nextGasRelayPaymaster) private {
+        gasRelayPaymaster = _nextGasRelayPaymaster;
+
+        emit GasRelayPaymasterSet(_nextGasRelayPaymaster);
+    }
+
     ///////////////////
     // STATE GETTERS //
     ///////////////////
@@ -934,6 +1083,12 @@ contract ComptrollerLib is IComptroller {
         return DISPATCHER;
     }
 
+    /// @notice Gets the `EXTERNAL_POSITION_MANAGER` variable
+    /// @return externalPositionManager_ The `EXTERNAL_POSITION_MANAGER` variable value
+    function getExternalPositionManager() public view override returns (address externalPositionManager_) {
+        return EXTERNAL_POSITION_MANAGER;
+    }
+
     /// @notice Gets the `FEE_MANAGER` variable
     /// @return feeManager_ The `FEE_MANAGER` variable value
     function getFeeManager() public view override returns (address feeManager_) {
@@ -944,6 +1099,12 @@ contract ComptrollerLib is IComptroller {
     /// @return fundDeployer_ The `FUND_DEPLOYER` variable value
     function getFundDeployer() public view override returns (address fundDeployer_) {
         return FUND_DEPLOYER;
+    }
+
+    /// @notice Gets the `INTEGRATION_MANAGER` variable
+    /// @return integrationManager_ The `INTEGRATION_MANAGER` variable value
+    function getIntegrationManager() public view override returns (address integrationManager_) {
+        return INTEGRATION_MANAGER;
     }
 
     /// @notice Gets the `MLN_TOKEN` variable
@@ -991,10 +1152,10 @@ contract ComptrollerLib is IComptroller {
         return denominationAsset;
     }
 
-    /// @notice Gets all active extension addresses
-    /// @return extensions_ The extension addresses
-    function getExtensions() external view override returns (address[] memory extensions_) {
-        return extensions;
+    /// @notice Gets the `gasRelayPaymaster` variable
+    /// @return gasRelayPaymaster_ The `gasRelayPaymaster` variable value
+    function getGasRelayPaymaster() public view override returns (address gasRelayPaymaster_) {
+        return gasRelayPaymaster;
     }
 
     /// @notice Gets the timestamp of the last time shares were bought for a given account
@@ -1019,12 +1180,5 @@ contract ComptrollerLib is IComptroller {
     /// @return vaultProxy_ The `vaultProxy` variable value
     function getVaultProxy() public view override returns (address vaultProxy_) {
         return vaultProxy;
-    }
-
-    /// @notice Returns whether or not a given account is an active extension
-    /// @param _who The account
-    /// @return isExtension_ True if active extension
-    function isExtension(address _who) public view override returns (bool isExtension_) {
-        return accountToIsExtension[_who];
     }
 }

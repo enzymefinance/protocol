@@ -7,12 +7,13 @@ import {IIntegrationManager as IIntegrationManagerProd} from
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IGenericWrappingAdapterBase} from "tests/interfaces/internal/IGenericWrappingAdapterBase.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 abstract contract TestBase is IntegrationTest {
     // Allowed abs tolerance for ratePerUnderlying conversion
     uint256 rateConversionTolerance = 10;
 
-    EnzymeVersion version;
     address adapterAddress;
     IERC20 underlyingToken;
     IERC20 derivativeToken;
@@ -25,7 +26,6 @@ abstract contract TestBase is IntegrationTest {
     address comptrollerProxyAddress;
 
     function __initialize(
-        EnzymeVersion _version,
         address _adapterAddress,
         address _underlyingTokenAddress,
         address _derivativeTokenAddress,
@@ -33,7 +33,6 @@ abstract contract TestBase is IntegrationTest {
         bool _testWrap,
         bool _testUnwrap
     ) internal {
-        version = _version;
         adapterAddress = _adapterAddress;
         underlyingToken = IERC20(_underlyingTokenAddress);
         derivativeToken = IERC20(_derivativeTokenAddress);
@@ -41,13 +40,23 @@ abstract contract TestBase is IntegrationTest {
         testWrap = _testWrap;
         testUnwrap = _testUnwrap;
 
-        // If v4, register assets to pass the asset universe validation
-        if (version == EnzymeVersion.V4) {
-            v4AddPrimitiveWithTestAggregator({_tokenAddress: address(underlyingToken), _skipIfRegistered: true});
-            v4AddPrimitiveWithTestAggregator({_tokenAddress: address(derivativeToken), _skipIfRegistered: true});
-        }
+        // Register assets to pass the asset universe validation
+        addPrimitiveWithTestAggregator({
+            _valueInterpreter: core.release.valueInterpreter,
+            _tokenAddress: address(underlyingToken),
+            _skipIfRegistered: true
+        });
+        addPrimitiveWithTestAggregator({
+            _valueInterpreter: core.release.valueInterpreter,
+            _tokenAddress: address(derivativeToken),
+            _skipIfRegistered: true
+        });
 
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        (IComptrollerLib comptrollerProxy, IVaultLib vaultProxy, address owner) =
+            createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
+        fundOwner = owner;
     }
 
     // ACTION HELPERS
@@ -56,12 +65,12 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_amount, _minIncomingAmount);
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _actionArgs: actionArgs,
-            _adapterAddress: adapterAddress,
-            _selector: IGenericWrappingAdapterBase.wrap.selector
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: adapterAddress,
+            _selector: IGenericWrappingAdapterBase.wrap.selector,
+            _actionArgs: actionArgs
         });
     }
 
@@ -69,12 +78,12 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_amount, _minIncomingAmount);
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _actionArgs: actionArgs,
-            _adapterAddress: adapterAddress,
-            _selector: IGenericWrappingAdapterBase.unwrap.selector
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: adapterAddress,
+            _selector: IGenericWrappingAdapterBase.unwrap.selector,
+            _actionArgs: actionArgs
         });
     }
 

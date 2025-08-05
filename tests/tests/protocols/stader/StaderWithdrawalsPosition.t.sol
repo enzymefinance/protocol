@@ -13,6 +13,8 @@ import {IStaderConfig} from "tests/interfaces/external/IStaderConfig.sol";
 import {IStaderUserWithdrawalManager} from "tests/interfaces/external/IStaderUserWithdrawalManager.sol";
 
 import {IStaderWithdrawalsPositionLib} from "tests/interfaces/internal/IStaderWithdrawalsPositionLib.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 
 address constant STAKE_POOLS_MANAGER = 0xcf5EA1b38380f6aF39068375516Daf40Ed70D299;
@@ -33,16 +35,15 @@ abstract contract StaderWithdrawalsPositionTestBase is IntegrationTest {
     address comptrollerProxyAddress;
     address vaultProxyAddress;
 
-    // Set by child contract
-    EnzymeVersion version;
-
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         setUpMainnetEnvironment();
 
-        version = _version;
-
         // Create a fund
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         // Seed with ETHx
         increaseTokenBalance({_token: ethxToken, _to: vaultProxyAddress, _amount: 10 ether});
@@ -50,14 +51,15 @@ abstract contract StaderWithdrawalsPositionTestBase is IntegrationTest {
         // Deploy all position dependencies
         uint256 typeId = __deployPositionType();
 
-        // Create an empty LidoStakingPosition for the fund
+        // Create an empty StaderWithdrawalsPosition for the fund
         vm.prank(fundOwner);
         staderWithdrawalsPosition = IStaderWithdrawalsPositionLib(
-            createExternalPositionForVersion({
-                _version: version,
-                _comptrollerProxyAddress: comptrollerProxyAddress,
+            createExternalPosition({
+                _externalPositionManager: core.release.externalPositionManager,
+                _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
                 _typeId: typeId,
-                _initializationData: ""
+                _initializationData: "",
+                _callOnExternalPositionCallArgs: ""
             })
         );
     }
@@ -82,8 +84,8 @@ abstract contract StaderWithdrawalsPositionTestBase is IntegrationTest {
         address parserAddress = __deployParser();
 
         // Register position type
-        typeId_ = registerExternalPositionTypeForVersion({
-            _version: version,
+        typeId_ = registerExternalPositionType({
+            _externalPositionManager: core.release.externalPositionManager,
             _label: "STADER_WITHDRAWALS",
             _lib: libAddress,
             _parser: parserAddress
@@ -96,9 +98,9 @@ abstract contract StaderWithdrawalsPositionTestBase is IntegrationTest {
 
     function __claimWithdrawal(uint256 _requestId) internal {
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(staderWithdrawalsPosition),
             _actionId: uint256(IStaderWithdrawalsPositionProd.Actions.ClaimWithdrawal),
             _actionArgs: abi.encode(IStaderWithdrawalsPositionProd.ClaimWithdrawalActionArgs({requestId: _requestId}))
@@ -107,9 +109,9 @@ abstract contract StaderWithdrawalsPositionTestBase is IntegrationTest {
 
     function __requestWithdrawal(uint256 _ethXAmount) internal {
         vm.prank(fundOwner);
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(staderWithdrawalsPosition),
             _actionId: uint256(IStaderWithdrawalsPositionProd.Actions.RequestWithdrawal),
             _actionArgs: abi.encode(IStaderWithdrawalsPositionProd.RequestWithdrawalActionArgs({ethXAmount: _ethXAmount}))
@@ -157,7 +159,7 @@ abstract contract StaderWithdrawalsPositionTestBase is IntegrationTest {
         // Assert assetsToReceive was correctly formatted (no assets in this case)
         assertExternalPositionAssetsToReceive({
             _logs: logs,
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: IExternalPositionManager(core.release.externalPositionManager),
             _assets: new address[](0)
         });
 
@@ -192,7 +194,7 @@ abstract contract StaderWithdrawalsPositionTestBase is IntegrationTest {
         // Assert assetsToReceive was correctly formatted
         assertExternalPositionAssetsToReceive({
             _logs: logs,
-            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
+            _externalPositionManager: IExternalPositionManager(core.release.externalPositionManager),
             _assets: toArray(address(wethToken))
         });
 
@@ -298,12 +300,6 @@ abstract contract StaderWithdrawalsPositionTestBase is IntegrationTest {
 
 contract StaderWithdrawalsPositionTest is StaderWithdrawalsPositionTestBase {
     function setUp() public override {
-        __initialize({_version: EnzymeVersion.Current});
-    }
-}
-
-contract StaderWithdrawalsPositionTestV4 is StaderWithdrawalsPositionTestBase {
-    function setUp() public override {
-        __initialize({_version: EnzymeVersion.V4});
+        __initialize();
     }
 }

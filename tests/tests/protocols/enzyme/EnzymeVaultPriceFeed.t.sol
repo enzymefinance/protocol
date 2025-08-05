@@ -5,8 +5,10 @@ import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IEnzymeVaultPriceFeed} from "tests/interfaces/internal/IEnzymeVaultPriceFeed.sol";
 import {IFundValueCalculatorRouter} from "tests/interfaces/internal/IFundValueCalculatorRouter.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 abstract contract EnzymeVaultPriceFeedTestBase is IntegrationTest {
     ///@dev Shares unit for the Enzyme Vault
@@ -19,15 +21,22 @@ abstract contract EnzymeVaultPriceFeedTestBase is IntegrationTest {
     address internal comptrollerProxyAddress;
     IERC20 internal denominationAsset;
 
-    EnzymeVersion internal version;
-
-    function __initialize(EnzymeVersion _version) internal {
-        version = _version;
-
+    function __initialize() internal {
         denominationAsset = createTestToken(6);
 
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) =
-            createTradingFundForVersion({_version: version, _denominationAsset: denominationAsset});
+        // register the denomination asset
+        addPrimitivesWithTestAggregator({
+            _valueInterpreter: core.release.valueInterpreter,
+            _tokenAddresses: toArray(address(denominationAsset)),
+            _skipIfRegistered: true
+        });
+
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) =
+            createFundMinimal({_fundDeployer: core.release.fundDeployer, _denominationAsset: denominationAsset});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         priceFeed = __deployPriceFeed();
     }
@@ -51,11 +60,10 @@ abstract contract EnzymeVaultPriceFeedTestBase is IntegrationTest {
     /// @dev
     function test_calcUnderlyingValues_successInitialDeposit() public {
         // Buy shares so vault holds some value
-        buySharesForVersion({
+        buyShares({
             _sharesBuyer: fundOwner,
             _amountToDeposit: 12 * assetUnit(denominationAsset),
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _version: version
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress)
         });
 
         uint256 sharesUnitsAmount = 2;
@@ -100,7 +108,7 @@ contract EnzymeVaultPriceFeedTestStandalone is EnzymeVaultPriceFeedTestBase {
     function setUp() public override {
         setUpStandaloneEnvironment();
 
-        __initialize(EnzymeVersion.Current);
+        __initialize();
     }
 }
 
@@ -108,7 +116,7 @@ contract EnzymeVaultPriceFeedTestEthereumV4 is EnzymeVaultPriceFeedTestBase {
     function setUp() public override {
         setUpLiveMainnetEnvironment();
 
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }
 
@@ -116,7 +124,7 @@ contract EnzymeVaultPriceFeedTestPolygonV4 is EnzymeVaultPriceFeedTestBase {
     function setUp() public override {
         setUpLivePolygonEnvironment();
 
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }
 
@@ -124,7 +132,7 @@ contract EnzymeVaultPriceFeedTestArbitrumV4 is EnzymeVaultPriceFeedTestBase {
     function setUp() public override {
         setUpLiveArbitrumEnvironment();
 
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }
 
@@ -132,6 +140,6 @@ contract EnzymeVaultPriceFeedTestBaseChainV4 is EnzymeVaultPriceFeedTestBase {
     function setUp() public override {
         setUpLiveBaseChainEnvironment();
 
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }

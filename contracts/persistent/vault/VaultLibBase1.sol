@@ -9,7 +9,7 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.8.19;
+pragma solidity 0.6.12;
 
 import "./VaultLibBaseCore.sol";
 

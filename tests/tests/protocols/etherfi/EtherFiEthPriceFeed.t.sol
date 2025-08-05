@@ -18,11 +18,8 @@ address constant WRAPPED_ETHERFI_ETH_AGGREGATOR = 0x8751F736E94F6CD167e8C5B97E24
 abstract contract EtherFiEthPriceFeedTestBase is IntegrationTest {
     IEtherFiEthPriceFeed internal priceFeed;
 
-    EnzymeVersion internal version;
-
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         setUpMainnetEnvironment();
-        version = _version;
         priceFeed = __deployPriceFeed();
     }
 
@@ -43,14 +40,14 @@ abstract contract EtherFiEthPriceFeedTestBase is IntegrationTest {
 
     function __addDerivativeAndUnderlying() private {
         addPrimitive({
-            _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion(version)),
+            _valueInterpreter: core.release.valueInterpreter,
             _tokenAddress: WRAPPED_ETHERFI_ETH_ADDRESS,
             _skipIfRegistered: false,
             _aggregatorAddress: ETHEREUM_WEETH_ETH_AGGREGATOR,
             _rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH
         });
         addDerivative({
-            _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion(version)),
+            _valueInterpreter: core.release.valueInterpreter,
             _tokenAddress: ETHERFI_ETH_ADDRESS,
             _skipIfRegistered: false,
             _priceFeedAddress: address(priceFeed)
@@ -65,8 +62,7 @@ abstract contract EtherFiEthPriceFeedTestBase is IntegrationTest {
         __addDerivativeAndUnderlying();
 
         // EETH/USD price Jan 26th 2025 https://www.coingecko.com/en/coins/ether-fi-staked-eth/historical_data
-        assertValueInUSDForVersion({
-            _version: version,
+        assertValueInUSD({
             _asset: ETHERFI_ETH_ADDRESS,
             _amount: assetUnit(IERC20(ETHERFI_ETH_ADDRESS)),
             _expected: 3311752649257491376322 // 3311.752649257491376322 USD
@@ -76,7 +72,7 @@ abstract contract EtherFiEthPriceFeedTestBase is IntegrationTest {
     function test_calcUnderlyingValuesInvariant_success() public {
         __addDerivativeAndUnderlying();
 
-        uint256 eETHvalue = IValueInterpreter(getValueInterpreterAddressForVersion(version)).calcCanonicalAssetValue({
+        uint256 eETHvalue = core.release.valueInterpreter.calcCanonicalAssetValue({
             _baseAsset: ETHERFI_ETH_ADDRESS,
             _amount: assetUnit(IERC20(ETHERFI_ETH_ADDRESS)),
             _quoteAsset: address(wethToken)
@@ -97,12 +93,6 @@ abstract contract EtherFiEthPriceFeedTestBase is IntegrationTest {
 
 contract EtherFiEthPriceFeedTestEthereum is EtherFiEthPriceFeedTestBase {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
-    }
-}
-
-contract EtherFiEthPriceFeedTestEthereumV4 is EtherFiEthPriceFeedTestBase {
-    function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }

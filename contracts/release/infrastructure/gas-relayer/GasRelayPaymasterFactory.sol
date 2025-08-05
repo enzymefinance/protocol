@@ -9,10 +9,10 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.8.19;
+pragma solidity 0.6.12;
 
 import {IDispatcher} from "../../../persistent/dispatcher/IDispatcher.sol";
-import {BeaconProxyFactory} from "../../../utils/0.8.19/deprecated/beacon-proxy/BeaconProxyFactory.sol";
+import {BeaconProxyFactory} from "../../../utils/0.6.12/beacon-proxy/BeaconProxyFactory.sol";
 
 /// @title GasRelayPaymasterFactory Contract
 /// @author Enzyme Foundation <security@enzyme.finance>
@@ -20,7 +20,7 @@ import {BeaconProxyFactory} from "../../../utils/0.8.19/deprecated/beacon-proxy/
 contract GasRelayPaymasterFactory is BeaconProxyFactory {
     address private immutable DISPATCHER;
 
-    constructor(address _dispatcher, address _paymasterLib) BeaconProxyFactory(_paymasterLib) {
+    constructor(address _dispatcher, address _paymasterLib) public BeaconProxyFactory(_paymasterLib) {
         DISPATCHER = _dispatcher;
     }
 

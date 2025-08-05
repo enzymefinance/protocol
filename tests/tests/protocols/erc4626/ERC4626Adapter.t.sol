@@ -20,42 +20,40 @@ import {ETHEREUM_MORPHO_RE7_USDC_VAULT_ADDRESS, ETHEREUM_SPARK_SDAI_VAULT_ADDRES
 
 abstract contract ERC4626AdapterTestBase is IntegrationTest {
     address internal fundOwner;
-    address internal vaultProxyAddress;
-    address internal comptrollerProxyAddress;
+    IVaultLib internal vaultProxy;
+    IComptrollerLib internal comptrollerProxy;
 
     IERC4626Adapter internal erc4626Adapter;
     IERC4626 internal erc4626Vault;
     IERC20 internal underlying;
 
-    EnzymeVersion internal version;
-
-    function __initialize(EnzymeVersion _version, address _erc4626VaultAddress) internal {
+    function __initialize(address _erc4626VaultAddress) internal {
         setUpMainnetEnvironment();
-
-        version = _version;
 
         erc4626Adapter = __deployAdapter();
         erc4626Vault = IERC4626(_erc4626VaultAddress);
         underlying = IERC20(erc4626Vault.asset());
 
-        // If v4, register incoming asset to pass the asset universe validation
-        if (version == EnzymeVersion.V4) {
-            address[] memory tokenAddresses = new address[](2);
-            tokenAddresses[0] = address(underlying);
-            tokenAddresses[1] = address(_erc4626VaultAddress);
-            v4AddPrimitivesWithTestAggregator({_tokenAddresses: tokenAddresses, _skipIfRegistered: true});
-        }
+        address[] memory tokenAddresses = new address[](2);
+        tokenAddresses[0] = address(underlying);
+        tokenAddresses[1] = address(_erc4626VaultAddress);
+        addPrimitivesWithTestAggregator({
+            _valueInterpreter: core.release.valueInterpreter,
+            _tokenAddresses: tokenAddresses,
+            _skipIfRegistered: true
+        });
 
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        (comptrollerProxy, vaultProxy, fundOwner) =
+            createFundMinimal({_fundDeployer: core.release.fundDeployer, _denominationAsset: underlying});
 
         // Seed the vault with some underlying
-        increaseTokenBalance({_token: underlying, _to: vaultProxyAddress, _amount: assetUnit(underlying) * 31});
+        increaseTokenBalance({_token: underlying, _to: address(vaultProxy), _amount: assetUnit(underlying) * 31});
     }
 
     // DEPLOYMENT HELPERS
 
     function __deployAdapter() private returns (IERC4626Adapter) {
-        bytes memory args = abi.encode(getIntegrationManagerAddressForVersion(version));
+        bytes memory args = abi.encode(core.release.integrationManager);
         address addr = deployCode("ERC4626Adapter.sol", args);
         return IERC4626Adapter(addr);
     }
@@ -66,12 +64,12 @@ abstract contract ERC4626AdapterTestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(address(erc4626Vault), _underlyingAmount, _minIncomingSharesAmount);
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _actionArgs: actionArgs,
-            _adapterAddress: address(erc4626Adapter),
-            _selector: IERC4626Adapter.lend.selector
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: comptrollerProxy,
+            _adapter: address(erc4626Adapter),
+            _selector: IERC4626Adapter.lend.selector,
+            _actionArgs: actionArgs
         });
     }
 
@@ -79,18 +77,18 @@ abstract contract ERC4626AdapterTestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(address(erc4626Vault), _sharesAmount, _minIncomingUnderlyingAmount);
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _actionArgs: actionArgs,
-            _adapterAddress: address(erc4626Adapter),
-            _selector: IERC4626Adapter.redeem.selector
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: comptrollerProxy,
+            _adapter: address(erc4626Adapter),
+            _selector: IERC4626Adapter.redeem.selector,
+            _actionArgs: actionArgs
         });
     }
 
     function test_lend_success() public {
-        uint256 underlyingBalancePre = underlying.balanceOf(vaultProxyAddress);
-        uint256 amountToDeposit = underlying.balanceOf(vaultProxyAddress) / 5;
+        uint256 underlyingBalancePre = underlying.balanceOf(address(vaultProxy));
+        uint256 amountToDeposit = underlying.balanceOf(address(vaultProxy)) / 5;
         uint256 minIncomingSharesAmount = 123;
 
         assertNotEq(amountToDeposit, 0, "Amount to deposit is 0");
@@ -112,25 +110,25 @@ abstract contract ERC4626AdapterTestBase is IntegrationTest {
         });
 
         assertEq(
-            erc4626Vault.balanceOf(vaultProxyAddress),
+            erc4626Vault.balanceOf(address(vaultProxy)),
             expectedSharesAmount,
             "Mismatch between received and expected erc4626 balance"
         );
 
         assertEq(
-            underlyingBalancePre - underlying.balanceOf(vaultProxyAddress),
+            underlyingBalancePre - underlying.balanceOf(address(vaultProxy)),
             amountToDeposit,
             "Mismatch between sent and expected underlying balance"
         );
     }
 
     function test_redeem_success() public {
-        uint256 amountToDeposit = underlying.balanceOf(vaultProxyAddress) / 5;
+        uint256 amountToDeposit = underlying.balanceOf(address(vaultProxy)) / 5;
 
         __lend({_underlyingAmount: amountToDeposit, _minIncomingSharesAmount: 0});
 
-        uint256 underlyingBalancePre = underlying.balanceOf(vaultProxyAddress);
-        uint256 sharesBalance = IERC20(address(erc4626Vault)).balanceOf(vaultProxyAddress);
+        uint256 underlyingBalancePre = underlying.balanceOf(address(vaultProxy));
+        uint256 sharesBalance = IERC20(address(erc4626Vault)).balanceOf(address(vaultProxy));
         uint256 expectedUnderlyingAmount = erc4626Vault.previewRedeem({shares: sharesBalance});
         uint256 minIncomingUnderlyingAmount = 123;
 
@@ -151,7 +149,7 @@ abstract contract ERC4626AdapterTestBase is IntegrationTest {
         uint256 expectedUnderlyingBalance = underlyingBalancePre + expectedUnderlyingAmount;
 
         assertEq(
-            underlying.balanceOf(vaultProxyAddress),
+            underlying.balanceOf(address(vaultProxy)),
             expectedUnderlyingBalance,
             "Mismatch between received and expected erc4626 underlying balance"
         );
@@ -160,24 +158,12 @@ abstract contract ERC4626AdapterTestBase is IntegrationTest {
 
 contract MorphoRe7USDCTest is ERC4626AdapterTestBase {
     function setUp() public override {
-        __initialize({_version: EnzymeVersion.Current, _erc4626VaultAddress: ETHEREUM_MORPHO_RE7_USDC_VAULT_ADDRESS});
-    }
-}
-
-contract MorphoRe7USDCTestV4 is ERC4626AdapterTestBase {
-    function setUp() public override {
-        __initialize({_version: EnzymeVersion.Current, _erc4626VaultAddress: ETHEREUM_MORPHO_RE7_USDC_VAULT_ADDRESS});
+        __initialize({_erc4626VaultAddress: ETHEREUM_MORPHO_RE7_USDC_VAULT_ADDRESS});
     }
 }
 
 contract SparkTest is ERC4626AdapterTestBase {
     function setUp() public override {
-        __initialize({_version: EnzymeVersion.Current, _erc4626VaultAddress: ETHEREUM_SPARK_SDAI_VAULT_ADDRESS});
-    }
-}
-
-contract SparkTestV4 is ERC4626AdapterTestBase {
-    function setUp() public override {
-        __initialize({_version: EnzymeVersion.V4, _erc4626VaultAddress: ETHEREUM_SPARK_SDAI_VAULT_ADDRESS});
+        __initialize({_erc4626VaultAddress: ETHEREUM_SPARK_SDAI_VAULT_ADDRESS});
     }
 }

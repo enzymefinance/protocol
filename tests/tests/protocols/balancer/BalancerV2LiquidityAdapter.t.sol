@@ -49,9 +49,6 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
 
     address[] internal poolAssetAddresses;
 
-    // Set by child contract
-    EnzymeVersion internal version;
-
     // Vars defined by child contract
     IIntegrationAdapter internal adapter;
     IERC20 internal balToken;
@@ -62,7 +59,11 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
 
     function setUp() public virtual override {
         // Create fund
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         // Store pool assets
         (poolAssetAddresses,,) = balancerVault.getPoolTokens(poolId);
@@ -71,17 +72,18 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
         // * must do after storing pool assets
         address[] memory tokensToRegister = toArray(address(poolBpt), address(stakingToken));
         tokensToRegister = tokensToRegister.mergeArray(poolAssetAddresses);
-        // If v4, register incoming asset to pass the asset universe validation
-        if (version == EnzymeVersion.V4) {
-            v4AddPrimitivesWithTestAggregator({_tokenAddresses: tokensToRegister, _skipIfRegistered: true});
-        }
+        addPrimitivesWithTestAggregator({
+            _valueInterpreter: core.release.valueInterpreter,
+            _tokenAddresses: tokensToRegister,
+            _skipIfRegistered: true
+        });
     }
 
     // DEPLOYMENT HELPERS
 
     function __deployAdapter(address _minterAddress) internal returns (address adapterAddress_) {
         bytes memory args =
-            abi.encode(getIntegrationManagerAddressForVersion(version), balancerVault, _minterAddress, balToken);
+            abi.encode(address(core.release.integrationManager), balancerVault, _minterAddress, balToken);
 
         return deployCode("BalancerV2LiquidityAdapter.sol", args);
     }
@@ -92,10 +94,10 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
         bytes memory actionArgs = abi.encode(address(stakingToken));
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: IBalancerV2LiquidityAdapter.claimRewards.selector,
             _actionArgs: actionArgs
         });
@@ -111,10 +113,10 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
             abi.encode(address(stakingToken), poolId, _minIncomingBptAmount, _spendAssets, _spendAssetAmounts, _request);
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: IBalancerV2LiquidityAdapter.lendAndStake.selector,
             _actionArgs: actionArgs
         });
@@ -124,10 +126,10 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
         bytes memory actionArgs = abi.encode(address(stakingToken), _amount);
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: IBalancerV2LiquidityAdapter.stake.selector,
             _actionArgs: actionArgs
         });
@@ -137,10 +139,10 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
         bytes memory actionArgs = abi.encode(address(stakingToken), _amount);
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: IBalancerV2LiquidityAdapter.unstake.selector,
             _actionArgs: actionArgs
         });
@@ -157,10 +159,10 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
         );
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: IBalancerV2LiquidityAdapter.unstakeAndRedeem.selector,
             _actionArgs: actionArgs
         });
@@ -176,10 +178,10 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
         bytes memory actionArgs = abi.encode(_kind, _swaps, _assets, _limits, _stakingTokens);
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(adapter),
             _selector: IBalancerV2LiquidityAdapter.takeOrder.selector,
             _actionArgs: actionArgs
         });
@@ -325,7 +327,7 @@ abstract contract BalancerPoolTest is PoolTestBase {
         if (__isBalancerMainnetTest()) {
             // Approve adapter to call Minter on behalf of the vault
             registerVaultCall({
-                _fundDeployer: IFundDeployer(getFundDeployerAddressForVersion(version)),
+                _fundDeployer: core.release.fundDeployer,
                 _contract: ETHEREUM_MINTER_ADDRESS,
                 _selector: ICurveMinter.toggle_approve_mint.selector
             });
@@ -923,22 +925,6 @@ contract PolygonTriCryptoPoolTest is PolygonBalancerPoolTest {
         poolBpt = IERC20(POLYGON_TRICRYPTO_POOL_ADDRESS);
         poolType = PoolType.Weighted;
         stakingToken = IERC20(POLYGON_TRICRYPTO_POOL_GAUGE_ADDRESS);
-
-        super.setUp();
-    }
-}
-
-contract EthereumUsdcDaiUsdtPoolTestV4 is EthereumUsdcDaiUsdtPoolTest {
-    function setUp() public override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
-    }
-}
-
-contract PolygonTriCryptoPoolTestV4 is PolygonTriCryptoPoolTest {
-    function setUp() public override {
-        version = EnzymeVersion.V4;
 
         super.setUp();
     }

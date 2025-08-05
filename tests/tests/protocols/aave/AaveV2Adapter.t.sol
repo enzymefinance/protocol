@@ -16,7 +16,6 @@ import {AaveV2Utils} from "./AaveV2Utils.sol";
 
 abstract contract AaveV2AdapterTest is AaveAdapterTestBase, AaveV2Utils {
     function __initializeAaveV2AdapterTest(
-        EnzymeVersion _version,
         uint256 _chainId,
         address _lendingPool,
         address _lendingPoolAddressProvider,
@@ -27,13 +26,12 @@ abstract contract AaveV2AdapterTest is AaveAdapterTestBase, AaveV2Utils {
 
         (IAaveV2Adapter aaveV2Adapter,) = __deployATokenListOwnerAndAdapter({
             _addressListRegistry: core.persistent.addressListRegistry,
-            _integrationManagerAddress: getIntegrationManagerAddressForVersion(_version),
+            _integrationManagerAddress: address(core.release.integrationManager),
             _lendingPool: _lendingPool,
             _lendingPoolAddressProvider: _lendingPoolAddressProvider
         });
 
         __initializeAaveAdapterTestBase({
-            _version: _version,
             _adapterAddress: address(aaveV2Adapter),
             _lendingPool: _lendingPool,
             _lendingPoolAddressProvider: _lendingPoolAddressProvider,
@@ -87,9 +85,8 @@ abstract contract AaveV2AdapterTest is AaveAdapterTestBase, AaveV2Utils {
 }
 
 abstract contract AaveV2AdapterTestEthereumBase is AaveV2AdapterTest {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         __initializeAaveV2AdapterTest({
-            _version: _version,
             _chainId: ETHEREUM_CHAIN_ID,
             _lendingPool: ETHEREUM_LENDING_POOL_ADDRESS,
             _lendingPoolAddressProvider: ETHEREUM_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS,
@@ -100,9 +97,8 @@ abstract contract AaveV2AdapterTestEthereumBase is AaveV2AdapterTest {
 }
 
 abstract contract AaveV2AdapterTestPolygonBase is AaveV2AdapterTest {
-    function __initialize(EnzymeVersion _version) internal {
+    function __initialize() internal {
         __initializeAaveV2AdapterTest({
-            _version: _version,
             _chainId: POLYGON_CHAIN_ID,
             _lendingPool: POLYGON_LENDING_POOL_ADDRESS,
             _lendingPoolAddressProvider: POLYGON_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS,
@@ -114,24 +110,12 @@ abstract contract AaveV2AdapterTestPolygonBase is AaveV2AdapterTest {
 
 contract AaveV2AdapterTestEthereum is AaveV2AdapterTestEthereumBase {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
-    }
-}
-
-contract AaveV2AdapterTestEthereumV4 is AaveV2AdapterTestEthereumBase {
-    function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }
 
 contract AaveV2AdapterTestPolygon is AaveV2AdapterTestPolygonBase {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
-    }
-}
-
-contract AaveV2AdapterTestPolygonV4 is AaveV2AdapterTestPolygonBase {
-    function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }

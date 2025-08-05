@@ -22,6 +22,7 @@ import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IIntegrationManager} from "tests/interfaces/internal/IIntegrationManager.sol";
 import {IPendleV2Adapter} from "tests/interfaces/internal/IPendleV2Adapter.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 // TODO: why ETHEREUM_BLOCK_TIME_SENSITIVE_PENDLE but not for ARBITRUM?
 
@@ -58,16 +59,10 @@ abstract contract TestBase is IntegrationTest {
     address vaultProxyAddress;
     IIntegrationManager integrationManager;
 
-    EnzymeVersion version;
-
-    function __initialize(
-        EnzymeVersion _version,
-        address _pendleOracleAddress,
-        address _pendleRouterAddress,
-        address _pendleMarketAddress
-    ) internal {
+    function __initialize(address _pendleOracleAddress, address _pendleRouterAddress, address _pendleMarketAddress)
+        internal
+    {
         // Assign vars from inputs
-        version = _version;
         pendleOracle = IPendleV2PyYtLpOracle(_pendleOracleAddress);
         pendleRouter = IPendleV2Router(_pendleRouterAddress);
         market = IPendleV2Market(_pendleMarketAddress);
@@ -79,7 +74,7 @@ abstract contract TestBase is IntegrationTest {
             IERC20(yieldTokenAddress == PENDLE_NATIVE_ASSET_ADDRESS ? address(wrappedNativeToken) : yieldTokenAddress);
 
         // Assign other misc vars
-        integrationManager = IIntegrationManager(getIntegrationManagerAddressForVersion(version));
+        integrationManager = IIntegrationManager(address(core.release.integrationManager));
         // Default generic IPendleV2Router.ApproxParams. In a production setting, these settings can be calculated offchain to reduce gas usage.
         // src: https://docs.pendle.finance/Developers/Contracts/PendleRouter#approxparams
         guessPt = IPendleV2RouterProd.ApproxParams({
@@ -94,12 +89,11 @@ abstract contract TestBase is IntegrationTest {
         // - underlyingAsset
         // - PT
         // - LP
-        if (version == EnzymeVersion.V4) {
-            v4AddPrimitivesWithTestAggregator({
-                _tokenAddresses: toArray(address(underlyingAsset), address(principalToken), address(market)),
-                _skipIfRegistered: true
-            });
-        }
+        addPrimitivesWithTestAggregator({
+            _valueInterpreter: core.release.valueInterpreter,
+            _tokenAddresses: toArray(address(underlyingAsset), address(principalToken), address(market)),
+            _skipIfRegistered: true
+        });
 
         // Deploy adapter
         pendleV2Adapter = __deployAdapter({
@@ -109,7 +103,11 @@ abstract contract TestBase is IntegrationTest {
         });
 
         // Create a fund
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        (IComptrollerLib comptrollerProxy, IVaultLib vaultProxy, address fundOwner_) =
+            createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
+        fundOwner = fundOwner_;
 
         // Increase the vault's balances of tokens to use in Pendle actions
         increaseTokenBalance({_token: wrappedNativeToken, _to: vaultProxyAddress, _amount: 100 ether});
@@ -140,10 +138,10 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_actionId, _encodedActionArgs);
 
         vm.prank(fundOwner);
-        callOnIntegrationForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
-            _adapterAddress: address(pendleV2Adapter),
+        callOnIntegration({
+            _integrationManager: core.release.integrationManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
+            _adapter: address(pendleV2Adapter),
             _selector: IPendleV2Adapter.action.selector,
             _actionArgs: actionArgs
         });
@@ -575,11 +573,10 @@ abstract contract TestBase is IntegrationTest {
 }
 
 abstract contract TestEthereumBase is TestBase {
-    function __initializeEthereum(EnzymeVersion _version, address _pendleMarketAddress) internal {
+    function __initializeEthereum(address _pendleMarketAddress) internal {
         setUpMainnetEnvironment(ETHEREUM_BLOCK_TIME_SENSITIVE_PENDLE);
 
         __initialize({
-            _version: _version,
             _pendleOracleAddress: ETHEREUM_PY_YT_LP_ORACLE,
             _pendleRouterAddress: ETHEREUM_ROUTER,
             _pendleMarketAddress: _pendleMarketAddress
@@ -588,11 +585,10 @@ abstract contract TestEthereumBase is TestBase {
 }
 
 abstract contract TestArbitrumBase is TestBase {
-    function __initializeArbitrum(EnzymeVersion _version, address _pendleMarketAddress) internal {
+    function __initializeArbitrum(address _pendleMarketAddress) internal {
         setUpArbitrumEnvironment(ARBITRUM_BLOCK_TIME_SENSITIVE);
 
         __initialize({
-            _version: _version,
             _pendleOracleAddress: ARBITRUM_PY_YT_LP_ORACLE,
             _pendleRouterAddress: ARBITRUM_ROUTER,
             _pendleMarketAddress: _pendleMarketAddress
@@ -603,68 +599,26 @@ abstract contract TestArbitrumBase is TestBase {
 // Pendle weETH is a v3 market
 contract WeEthTestEthereum is TestEthereumBase {
     function setUp() public override {
-        __initializeEthereum({
-            _version: EnzymeVersion.Current,
-            _pendleMarketAddress: ETHEREUM_WEETH_27JUN2024_MARKET_ADDRESS
-        });
-    }
-}
-
-// Pendle weETH is a v3 market
-contract WeEthTestEthereumV4 is TestEthereumBase {
-    function setUp() public override {
-        __initializeEthereum({_version: EnzymeVersion.V4, _pendleMarketAddress: ETHEREUM_WEETH_27JUN2024_MARKET_ADDRESS});
+        __initializeEthereum({_pendleMarketAddress: ETHEREUM_WEETH_27JUN2024_MARKET_ADDRESS});
     }
 }
 
 // Pendle steth is a v1 market
 contract StethTestEthereum is TestEthereumBase {
     function setUp() public override {
-        __initializeEthereum({
-            _version: EnzymeVersion.Current,
-            _pendleMarketAddress: ETHEREUM_STETH_26DEC2025_MARKET_ADDRESS
-        });
-    }
-}
-
-// Pendle steth is a v1 market
-contract StethTestEthereumV4 is TestEthereumBase {
-    function setUp() public override {
-        __initializeEthereum({_version: EnzymeVersion.V4, _pendleMarketAddress: ETHEREUM_STETH_26DEC2025_MARKET_ADDRESS});
+        __initializeEthereum({_pendleMarketAddress: ETHEREUM_STETH_26DEC2025_MARKET_ADDRESS});
     }
 }
 
 // Pendle FUSDc is a market where the decimals of the yieldToken aren't equal to the decimals of the asset returned by assetInfo
 contract FUsdcTestEthereum is TestEthereumBase {
     function setUp() public override {
-        __initializeEthereum({
-            _version: EnzymeVersion.Current,
-            _pendleMarketAddress: ETHEREUM_FUSDC_26DEC2024_MARKET_ADDRESS
-        });
-    }
-}
-
-// Pendle FUSDc is a market where the decimals of the yieldToken aren't equal to the decimals of the asset returned by assetInfo
-contract FUsdcTestEthereumV4 is TestEthereumBase {
-    function setUp() public override {
-        __initializeEthereum({_version: EnzymeVersion.V4, _pendleMarketAddress: ETHEREUM_FUSDC_26DEC2024_MARKET_ADDRESS});
+        __initializeEthereum({_pendleMarketAddress: ETHEREUM_FUSDC_26DEC2024_MARKET_ADDRESS});
     }
 }
 
 contract EzethTestArbitrum is TestArbitrumBase {
     function setUp() public override {
-        __initializeArbitrum({
-            _version: EnzymeVersion.Current,
-            _pendleMarketAddress: ARBITRUM_EZETH_25SEPT2024_MARKET_ADDRESS
-        });
-    }
-}
-
-contract EEthTestArbitrumV4 is TestArbitrumBase {
-    function setUp() public override {
-        __initializeArbitrum({
-            _version: EnzymeVersion.V4,
-            _pendleMarketAddress: ARBITRUM_EZETH_25SEPT2024_MARKET_ADDRESS
-        });
+        __initializeArbitrum({_pendleMarketAddress: ARBITRUM_EZETH_25SEPT2024_MARKET_ADDRESS});
     }
 }

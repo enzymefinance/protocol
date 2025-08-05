@@ -52,11 +52,7 @@ abstract contract TestBase is IntegrationTest, UniswapV3Utils {
         core.release.fundDeployer.registerBuySharesOnBehalfCallers(toArray(address(depositWrapper)));
 
         // Create a fund denominated in any ERC20 other than the wrapped native asset
-        IFundDeployer.ConfigInput memory comptrollerConfig;
-        comptrollerConfig.denominationAsset = address(denominationAsset);
-
-        (comptrollerProxy, vaultProxy,) =
-            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
+        (comptrollerProxy, vaultProxy,) = createFundMinimal(core.release.fundDeployer, denominationAsset);
     }
 
     // DEPLOYMENT HELPERS
@@ -311,11 +307,8 @@ abstract contract ExchangeEthAndBuySharesTest is TestBase {
 
     function test_successWithNativeAssetDenomination() public {
         // Create new fund that is denominated in the wrapped native asset
-        IFundDeployer.ConfigInput memory comptrollerConfig;
-        comptrollerConfig.denominationAsset = address(wrappedNativeToken);
-
         (IComptrollerLib nativeAssetComptrollerProxy, IVaultLib nativeAssetVaultProxy,) =
-            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
+            createFundMinimal(core.release.fundDeployer, wrappedNativeToken);
 
         uint256 inputAmount = 3 ether;
         uint256 expectedShares = inputAmount; // 1:1

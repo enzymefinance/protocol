@@ -9,17 +9,18 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.8.19;
+pragma solidity 0.6.12;
 
-import {IERC20} from "../../../../external-interfaces/IERC20.sol";
-import {IERC20Burnable} from "../../../../external-interfaces/IERC20Burnable.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {ERC20Burnable} from "openzeppelin-solc-0.6/token/ERC20/ERC20Burnable.sol";
+import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
 import {IWETH} from "../../../../external-interfaces/IWETH.sol";
 import {IDispatcher} from "../../../../persistent/dispatcher/IDispatcher.sol";
 import {IProtocolFeeReserve1} from "../../../../persistent/protocol-fee-reserve/interfaces/IProtocolFeeReserve1.sol";
 import {VaultLibBase2} from "../../../../persistent/vault/VaultLibBase2.sol";
-import {AddressArrayLib} from "../../../../utils/0.8.19/AddressArrayLib.sol";
-import {WrappedSafeERC20 as SafeERC20} from "../../../../utils/0.8.19/open-zeppelin/WrappedSafeERC20.sol";
+import {AddressArrayLib} from "../../../../utils/0.6.12/AddressArrayLib.sol";
 import {IExternalPosition} from "../../../extensions/external-position-manager/IExternalPosition.sol";
+import {GasRelayRecipientMixin} from "../../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
 import {IProtocolFeeTracker} from "../../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
 import {IExternalPositionManager} from "../../../extensions/external-position-manager/IExternalPositionManager.sol";
 import {IComptroller} from "../comptroller/IComptroller.sol";
@@ -33,9 +34,9 @@ import {IVault} from "./IVault.sol";
 /// but only tracked assets are used in gav calculations.
 /// Note that this contract inherits VaultLibSafeMath (a verbatim Open Zeppelin SafeMath copy)
 /// from SharesTokenBase via VaultLibBase2
-contract VaultLib is VaultLibBase2, IVault {
+contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     using AddressArrayLib for address[];
-    using SafeERC20 for IERC20;
+    using SafeERC20 for ERC20;
 
     address private immutable EXTERNAL_POSITION_MANAGER;
     // The account to which to send $MLN earmarked for burn.
@@ -68,13 +69,14 @@ contract VaultLib is VaultLibBase2, IVault {
 
     constructor(
         address _externalPositionManager,
+        address _gasRelayPaymasterFactory,
         address _protocolFeeReserve,
         address _protocolFeeTracker,
         address _mlnToken,
         address _mlnBurner,
         address _wethToken,
         uint256 _positionsLimit
-    ) {
+    ) public GasRelayRecipientMixin(_gasRelayPaymasterFactory) {
         EXTERNAL_POSITION_MANAGER = _externalPositionManager;
         MLN_BURNER = _mlnBurner;
         MLN_TOKEN = _mlnToken;
@@ -91,11 +93,6 @@ contract VaultLib is VaultLibBase2, IVault {
         IWETH(payable(getWethToken())).deposit{value: ethAmount}();
 
         emit EthReceived(msg.sender, ethAmount);
-    }
-
-    // TODO: Temp placeholder; update when tx relaying is reinstated
-    function __msgSender() private view returns (address sender_) {
-        return msg.sender;
     }
 
     /////////////
@@ -282,9 +279,9 @@ contract VaultLib is VaultLibBase2, IVault {
         __burn(getProtocolFeeReserve(), _sharesAmount);
 
         if (getMlnBurner() == address(0)) {
-            IERC20Burnable(getMlnToken()).burn(mlnAmountToBurn);
+            ERC20Burnable(getMlnToken()).burn(mlnAmountToBurn);
         } else {
-            IERC20(getMlnToken()).safeTransfer(getMlnBurner(), mlnAmountToBurn);
+            ERC20(getMlnToken()).safeTransfer(getMlnBurner(), mlnAmountToBurn);
         }
 
         emit ProtocolFeeSharesBoughtBack(_sharesAmount, _mlnValue, mlnAmountToBurn);
@@ -480,7 +477,7 @@ contract VaultLib is VaultLibBase2, IVault {
 
     /// @dev Helper to grant an allowance to a spender to use a vault asset
     function __approveAssetSpender(address _asset, address _target, uint256 _amount) private notShares(_asset) {
-        IERC20 assetContract = IERC20(_asset);
+        ERC20 assetContract = ERC20(_asset);
         if (assetContract.allowance(address(this), _target) > 0) {
             assetContract.safeApprove(_target, 0);
         }
@@ -517,7 +514,7 @@ contract VaultLib is VaultLibBase2, IVault {
 
     /// @dev Helper to the get the Vault's balance of a given asset
     function __getAssetBalance(address _asset) private view returns (uint256 balance_) {
-        return IERC20(_asset).balanceOf(address(this));
+        return ERC20(_asset).balanceOf(address(this));
     }
 
     /// @dev Helper to remove a external position from the vault
@@ -552,7 +549,7 @@ contract VaultLib is VaultLibBase2, IVault {
 
     /// @dev Helper to withdraw an asset from the vault to a specified recipient
     function __withdrawAssetTo(address _asset, address _target, uint256 _amount) private notShares(_asset) {
-        IERC20(_asset).safeTransfer(_target, _amount);
+        ERC20(_asset).safeTransfer(_target, _amount);
 
         emit AssetWithdrawn(_asset, _target, _amount);
     }

@@ -8,7 +8,9 @@ import {IStakeWiseV3StakingPosition as IStakeWiseV3StakingPositionProd} from
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {IStakeWiseV3EthVault} from "tests/interfaces/external/IStakeWiseV3EthVault.sol";
 import {IStakeWiseV3KeeperRewards} from "tests/interfaces/external/IStakeWiseV3KeeperRewards.sol";
 import {IStakeWiseV3OsTokenController} from "tests/interfaces/external/IStakeWiseV3OsTokenController.sol";
@@ -62,28 +64,30 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
     address[] internal supportedImplementations;
     uint256 internal supportedImplementationsListID;
 
-    // Set by child contract
-    EnzymeVersion internal version;
-
     function setUp() public virtual override {
-        externalPositionManager = IExternalPositionManager(getExternalPositionManagerAddressForVersion(version));
+        externalPositionManager = core.release.externalPositionManager;
         (stakeWiseV3StakingPositionLib, stakeWiseV3StakingPositionParser, stakeWiseV3StakingTypeId) =
         deployStakeWiseV3Staking({
             _stakeWiseVaultsRegistryAddress: stakeWiseV3RegistryAddress,
             _wethAddress: address(wethToken)
         });
 
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         increaseTokenBalance({_token: wethToken, _to: vaultProxyAddress, _amount: 10_000 ether});
 
         vm.prank(fundOwner);
         stakeWiseV3ExternalPosition = IStakeWiseV3StakingPositionLib(
-            createExternalPositionForVersion({
-                _version: version,
-                _comptrollerProxyAddress: comptrollerProxyAddress,
+            createExternalPosition({
+                _externalPositionManager: core.release.externalPositionManager,
+                _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
                 _typeId: stakeWiseV3StakingTypeId,
-                _initializationData: ""
+                _initializationData: "",
+                _callOnExternalPositionCallArgs: ""
             })
         );
     }
@@ -116,8 +120,8 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
             _wethAddress: _wethAddress
         });
 
-        uint256 typeId = registerExternalPositionTypeForVersion({
-            _version: version,
+        uint256 typeId = registerExternalPositionType({
+            _externalPositionManager: core.release.externalPositionManager,
             _label: "STAKEWISE_V3_STAKING",
             _lib: address(stakeWiseV3StakingPositionLib_),
             _parser: address(stakeWiseV3StakingPositionParser_)
@@ -153,9 +157,9 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
 
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(stakeWiseV3ExternalPosition),
             _actionId: uint256(IStakeWiseV3StakingPositionProd.Actions.Stake),
             _actionArgs: actionArgs
@@ -172,9 +176,9 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
         vm.prank(fundOwner);
 
         // Need to ensure that stakewisevault is collateralized
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(stakeWiseV3ExternalPosition),
             _actionId: uint256(IStakeWiseV3StakingPositionProd.Actions.EnterExitQueue),
             _actionArgs: actionArgs
@@ -197,9 +201,9 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
 
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(stakeWiseV3ExternalPosition),
             _actionId: uint256(IStakeWiseV3StakingPositionProd.Actions.ClaimExitedAssets),
             _actionArgs: actionArgs
@@ -639,25 +643,9 @@ contract StakeWiseTestEthereumEthVault is StakeWiseTestEthereum {
     }
 }
 
-contract StakeWiseTestEthereumV4EthVault is StakeWiseTestEthereumEthVault {
-    function setUp() public override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
-    }
-}
-
 contract StakeWiseTestEthereumGenesisVault is StakeWiseTestEthereum {
     function setUp() public virtual override {
         stakeWiseVault = IStakeWiseV3EthVault(STAKEWISE_V3_ETH_GENESIS_VAULT_ETHEREUM_ADDRESS);
-
-        super.setUp();
-    }
-}
-
-contract StakeWiseTestEthereumVGenesisVault is StakeWiseTestEthereumGenesisVault {
-    function setUp() public override {
-        version = EnzymeVersion.V4;
 
         super.setUp();
     }

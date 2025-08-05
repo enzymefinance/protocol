@@ -27,10 +27,17 @@ interface IFeeManager {
         None,
         Direct,
         Mint,
-        Burn
+        Burn,
+        MintSharesOutstanding,
+        BurnSharesOutstanding
     }
 
     function getEnabledFeesForFund(address _comptrollerProxy) external view returns (address[] memory enabledFees_);
+
+    function getFeeSharesOutstandingForFund(address _comptrollerProxy, address _fee)
+        external
+        view
+        returns (uint256 sharesOutstanding_);
 
     function invokeHook(FeeHook _hook, bytes calldata _settlementData, uint256 _gav) external;
 }

@@ -13,11 +13,8 @@ import {BalancerV2Utils} from "./BalancerV2Utils.sol";
 abstract contract BalancerV2GaugeTokenPriceFeedTestBase is BalancerV2Utils, IntegrationTest {
     IBalancerV2GaugeTokenPriceFeed internal priceFeed;
 
-    EnzymeVersion internal version;
-
-    function __initialize(EnzymeVersion _version, uint256 _chainId) internal {
+    function __initialize(uint256 _chainId) internal {
         setUpNetworkEnvironment(_chainId);
-        version = _version;
         priceFeed = __deployPriceFeed();
     }
 
@@ -46,8 +43,8 @@ abstract contract BalancerV2GaugeTokenPriceFeedTestBase is BalancerV2Utils, Inte
 }
 
 abstract contract BalancerV2GaugeTokenPriceFeedTestBaseEthereum is BalancerV2GaugeTokenPriceFeedTestBase {
-    function __initialize(EnzymeVersion _version) internal {
-        __initialize({_version: _version, _chainId: ETHEREUM_CHAIN_ID});
+    function __initialize() internal {
+        __initialize({_chainId: ETHEREUM_CHAIN_ID});
     }
 
     function test_calcUnderlyingValues_success() public {
@@ -63,8 +60,8 @@ abstract contract BalancerV2GaugeTokenPriceFeedTestBaseEthereum is BalancerV2Gau
 }
 
 abstract contract BalancerV2GaugeTokenPriceFeedTestBasePolygon is BalancerV2GaugeTokenPriceFeedTestBase {
-    function __initialize(EnzymeVersion _version) internal {
-        __initialize({_version: _version, _chainId: POLYGON_CHAIN_ID});
+    function __initialize() internal {
+        __initialize({_chainId: POLYGON_CHAIN_ID});
     }
 
     function test_calcUnderlyingValues_success() public {
@@ -81,24 +78,24 @@ abstract contract BalancerV2GaugeTokenPriceFeedTestBasePolygon is BalancerV2Gaug
 
 contract BalancerV2GaugeTokenPriceFeedTestEthereum is BalancerV2GaugeTokenPriceFeedTestBaseEthereum {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
+        __initialize();
     }
 }
 
 contract BalancerV2GaugeTokenPriceFeedTestEthereumV4 is BalancerV2GaugeTokenPriceFeedTestBaseEthereum {
     function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }
 
 contract BalancerV2GaugeTokenPriceFeedTestPolygon is BalancerV2GaugeTokenPriceFeedTestBasePolygon {
     function setUp() public override {
-        __initialize(EnzymeVersion.Current);
+        __initialize();
     }
 }
 
 contract BalancerV2GaugeTokenPriceFeedTestPolygonV4 is BalancerV2GaugeTokenPriceFeedTestBasePolygon {
     function setUp() public override {
-        __initialize(EnzymeVersion.V4);
+        __initialize();
     }
 }

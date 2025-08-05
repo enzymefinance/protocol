@@ -15,9 +15,11 @@ import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IMorphoBlue} from "tests/interfaces/external/IMorphoBlue.sol";
 
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {IMorphoBluePositionLib} from "tests/interfaces/internal/IMorphoBluePositionLib.sol";
 import {IMorphoBluePositionParser} from "tests/interfaces/internal/IMorphoBluePositionParser.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 // ETHEREUM MAINNET CONSTANTS
 address constant ETHEREUM_MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
@@ -44,22 +46,13 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
     IMorphoBlue internal morphoBlue;
     IMorphoBlue.MarketParams internal marketParams;
 
-    address internal comptrollerProxyAddress;
+    IComptrollerLib internal comptrollerProxy;
     address internal fundOwner;
     address internal listOwner;
-    address internal vaultProxyAddress;
+    IVaultLib internal vaultProxy;
     IExternalPositionManager internal externalPositionManager;
 
-    EnzymeVersion internal version;
-
-    function __initialize(
-        EnzymeVersion _version,
-        address _morphoBlueAddress,
-        bytes32 _morphoBlueMarketId,
-        uint256 _chainId
-    ) internal {
-        version = _version;
-
+    function __initialize(address _morphoBlueAddress, bytes32 _morphoBlueMarketId, uint256 _chainId) internal {
         setUpNetworkEnvironment({_chainId: _chainId});
 
         listOwner = makeAddr("AllowedMorphoBlueVaultsListOwner");
@@ -72,7 +65,7 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
             _initialItems: toArray(uint256(marketId))
         });
 
-        externalPositionManager = IExternalPositionManager(getExternalPositionManagerAddressForVersion(version));
+        externalPositionManager = core.release.externalPositionManager;
         (morphoBluePositionLib, morphoBluePositionParser, morphoBlueTypeId) = deployMorphoBlue({
             _allowedMorphoBlueVaultsListId: allowedMorphoBlueVaultsListId,
             _morphoBlueAddress: _morphoBlueAddress,
@@ -84,15 +77,16 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
         loanToken = IERC20(marketParams.loanToken);
         collateralToken = IERC20(marketParams.collateralToken);
 
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
 
         vm.prank(fundOwner);
         morphoBlueExternalPosition = IMorphoBluePositionLib(
-            createExternalPositionForVersion({
-                _version: version,
-                _comptrollerProxyAddress: comptrollerProxyAddress,
+            createExternalPosition({
+                _externalPositionManager: externalPositionManager,
+                _comptrollerProxy: comptrollerProxy,
                 _typeId: morphoBlueTypeId,
-                _initializationData: ""
+                _initializationData: "",
+                _callOnExternalPositionCallArgs: ""
             })
         );
 
@@ -109,10 +103,10 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
         });
 
         // Increase the loanToken and collateralToken balances
-        increaseTokenBalance({_token: loanToken, _to: vaultProxyAddress, _amount: assetUnit(loanToken) * 678});
+        increaseTokenBalance({_token: loanToken, _to: address(vaultProxy), _amount: assetUnit(loanToken) * 678});
         increaseTokenBalance({
             _token: collateralToken,
-            _to: vaultProxyAddress,
+            _to: address(vaultProxy),
             _amount: assetUnit(collateralToken) * 345
         });
 
@@ -153,8 +147,8 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
         });
         morphoBluePositionParser_ = deployMorphoBluePositionParser({_morphoBlueAddress: _morphoBlueAddress});
 
-        typeId_ = registerExternalPositionTypeForVersion({
-            _version: version,
+        typeId_ = registerExternalPositionType({
+            _externalPositionManager: externalPositionManager,
             _label: "MORPHO_BLUE",
             _lib: address(morphoBluePositionLib_),
             _parser: address(morphoBluePositionParser_)
@@ -186,9 +180,9 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
 
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: externalPositionManager,
+            _comptrollerProxy: comptrollerProxy,
             _externalPositionAddress: address(morphoBlueExternalPosition),
             _actionId: uint256(IMorphoBluePositionProd.Actions.Lend),
             _actionArgs: actionArgs
@@ -200,9 +194,9 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
 
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: externalPositionManager,
+            _comptrollerProxy: comptrollerProxy,
             _externalPositionAddress: address(morphoBlueExternalPosition),
             _actionId: uint256(IMorphoBluePositionProd.Actions.Redeem),
             _actionArgs: actionArgs
@@ -214,9 +208,9 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
 
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: externalPositionManager,
+            _comptrollerProxy: comptrollerProxy,
             _externalPositionAddress: address(morphoBlueExternalPosition),
             _actionId: uint256(IMorphoBluePositionProd.Actions.AddCollateral),
             _actionArgs: actionArgs
@@ -228,9 +222,9 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
 
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: externalPositionManager,
+            _comptrollerProxy: comptrollerProxy,
             _externalPositionAddress: address(morphoBlueExternalPosition),
             _actionId: uint256(IMorphoBluePositionProd.Actions.RemoveCollateral),
             _actionArgs: actionArgs
@@ -242,9 +236,9 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
 
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: externalPositionManager,
+            _comptrollerProxy: comptrollerProxy,
             _externalPositionAddress: address(morphoBlueExternalPosition),
             _actionId: uint256(IMorphoBluePositionProd.Actions.Borrow),
             _actionArgs: actionArgs
@@ -256,9 +250,9 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
 
         vm.prank(fundOwner);
 
-        callOnExternalPositionForVersion({
-            _version: version,
-            _comptrollerProxyAddress: comptrollerProxyAddress,
+        callOnExternalPosition({
+            _externalPositionManager: externalPositionManager,
+            _comptrollerProxy: comptrollerProxy,
             _externalPositionAddress: address(morphoBlueExternalPosition),
             _actionId: uint256(IMorphoBluePositionProd.Actions.Repay),
             _actionArgs: actionArgs
@@ -286,7 +280,7 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
         expectEmit(address(morphoBlueExternalPosition));
         emit MarketIdAdded(marketId);
 
-        uint256 assetAmount = loanToken.balanceOf(vaultProxyAddress) / 3;
+        uint256 assetAmount = loanToken.balanceOf(address(vaultProxy)) / 3;
 
         __lend({_marketId: marketId, _assetAmount: assetAmount});
 
@@ -343,7 +337,7 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
     }
 
     function __test_redeem_success(bool _redeemAll) private {
-        uint256 lentAssetAmount = loanToken.balanceOf(vaultProxyAddress) / 7;
+        uint256 lentAssetAmount = loanToken.balanceOf(address(vaultProxy)) / 7;
 
         __lend({_marketId: marketId, _assetAmount: lentAssetAmount});
 
@@ -358,11 +352,11 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
             emit MarketIdRemoved(marketId);
         }
 
-        uint256 preRedeemVaultAssetBalance = loanToken.balanceOf(vaultProxyAddress);
+        uint256 preRedeemVaultAssetBalance = loanToken.balanceOf(address(vaultProxy));
 
         __redeem({_marketId: marketId, _sharesAmount: redeemedSharesAmount});
 
-        uint256 postRedeemVaultAssetBalance = loanToken.balanceOf(vaultProxyAddress);
+        uint256 postRedeemVaultAssetBalance = loanToken.balanceOf(address(vaultProxy));
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
@@ -409,7 +403,7 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
         expectEmit(address(morphoBlueExternalPosition));
         emit MarketIdAdded(marketId);
 
-        uint256 addedCollateral = collateralToken.balanceOf(vaultProxyAddress) / 7;
+        uint256 addedCollateral = collateralToken.balanceOf(address(vaultProxy)) / 7;
 
         __addCollateral({_marketId: marketId, _collateralAmount: addedCollateral});
 
@@ -430,7 +424,7 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
     }
 
     function __test_removeCollateral(bool _removeAll) private {
-        uint256 addedCollateral = collateralToken.balanceOf(vaultProxyAddress) / 7;
+        uint256 addedCollateral = collateralToken.balanceOf(address(vaultProxy)) / 7;
 
         __addCollateral({_marketId: marketId, _collateralAmount: addedCollateral});
 
@@ -442,11 +436,11 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
             emit MarketIdRemoved(marketId);
         }
 
-        uint256 preRemoveVaultCollateralBalance = collateralToken.balanceOf(vaultProxyAddress);
+        uint256 preRemoveVaultCollateralBalance = collateralToken.balanceOf(address(vaultProxy));
 
         __removeCollateral({_marketId: marketId, _collateralAmount: removedCollateral});
 
-        uint256 postRemoveVaultCollateralBalance = collateralToken.balanceOf(vaultProxyAddress);
+        uint256 postRemoveVaultCollateralBalance = collateralToken.balanceOf(address(vaultProxy));
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
@@ -489,7 +483,7 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
     }
 
     function test_borrow_success() public {
-        uint256 addedCollateral = collateralToken.balanceOf(vaultProxyAddress) / 3;
+        uint256 addedCollateral = collateralToken.balanceOf(address(vaultProxy)) / 3;
 
         __addCollateral({_marketId: marketId, _collateralAmount: addedCollateral});
 
@@ -497,11 +491,11 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
 
         vm.recordLogs();
 
-        uint256 preBorrowVaultAssetBalance = loanToken.balanceOf(vaultProxyAddress);
+        uint256 preBorrowVaultAssetBalance = loanToken.balanceOf(address(vaultProxy));
 
         __borrow({_marketId: marketId, _borrowAmount: borrowedAmount});
 
-        uint256 borrowAssetBalanceDelta = loanToken.balanceOf(vaultProxyAddress) - preBorrowVaultAssetBalance;
+        uint256 borrowAssetBalanceDelta = loanToken.balanceOf(address(vaultProxy)) - preBorrowVaultAssetBalance;
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
@@ -526,7 +520,7 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
     }
 
     function __test_repay(bool _repayAll) private {
-        uint256 addedCollateral = collateralToken.balanceOf(vaultProxyAddress) / 3;
+        uint256 addedCollateral = collateralToken.balanceOf(address(vaultProxy)) / 3;
 
         __addCollateral({_marketId: marketId, _collateralAmount: addedCollateral});
 
@@ -554,11 +548,11 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
 
         vm.recordLogs();
 
-        uint256 preRepayVaultAssetBalance = loanToken.balanceOf(vaultProxyAddress);
+        uint256 preRepayVaultAssetBalance = loanToken.balanceOf(address(vaultProxy));
 
         __repay({_marketId: marketId, _repayAmount: repayAmount});
 
-        uint256 borrowAssetBalanceDelta = preRepayVaultAssetBalance - loanToken.balanceOf(vaultProxyAddress);
+        uint256 borrowAssetBalanceDelta = preRepayVaultAssetBalance - loanToken.balanceOf(address(vaultProxy));
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
@@ -614,18 +608,6 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
 contract MorphoBlueUsdcWethTestEthereum is MorphoBlueTestBase {
     function setUp() public override {
         __initialize({
-            _version: EnzymeVersion.Current,
-            _morphoBlueAddress: ETHEREUM_MORPHO_BLUE,
-            _morphoBlueMarketId: ETHEREUM_MORPHO_USDC_WETH_MARKET,
-            _chainId: ETHEREUM_CHAIN_ID
-        });
-    }
-}
-
-contract MorphoBlueUsdcWethTestEthereumV4 is MorphoBlueTestBase {
-    function setUp() public override {
-        __initialize({
-            _version: EnzymeVersion.V4,
             _morphoBlueAddress: ETHEREUM_MORPHO_BLUE,
             _morphoBlueMarketId: ETHEREUM_MORPHO_USDC_WETH_MARKET,
             _chainId: ETHEREUM_CHAIN_ID
@@ -636,18 +618,6 @@ contract MorphoBlueUsdcWethTestEthereumV4 is MorphoBlueTestBase {
 contract MorphoBlueUsdcWethTestBaseChain is MorphoBlueTestBase {
     function setUp() public override {
         __initialize({
-            _version: EnzymeVersion.Current,
-            _morphoBlueAddress: BASE_MORPHO_BLUE,
-            _morphoBlueMarketId: BASE_MORPHO_USDC_WETH_MARKET,
-            _chainId: BASE_CHAIN_ID
-        });
-    }
-}
-
-contract MorphoBlueUsdcWethTestBaseChainV4 is MorphoBlueTestBase {
-    function setUp() public override {
-        __initialize({
-            _version: EnzymeVersion.V4,
             _morphoBlueAddress: BASE_MORPHO_BLUE,
             _morphoBlueMarketId: BASE_MORPHO_USDC_WETH_MARKET,
             _chainId: BASE_CHAIN_ID

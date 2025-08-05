@@ -14,8 +14,6 @@ import {Uint256ArrayLib} from "tests/utils/libs/Uint256ArrayLib.sol";
 contract SingleAssetDepositQueueTest is IntegrationTest {
     using Uint256ArrayLib for uint256[];
 
-    EnzymeVersion internal version = EnzymeVersion.Current;
-
     address internal comptrollerProxyAddress;
     address internal fundOwner;
     address internal vaultProxyAddress;
@@ -41,7 +39,11 @@ contract SingleAssetDepositQueueTest is IntegrationTest {
     function setUp() public override {
         setUpStandaloneEnvironment();
 
-        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
+        IComptrollerLib comptrollerProxy;
+        IVaultLib vaultProxy;
+        (comptrollerProxy, vaultProxy, fundOwner) = createFundMinimal({_fundDeployer: core.release.fundDeployer});
+        comptrollerProxyAddress = address(comptrollerProxy);
+        vaultProxyAddress = address(vaultProxy);
 
         depositQueue = __deployLib();
     }
