@@ -5,8 +5,10 @@ import {IPolicyManager as IPolicyManagerProd} from "contracts/release/extensions
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
-import {IAllowedRedeemersForSpecificAssetsPolicy} from
-    "tests/interfaces/internal/IAllowedRedeemersForSpecificAssetsPolicy.sol";
+import {
+    IAllowedRedeemersForSpecificAssetsPolicy,
+    IPolicyManager as IPolicyManagerTypeLibrary
+} from "tests/interfaces/internal/IAllowedRedeemersForSpecificAssetsPolicy.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
@@ -48,12 +50,12 @@ contract AllowedRedeemersForSpecificAssetsPolicy is IntegrationTest {
     }
 
     function test_implementedHooks_success() public {
-        IAllowedRedeemersForSpecificAssetsPolicy.PolicyHook[] memory implementedHooks = policy.implementedHooks();
+        IPolicyManagerTypeLibrary.PolicyHook[] memory implementedHooks = policy.implementedHooks();
 
         // Only RedeemSharesForSpecificAssets
         assertEq(implementedHooks.length, 1, "Unexpected number of implemented hooks");
         assertEq(
-            IAllowedRedeemersForSpecificAssetsPolicy.PolicyHook.unwrap(implementedHooks[0]),
+            IPolicyManagerTypeLibrary.PolicyHook.unwrap(implementedHooks[0]),
             uint8(IPolicyManagerProd.PolicyHook.RedeemSharesForSpecificAssets),
             "Unexpected hook"
         );

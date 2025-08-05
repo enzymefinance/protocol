@@ -11,7 +11,10 @@ import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {ILidoWithdrawalQueue} from "tests/interfaces/external/ILidoWithdrawalQueue.sol";
 
-import {ILidoWithdrawalsPositionLib} from "tests/interfaces/internal/ILidoWithdrawalsPositionLib.sol";
+import {
+    ILidoWithdrawalsPositionLib,
+    ILidoWithdrawalsPosition as ILidoWithdrawalsPositionTypeLibrary
+} from "tests/interfaces/internal/ILidoWithdrawalsPositionLib.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
@@ -213,7 +216,7 @@ abstract contract RequestWithdrawalsTest is TestBase {
         });
 
         // Assert EP storage
-        ILidoWithdrawalsPositionLib.Request[] memory requests = lidoWithdrawalsPosition.getRequests();
+        ILidoWithdrawalsPositionTypeLibrary.Request[] memory requests = lidoWithdrawalsPosition.getRequests();
         assertEq(requests.length, 2);
         assertEq(requests[0].id, uint128(expectedRequestId1));
         assertEq(requests[0].amount, uint128(requestAmount1));
@@ -246,8 +249,8 @@ abstract contract ClaimWithdrawalsTest is TestBase {
         uint256 preTxVaultWethBal = wethToken.balanceOf(vaultProxyAddress);
 
         // Define a subset of requests to withdraw
-        ILidoWithdrawalsPositionLib.Request[] memory preTxRequests = lidoWithdrawalsPosition.getRequests();
-        ILidoWithdrawalsPositionLib.Request memory requestToKeep = preTxRequests[1];
+        ILidoWithdrawalsPositionTypeLibrary.Request[] memory preTxRequests = lidoWithdrawalsPosition.getRequests();
+        ILidoWithdrawalsPositionTypeLibrary.Request memory requestToKeep = preTxRequests[1];
         uint256[] memory requestIdsToClaim = toArray(preTxRequests[0].id, preTxRequests[2].id);
         uint256 totalClaimsAmount = preTxRequests[0].amount + preTxRequests[2].amount;
 
@@ -275,7 +278,7 @@ abstract contract ClaimWithdrawalsTest is TestBase {
         });
 
         // Assert the requests were removed from storage
-        ILidoWithdrawalsPositionLib.Request[] memory postTxRequests = lidoWithdrawalsPosition.getRequests();
+        ILidoWithdrawalsPositionTypeLibrary.Request[] memory postTxRequests = lidoWithdrawalsPosition.getRequests();
         assertEq(postTxRequests.length, 1);
         assertEq(postTxRequests[0].id, requestToKeep.id);
         assertEq(postTxRequests[0].amount, requestToKeep.amount);

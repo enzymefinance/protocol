@@ -10,18 +10,23 @@ import {TestChainlinkAggregator} from "tests/utils/core/AssetUniverseUtils.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
-import {INoDepegOnRedeemSharesForSpecificAssetsPolicy as INoDepegPolicy} from
-    "tests/interfaces/internal/INoDepegOnRedeemSharesForSpecificAssetsPolicy.sol";
+import {
+    INoDepegOnRedeemSharesForSpecificAssetsPolicy as INoDepegPolicy,
+    INoDepegPolicyBase as INoDepegPolicyBaseTypeLibrary,
+    IPolicyManager as IPolicyManagerTypeLibrary
+} from "tests/interfaces/internal/INoDepegOnRedeemSharesForSpecificAssetsPolicy.sol";
 
 /// @dev Written as integration test since it relies on ValueInterpreter interactions
 contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
-    event FundSettingsUpdated(address indexed comptrollerProxy, INoDepegPolicy.AssetConfig[] assetConfigs);
+    event FundSettingsUpdated(
+        address indexed comptrollerProxy, INoDepegPolicyBaseTypeLibrary.AssetConfig[] assetConfigs
+    );
 
     bytes private constant ERROR_MESSAGE_ONLY_POLICY_MANAGER = "Only the PolicyManager can make this call";
     uint256 private constant ONE_HUNDRED_PERCENT_FOR_POLICY = BPS_ONE_HUNDRED_PERCENT;
 
-    INoDepegPolicy.PolicyHook internal policyHook =
-        INoDepegPolicy.PolicyHook.wrap(uint8(IPolicyManagerProd.PolicyHook.RedeemSharesForSpecificAssets));
+    IPolicyManagerTypeLibrary.PolicyHook internal policyHook =
+        IPolicyManagerTypeLibrary.PolicyHook.wrap(uint8(IPolicyManagerProd.PolicyHook.RedeemSharesForSpecificAssets));
     INoDepegPolicy internal policy;
     IERC20 internal simulatedUsd;
     IERC20 internal ethPeggedAsset;
@@ -67,7 +72,7 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
 
     // HELPERS
 
-    function __encodeFundSettings(INoDepegPolicy.AssetConfig[] memory _assetConfigs)
+    function __encodeFundSettings(INoDepegPolicyBaseTypeLibrary.AssetConfig[] memory _assetConfigs)
         private
         pure
         returns (bytes memory encodedSettings_)
@@ -78,8 +83,9 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
     // TESTS
 
     function test_addFundSettings_failsWithDeviationToleranceOfZero() public {
-        INoDepegPolicy.AssetConfig[] memory assetConfigs = new INoDepegPolicy.AssetConfig[](1);
-        assetConfigs[0] = INoDepegPolicy.AssetConfig({
+        INoDepegPolicyBaseTypeLibrary.AssetConfig[] memory assetConfigs =
+            new INoDepegPolicyBaseTypeLibrary.AssetConfig[](1);
+        assetConfigs[0] = INoDepegPolicyBaseTypeLibrary.AssetConfig({
             asset: address(ethPeggedAsset),
             referenceAsset: address(wethToken),
             deviationToleranceInBps: 0
@@ -93,8 +99,9 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
     }
 
     function test_addFundSettings_failsWithDeviationToleranceMax() public {
-        INoDepegPolicy.AssetConfig[] memory assetConfigs = new INoDepegPolicy.AssetConfig[](1);
-        assetConfigs[0] = INoDepegPolicy.AssetConfig({
+        INoDepegPolicyBaseTypeLibrary.AssetConfig[] memory assetConfigs =
+            new INoDepegPolicyBaseTypeLibrary.AssetConfig[](1);
+        assetConfigs[0] = INoDepegPolicyBaseTypeLibrary.AssetConfig({
             asset: address(ethPeggedAsset),
             referenceAsset: address(wethToken),
             deviationToleranceInBps: uint16(ONE_HUNDRED_PERCENT_FOR_POLICY)
@@ -113,13 +120,14 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
     }
 
     function test_addFundSettings_success() public {
-        INoDepegPolicy.AssetConfig[] memory assetConfigs = new INoDepegPolicy.AssetConfig[](2);
-        assetConfigs[0] = INoDepegPolicy.AssetConfig({
+        INoDepegPolicyBaseTypeLibrary.AssetConfig[] memory assetConfigs =
+            new INoDepegPolicyBaseTypeLibrary.AssetConfig[](2);
+        assetConfigs[0] = INoDepegPolicyBaseTypeLibrary.AssetConfig({
             asset: address(ethPeggedAsset),
             referenceAsset: address(wethToken),
             deviationToleranceInBps: uint16(ONE_HUNDRED_PERCENT_FOR_POLICY / 100)
         });
-        assetConfigs[1] = INoDepegPolicy.AssetConfig({
+        assetConfigs[1] = INoDepegPolicyBaseTypeLibrary.AssetConfig({
             asset: address(usdPeggedAsset),
             referenceAsset: address(simulatedUsd),
             deviationToleranceInBps: uint16(ONE_HUNDRED_PERCENT_FOR_POLICY / 10)
@@ -136,12 +144,13 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
         policy.addFundSettings({_comptrollerProxy: comptrollerProxyAddress, _encodedSettings: encodedSettings});
 
         // Validate stored settings match input settings
-        INoDepegPolicy.AssetConfig[] memory storedAssetConfigs = policy.getAssetConfigsForFund(comptrollerProxyAddress);
+        INoDepegPolicyBaseTypeLibrary.AssetConfig[] memory storedAssetConfigs =
+            policy.getAssetConfigsForFund(comptrollerProxyAddress);
         assertEq(assetConfigs.length, storedAssetConfigs.length, "Asset configs length mismatch");
 
         for (uint256 i; i < assetConfigs.length; i++) {
-            INoDepegPolicy.AssetConfig memory inputAssetConfig = assetConfigs[i];
-            INoDepegPolicy.AssetConfig memory storedAssetConfig = storedAssetConfigs[i];
+            INoDepegPolicyBaseTypeLibrary.AssetConfig memory inputAssetConfig = assetConfigs[i];
+            INoDepegPolicyBaseTypeLibrary.AssetConfig memory storedAssetConfig = storedAssetConfigs[i];
 
             assertEq(inputAssetConfig.asset, storedAssetConfig.asset, "Asset mismatch");
             assertEq(inputAssetConfig.referenceAsset, storedAssetConfig.referenceAsset, "Reference asset mismatch");
@@ -165,13 +174,14 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
     function test_updateFundSettings_success() public {
         // Register some initial fund settings
         {
-            INoDepegPolicy.AssetConfig[] memory initialAssetConfigs = new INoDepegPolicy.AssetConfig[](2);
-            initialAssetConfigs[0] = INoDepegPolicy.AssetConfig({
+            INoDepegPolicyBaseTypeLibrary.AssetConfig[] memory initialAssetConfigs =
+                new INoDepegPolicyBaseTypeLibrary.AssetConfig[](2);
+            initialAssetConfigs[0] = INoDepegPolicyBaseTypeLibrary.AssetConfig({
                 asset: address(ethPeggedAsset),
                 referenceAsset: address(wethToken),
                 deviationToleranceInBps: uint16(ONE_HUNDRED_PERCENT_FOR_POLICY / 100)
             });
-            initialAssetConfigs[1] = INoDepegPolicy.AssetConfig({
+            initialAssetConfigs[1] = INoDepegPolicyBaseTypeLibrary.AssetConfig({
                 asset: address(usdPeggedAsset),
                 referenceAsset: address(simulatedUsd),
                 deviationToleranceInBps: uint16(ONE_HUNDRED_PERCENT_FOR_POLICY / 10)
@@ -186,8 +196,9 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
         }
 
         // Define new fund settings
-        INoDepegPolicy.AssetConfig[] memory nextAssetConfigs = new INoDepegPolicy.AssetConfig[](1);
-        nextAssetConfigs[0] = INoDepegPolicy.AssetConfig({
+        INoDepegPolicyBaseTypeLibrary.AssetConfig[] memory nextAssetConfigs =
+            new INoDepegPolicyBaseTypeLibrary.AssetConfig[](1);
+        nextAssetConfigs[0] = INoDepegPolicyBaseTypeLibrary.AssetConfig({
             asset: address(usdPeggedAsset),
             referenceAsset: address(simulatedUsd),
             deviationToleranceInBps: uint16(ONE_HUNDRED_PERCENT_FOR_POLICY / 30)
@@ -203,12 +214,13 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
         policy.updateFundSettings({_comptrollerProxy: comptrollerProxyAddress, _encodedSettings: nextEncodedSettings});
 
         // Validate stored settings match input settings
-        INoDepegPolicy.AssetConfig[] memory storedAssetConfigs = policy.getAssetConfigsForFund(comptrollerProxyAddress);
+        INoDepegPolicyBaseTypeLibrary.AssetConfig[] memory storedAssetConfigs =
+            policy.getAssetConfigsForFund(comptrollerProxyAddress);
         assertEq(nextAssetConfigs.length, storedAssetConfigs.length, "Asset configs length mismatch");
 
         for (uint256 i; i < nextAssetConfigs.length; i++) {
-            INoDepegPolicy.AssetConfig memory inputAssetConfig = nextAssetConfigs[i];
-            INoDepegPolicy.AssetConfig memory storedAssetConfig = storedAssetConfigs[i];
+            INoDepegPolicyBaseTypeLibrary.AssetConfig memory inputAssetConfig = nextAssetConfigs[i];
+            INoDepegPolicyBaseTypeLibrary.AssetConfig memory storedAssetConfig = storedAssetConfigs[i];
 
             assertEq(inputAssetConfig.asset, storedAssetConfig.asset, "Asset mismatch");
             assertEq(inputAssetConfig.referenceAsset, storedAssetConfig.referenceAsset, "Reference asset mismatch");
@@ -222,12 +234,14 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
 
     function test_validateRule_success() public {
         // Define asset configs
-        INoDepegPolicy.AssetConfig memory ethPeggedAssetConfig = INoDepegPolicy.AssetConfig({
+        INoDepegPolicyBaseTypeLibrary.AssetConfig memory ethPeggedAssetConfig = INoDepegPolicyBaseTypeLibrary
+            .AssetConfig({
             asset: address(ethPeggedAsset),
             referenceAsset: address(wethToken),
             deviationToleranceInBps: uint16(ONE_HUNDRED_PERCENT_FOR_POLICY / 100)
         });
-        INoDepegPolicy.AssetConfig memory usdPeggedAssetConfig = INoDepegPolicy.AssetConfig({
+        INoDepegPolicyBaseTypeLibrary.AssetConfig memory usdPeggedAssetConfig = INoDepegPolicyBaseTypeLibrary
+            .AssetConfig({
             asset: address(usdPeggedAsset),
             referenceAsset: address(simulatedUsd),
             deviationToleranceInBps: uint16(ONE_HUNDRED_PERCENT_FOR_POLICY / 10)
@@ -252,7 +266,8 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
 
         // Register fund settings
         {
-            INoDepegPolicy.AssetConfig[] memory assetConfigs = new INoDepegPolicy.AssetConfig[](2);
+            INoDepegPolicyBaseTypeLibrary.AssetConfig[] memory assetConfigs =
+                new INoDepegPolicyBaseTypeLibrary.AssetConfig[](2);
             assetConfigs[0] = ethPeggedAssetConfig;
             assetConfigs[1] = usdPeggedAssetConfig;
             bytes memory encodedSettings = __encodeFundSettings({_assetConfigs: assetConfigs});

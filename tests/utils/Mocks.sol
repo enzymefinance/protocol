@@ -2,10 +2,10 @@
 pragma solidity 0.8.19;
 
 import {IExtension} from "tests/interfaces/internal/IExtension.sol";
-import {IFee} from "tests/interfaces/internal/IFee.sol";
+import {IFee, IFeeManager as IFeeManagerTypeLibrary} from "tests/interfaces/internal/IFee.sol";
 import {IFundValueCalculator} from "tests/interfaces/internal/IFundValueCalculator.sol";
 import {IMigrationHookHandler} from "tests/interfaces/internal/IMigrationHookHandler.sol";
-import {IPolicy} from "tests/interfaces/internal/IPolicy.sol";
+import {IPolicy, IPolicyManager as IPolicyManagerTypeLibrary} from "tests/interfaces/internal/IPolicy.sol";
 
 // MOCK DEFAULT CONTRACTS
 // Complete interface implementation without logic; simply returns all default values
@@ -52,19 +52,36 @@ contract MockDefaultFee is IFee {
     function settle(
         address _comptrollerProxy,
         address _vaultProxy,
-        FeeHook _hook,
+        IFeeManagerTypeLibrary.FeeHook _hook,
         bytes memory _settlementData,
         uint256 _gav
-    ) external virtual override returns (SettlementType settlementType_, address payer_, uint256 sharesDue_) {}
+    )
+        external
+        virtual
+        override
+        returns (IFeeManagerTypeLibrary.SettlementType settlementType_, address payer_, uint256 sharesDue_)
+    {}
 
-    function settlesOnHook(FeeHook _hook) external view virtual override returns (bool settles_, bool usesGav_) {}
+    function settlesOnHook(IFeeManagerTypeLibrary.FeeHook _hook)
+        external
+        view
+        virtual
+        override
+        returns (bool settles_, bool usesGav_)
+    {}
 
-    function updatesOnHook(FeeHook _hook) external view virtual override returns (bool updates_, bool usesGav_) {}
+    function updatesOnHook(IFeeManagerTypeLibrary.FeeHook _hook)
+        external
+        view
+        virtual
+        override
+        returns (bool updates_, bool usesGav_)
+    {}
 
     function update(
         address _comptrollerProxy,
         address _vaultProxy,
-        FeeHook _hook,
+        IFeeManagerTypeLibrary.FeeHook _hook,
         bytes memory _settlementData,
         uint256 _gav
     ) external virtual override {}
@@ -173,15 +190,14 @@ contract MockDefaultPolicy is IPolicy {
         pure
         virtual
         override
-        returns (IPolicy.PolicyHook[] memory implementedHooks_)
+        returns (IPolicyManagerTypeLibrary.PolicyHook[] memory implementedHooks_)
     {}
 
     function updateFundSettings(address _comptrollerProxy, bytes memory _encodedSettings) external virtual override {}
 
-    function validateRule(address _comptrollerProxy, IPolicy.PolicyHook _hook, bytes memory _encodedArgs)
-        external
-        virtual
-        override
-        returns (bool isValid_)
-    {}
+    function validateRule(
+        address _comptrollerProxy,
+        IPolicyManagerTypeLibrary.PolicyHook _hook,
+        bytes memory _encodedArgs
+    ) external virtual override returns (bool isValid_) {}
 }

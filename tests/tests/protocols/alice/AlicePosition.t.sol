@@ -14,7 +14,10 @@ import {IAliceWhitelistManager} from "tests/interfaces/external/IAliceWhitelistM
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
-import {IAlicePositionLib} from "tests/interfaces/internal/IAlicePositionLib.sol";
+import {
+    IAlicePositionLib,
+    AlicePositionLibBase1 as AlicePositionLibBase1TypeLibrary
+} from "tests/interfaces/internal/IAlicePositionLib.sol";
 import {IAlicePositionParser} from "tests/interfaces/internal/IAlicePositionParser.sol";
 
 // ETHEREUM MAINNET CONSTANTS
@@ -25,7 +28,7 @@ uint16 constant ETHEREUM_ALICE_ETH_USDC_INSTRUMENT_ID = 2;
 address constant ALICE_NATIVE_ASSET_ADDRESS = address(0);
 
 abstract contract AliceTestBase is IntegrationTest {
-    event OrderIdAdded(uint256 indexed orderId, IAlicePositionLib.OrderDetails orderDetails);
+    event OrderIdAdded(uint256 indexed orderId, AlicePositionLibBase1TypeLibrary.OrderDetails orderDetails);
 
     event OrderIdRemoved(uint256 indexed orderId);
 
@@ -272,7 +275,8 @@ abstract contract AliceTestBase is IntegrationTest {
     function __cancelOrder(uint256 _orderId, uint16 _instrumentId, uint256 _limitAmountToGet, uint256 _timestamp)
         private
     {
-        IAlicePositionLib.OrderDetails memory orderDetails = aliceExternalPosition.getOrderDetails({_orderId: _orderId});
+        AlicePositionLibBase1TypeLibrary.OrderDetails memory orderDetails =
+            aliceExternalPosition.getOrderDetails({_orderId: _orderId});
 
         bool isBuyOrder = __isBuyOrder({_orderId: _orderId, _instrumentId: _instrumentId});
 
@@ -290,7 +294,8 @@ abstract contract AliceTestBase is IntegrationTest {
     }
 
     function __isBuyOrder(uint256 _orderId, uint16 _instrumentId) private view returns (bool isBuyOrder_) {
-        IAlicePositionLib.OrderDetails memory orderDetails = aliceExternalPosition.getOrderDetails({_orderId: _orderId});
+        AlicePositionLibBase1TypeLibrary.OrderDetails memory orderDetails =
+            aliceExternalPosition.getOrderDetails({_orderId: _orderId});
         IAliceOrderManager.Instrument memory instrumentDetails =
             aliceOrderManager.getInstrument({_instrumentId: _instrumentId, _mustBeActive: false});
 
@@ -310,7 +315,8 @@ abstract contract AliceTestBase is IntegrationTest {
         uint256 _timestamp,
         uint256 _settlementAmount
     ) private {
-        IAlicePositionLib.OrderDetails memory orderDetails = aliceExternalPosition.getOrderDetails({_orderId: _orderId});
+        AlicePositionLibBase1TypeLibrary.OrderDetails memory orderDetails =
+            aliceExternalPosition.getOrderDetails({_orderId: _orderId});
         bool isBuyOrder = __isBuyOrder({_orderId: _orderId, _instrumentId: _instrumentId});
 
         // Seed the liquidity pool so that funds are available to trade
@@ -353,7 +359,10 @@ abstract contract AliceTestBase is IntegrationTest {
 
         expectEmit(address(aliceExternalPosition));
         emit OrderIdAdded(
-            orderId, IAlicePositionLib.OrderDetails(address(rawOutgoingAsset), address(rawIncomingAsset), orderQuantity)
+            orderId,
+            AlicePositionLibBase1TypeLibrary.OrderDetails(
+                address(rawOutgoingAsset), address(rawIncomingAsset), orderQuantity
+            )
         );
 
         uint256 preOrderVaultOutgoingAssetBalance = outgoingAsset.balanceOf(vaultProxyAddress);
@@ -371,7 +380,8 @@ abstract contract AliceTestBase is IntegrationTest {
         // The orderId should have been added to storage
         assertEq(toArray(orderId), aliceExternalPosition.getOrderIds(), "Incorrect orderIds");
         // The order details should have been added to storage
-        IAlicePositionLib.OrderDetails memory orderDetails = aliceExternalPosition.getOrderDetails({_orderId: orderId});
+        AlicePositionLibBase1TypeLibrary.OrderDetails memory orderDetails =
+            aliceExternalPosition.getOrderDetails({_orderId: orderId});
         assertEq(orderDetails.outgoingAssetAddress, address(rawOutgoingAsset), "Incorrect outgoingAssetAddress");
         assertEq(orderDetails.incomingAssetAddress, address(rawIncomingAsset), "Incorrect incomingAssetAddress");
         assertEq(orderDetails.outgoingAmount, orderQuantity, "Incorrect outgoingAmount");

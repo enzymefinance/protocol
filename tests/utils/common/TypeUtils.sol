@@ -10,11 +10,14 @@ import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
     "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
 
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
-import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IComptrollerLib, IVault as IVaultTypeLibrary} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IFeeManager} from "tests/interfaces/internal/IFeeManager.sol";
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IUintListRegistry} from "tests/interfaces/internal/IUintListRegistry.sol";
-import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
+import {
+    IValueInterpreter,
+    IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinTypeLibrary
+} from "tests/interfaces/internal/IValueInterpreter.sol";
 import {CommonUtilsBase} from "tests/utils/bases/CommonUtilsBase.sol";
 
 abstract contract TypeUtils is CommonUtilsBase {
@@ -31,9 +34,9 @@ abstract contract TypeUtils is CommonUtilsBase {
     function formatChainlinkRateAsset(IChainlinkPriceFeedMixinProd.RateAsset _rateAsset)
         internal
         pure
-        returns (IValueInterpreter.RateAsset formattedRateAsset_)
+        returns (IChainlinkPriceFeedMixinTypeLibrary.RateAsset formattedRateAsset_)
     {
-        return IValueInterpreter.RateAsset.wrap(uint8(_rateAsset));
+        return IChainlinkPriceFeedMixinTypeLibrary.RateAsset.wrap(uint8(_rateAsset));
     }
 
     function formatFeeHook(IFeeManagerProd.FeeHook _feeHook)
@@ -55,9 +58,9 @@ abstract contract TypeUtils is CommonUtilsBase {
     function formatVaultActionForComptroller(IVaultProd.VaultAction _vaultAction)
         internal
         pure
-        returns (IComptrollerLib.VaultAction formattedVaultAction_)
+        returns (IVaultTypeLibrary.VaultAction formattedVaultAction_)
     {
-        return IComptrollerLib.VaultAction.wrap(uint8(_vaultAction));
+        return IVaultTypeLibrary.VaultAction.wrap(uint8(_vaultAction));
     }
 
     // toArray() - bool

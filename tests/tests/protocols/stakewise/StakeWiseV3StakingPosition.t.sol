@@ -14,7 +14,10 @@ import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {IStakeWiseV3EthVault} from "tests/interfaces/external/IStakeWiseV3EthVault.sol";
 import {IStakeWiseV3KeeperRewards} from "tests/interfaces/external/IStakeWiseV3KeeperRewards.sol";
 import {IStakeWiseV3OsTokenController} from "tests/interfaces/external/IStakeWiseV3OsTokenController.sol";
-import {IStakeWiseV3StakingPositionLib} from "tests/interfaces/internal/IStakeWiseV3StakingPositionLib.sol";
+import {
+    IStakeWiseV3StakingPositionLib,
+    IStakeWiseV3StakingPosition as IStakeWiseV3StakingPositionTypeLibrary
+} from "tests/interfaces/internal/IStakeWiseV3StakingPositionLib.sol";
 import {IStakeWiseV3StakingPositionParser} from "tests/interfaces/internal/IStakeWiseV3StakingPositionParser.sol";
 
 // ETHEREUM MAINNET CONSTANTS
@@ -185,7 +188,8 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
         });
 
         // Retrieve the position counter from the last exit request
-        IStakeWiseV3StakingPositionLib.ExitRequest[] memory exitRequests = stakeWiseV3ExternalPosition.getExitRequests();
+        IStakeWiseV3StakingPositionTypeLibrary.ExitRequest[] memory exitRequests =
+            stakeWiseV3ExternalPosition.getExitRequests();
 
         // If enterExitQueue results in instant redemption, there will be no exitRequest in storage
         if (exitRequests.length > 0) {
@@ -446,7 +450,8 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
             );
         }
 
-        IStakeWiseV3StakingPositionLib.ExitRequest[] memory exitRequests = stakeWiseV3ExternalPosition.getExitRequests();
+        IStakeWiseV3StakingPositionTypeLibrary.ExitRequest[] memory exitRequests =
+            stakeWiseV3ExternalPosition.getExitRequests();
 
         assertEq(exitRequests.length, 1, "ExitRequest not found in storage");
         assertEq(
@@ -494,7 +499,8 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
         // There should be no assets in the external position since the only position has been redeemed in full
         assertEq(assets.length, 0, "Incorrect managed assets");
         assertEq(stakeWiseV3ExternalPosition.getStakeWiseVaultTokens().length, 0, "StakeWise vault still in storage");
-        IStakeWiseV3StakingPositionLib.ExitRequest[] memory exitRequests = stakeWiseV3ExternalPosition.getExitRequests();
+        IStakeWiseV3StakingPositionTypeLibrary.ExitRequest[] memory exitRequests =
+            stakeWiseV3ExternalPosition.getExitRequests();
         assertEq(exitRequests.length, 0, "ExitRequest incorrectly found in storage");
     }
 
@@ -577,7 +583,7 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
             );
 
             // Check that the previous exit request has been removed from storage, and a new one added
-            IStakeWiseV3StakingPositionLib.ExitRequest[] memory exitRequests =
+            IStakeWiseV3StakingPositionTypeLibrary.ExitRequest[] memory exitRequests =
                 stakeWiseV3ExternalPosition.getExitRequests();
 
             assertEq(exitRequests.length, 1, "ExitRequest missing from storage");

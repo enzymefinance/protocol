@@ -4,7 +4,10 @@ pragma solidity 0.8.19;
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
 import {IFundValueCalculator} from "tests/interfaces/internal/IFundValueCalculator.sol";
-import {ISharePriceThrottledAssetManagerLib} from "tests/interfaces/internal/ISharePriceThrottledAssetManagerLib.sol";
+import {
+    ISharePriceThrottledAssetManagerLib,
+    IMultiCallAccountMixin as IMultiCallAccountMixinTypeLibrary
+} from "tests/interfaces/internal/ISharePriceThrottledAssetManagerLib.sol";
 import {ISharePriceThrottledAssetManagerFactory} from
     "tests/interfaces/internal/ISharePriceThrottledAssetManagerFactory.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
@@ -95,10 +98,10 @@ contract SharePriceThrottledAssetManagerTest is IntegrationTest {
     function __formatSharePriceChangeCall(uint256 _nextSharePrice)
         internal
         view
-        returns (ISharePriceThrottledAssetManagerLib.Call[] memory calls_)
+        returns (IMultiCallAccountMixinTypeLibrary.Call[] memory calls_)
     {
-        calls_ = new ISharePriceThrottledAssetManagerLib.Call[](1);
-        calls_[0] = ISharePriceThrottledAssetManagerLib.Call({
+        calls_ = new IMultiCallAccountMixinTypeLibrary.Call[](1);
+        calls_[0] = IMultiCallAccountMixinTypeLibrary.Call({
             target: address(mockFundValueCalculator),
             data: abi.encodeWithSelector(MockFundValueCalculator.setShareValue.selector, _nextSharePrice)
         });

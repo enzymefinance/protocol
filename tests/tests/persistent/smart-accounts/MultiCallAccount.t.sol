@@ -3,14 +3,17 @@ pragma solidity 0.8.19;
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
-import {IMultiCallAccountMixinHarness} from "tests/interfaces/internal/IMultiCallAccountMixinHarness.sol";
+import {
+    IMultiCallAccountMixinHarness,
+    IMultiCallAccountMixin as IMultiCallAccountMixinTypeLibrary
+} from "tests/interfaces/internal/IMultiCallAccountMixinHarness.sol";
 
 contract MultiCallAccountTest is IntegrationTest {
     event OwnerSet(address nextOwner);
 
     IMultiCallAccountMixinHarness multiCallAccount;
     address owner;
-    IMultiCallAccountMixinHarness.Call[] calls;
+    IMultiCallAccountMixinTypeLibrary.Call[] calls;
 
     function setUp() public override {
         setUpStandaloneEnvironment();
@@ -26,8 +29,8 @@ contract MultiCallAccountTest is IntegrationTest {
         address target2 = makeAddr("Target2");
         bytes memory data1 = "MoreThanFourBytes";
         bytes memory data2 = bytes.concat(data1, "2");
-        calls.push(IMultiCallAccountMixinHarness.Call({target: target1, data: data1}));
-        calls.push(IMultiCallAccountMixinHarness.Call({target: target2, data: data2}));
+        calls.push(IMultiCallAccountMixinTypeLibrary.Call({target: target1, data: data1}));
+        calls.push(IMultiCallAccountMixinTypeLibrary.Call({target: target2, data: data2}));
 
         // Make contract calls never revert with the expected payloads
         vm.mockCall({callee: target1, data: data1, returnData: ""});

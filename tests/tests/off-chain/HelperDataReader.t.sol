@@ -12,7 +12,10 @@ pragma solidity 0.8.19;
 import {Test} from "forge-std/Test.sol";
 
 import {IHelperDataReader} from "tests/interfaces/internal/IHelperDataReader.sol";
-import {IHelperDataReaderRouter} from "tests/interfaces/internal/IHelperDataReaderRouter.sol";
+import {
+    IHelperDataReaderRouter,
+    HelperDataReaderRouter as HelperDataReaderRouterTypeLibrary
+} from "tests/interfaces/internal/IHelperDataReaderRouter.sol";
 import {IFeeManager} from "tests/interfaces/internal/IFeeManager.sol";
 import {IDispatcher} from "tests/interfaces/internal/IDispatcher.sol";
 import {IPolicyManager} from "tests/interfaces/internal/IPolicyManager.sol";
@@ -39,10 +42,12 @@ contract HelperDataReaderTest is Test {
         address[] memory fundDeployers = new address[](1);
         fundDeployers[0] = 0x4f1C53F096533C04d8157EFB6Bca3eb22ddC6360;
 
-        IHelperDataReaderRouter.HelperDataReaderInfo[] memory helperDataReadersInfo =
-            new IHelperDataReaderRouter.HelperDataReaderInfo[](1);
-        helperDataReadersInfo[0] =
-            IHelperDataReaderRouter.HelperDataReaderInfo({helperDataReader: address(helperDataReader), version: 4});
+        HelperDataReaderRouterTypeLibrary.HelperDataReaderInfo[] memory helperDataReadersInfo =
+            new HelperDataReaderRouterTypeLibrary.HelperDataReaderInfo[](1);
+        helperDataReadersInfo[0] = HelperDataReaderRouterTypeLibrary.HelperDataReaderInfo({
+            helperDataReader: address(helperDataReader),
+            version: 4
+        });
 
         helperDataReaderRouter = __deployHelperDataReaderRouter({
             _dispatcher: IDispatcher(0xC3DC853dD716bd5754f421ef94fdCbac3902ab32),
@@ -70,7 +75,7 @@ contract HelperDataReaderTest is Test {
     function __deployHelperDataReaderRouter(
         IDispatcher _dispatcher,
         address[] memory _fundDeployers,
-        IHelperDataReaderRouter.HelperDataReaderInfo[] memory _helperDataReadersInfo
+        HelperDataReaderRouterTypeLibrary.HelperDataReaderInfo[] memory _helperDataReadersInfo
     ) private returns (IHelperDataReaderRouter) {
         return IHelperDataReaderRouter(
             deployCode(

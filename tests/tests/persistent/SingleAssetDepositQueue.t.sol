@@ -7,7 +7,10 @@ import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
-import {ISingleAssetDepositQueueLib} from "tests/interfaces/internal/ISingleAssetDepositQueueLib.sol";
+import {
+    ISingleAssetDepositQueueLib,
+    ISingleAssetDepositQueue as ISingleAssetDepositQueueTypeLibrary
+} from "tests/interfaces/internal/ISingleAssetDepositQueueLib.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {Uint256ArrayLib} from "tests/utils/libs/Uint256ArrayLib.sol";
 
@@ -623,7 +626,7 @@ contract SingleAssetDepositQueueTest is IntegrationTest {
         uint256 depositor2DepositedAssets;
 
         for (uint256 id = startId; id <= _params.endId; id++) {
-            ISingleAssetDepositQueueLib.Request memory request = depositQueue.getRequest(id);
+            ISingleAssetDepositQueueTypeLibrary.Request memory request = depositQueue.getRequest(id);
 
             if (!_params.idsToBypass.contains(id)) {
                 if (request.user == _params.depositor1) {
@@ -683,7 +686,7 @@ contract SingleAssetDepositQueueTest is IntegrationTest {
         // Assert storage
         assertEq(depositQueue.getNextQueuedId(), _params.endId + 1, "incorrect nextQueuedId");
         for (uint256 id = startId; id <= _params.endId; id++) {
-            ISingleAssetDepositQueueLib.Request memory request = depositQueue.getRequest(id);
+            ISingleAssetDepositQueueTypeLibrary.Request memory request = depositQueue.getRequest(id);
 
             if (_params.idsToBypass.contains(id)) {
                 // bypassed request remains
@@ -792,7 +795,7 @@ contract SingleAssetDepositQueueTest is IntegrationTest {
         uint256 id = depositQueue.requestDeposit(_assetAmount);
         assertEq(id, preTxNextNewId, "incorrect id");
 
-        ISingleAssetDepositQueueLib.Request memory request = depositQueue.getRequest(id);
+        ISingleAssetDepositQueueTypeLibrary.Request memory request = depositQueue.getRequest(id);
         // Assert deposit request storage
         assertEq(request.depositAssetAmount, _assetAmount, "incorrect shares");
         assertEq(request.user, _depositor, "incorrect user");
@@ -926,7 +929,7 @@ contract SingleAssetDepositQueueTest is IntegrationTest {
     }
 
     function __test_cancelRequest(uint88 _id) internal {
-        ISingleAssetDepositQueueLib.Request memory preRequest = depositQueue.getRequest(_id);
+        ISingleAssetDepositQueueTypeLibrary.Request memory preRequest = depositQueue.getRequest(_id);
 
         IERC20 depositAsset = IERC20(depositQueue.getDepositAsset());
 
@@ -939,7 +942,7 @@ contract SingleAssetDepositQueueTest is IntegrationTest {
         vm.prank(preRequest.user);
         depositQueue.cancelRequest(_id);
 
-        ISingleAssetDepositQueueLib.Request memory postRequest = depositQueue.getRequest(_id);
+        ISingleAssetDepositQueueTypeLibrary.Request memory postRequest = depositQueue.getRequest(_id);
         // Assert storage: request removed
         assertEq(postRequest.user, address(0), "incorrect user");
         assertEq(postRequest.depositAssetAmount, 0, "incorrect depositAssetAmount");

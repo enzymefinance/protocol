@@ -26,7 +26,12 @@ import {IGMXV2Reader} from "tests/interfaces/external/IGMXV2Reader.sol";
 import {IGMXV2RoleStore} from "tests/interfaces/external/IGMXV2RoleStore.sol";
 
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
-import {IGMXV2LeverageTradingPositionLib} from "tests/interfaces/internal/IGMXV2LeverageTradingPositionLib.sol";
+import {
+    IGMXV2LeverageTradingPositionLib,
+    GMXV2LeverageTradingPositionLibBase1 as GMXV2LeverageTradingPositionLibBase1TypeLibrary,
+    IGMXV2Event as IGMXV2EventTypeLibrary,
+    IGMXV2Order as IGMXV2OrderTypeLibrary
+} from "tests/interfaces/internal/IGMXV2LeverageTradingPositionLib.sol";
 import {IGMXV2LeverageTradingPositionParser} from "tests/interfaces/internal/IGMXV2LeverageTradingPositionParser.sol";
 
 import {AddressArrayLib} from "tests/utils/libs/AddressArrayLib.sol";
@@ -1691,8 +1696,8 @@ abstract contract TestBase is IntegrationTest {
 
         externalPosition.afterOrderExecution(
             "",
-            IGMXV2LeverageTradingPositionLib.Props({
-                addresses: IGMXV2LeverageTradingPositionLib.Addresses({
+            IGMXV2OrderTypeLibrary.Props({
+                addresses: IGMXV2OrderTypeLibrary.Addresses({
                     account: address(0),
                     receiver: address(0),
                     cancellationReceiver: address(0),
@@ -1702,9 +1707,9 @@ abstract contract TestBase is IntegrationTest {
                     initialCollateralToken: address(0),
                     swapPath: new address[](0)
                 }),
-                numbers: IGMXV2LeverageTradingPositionLib.Numbers({
-                    orderType: IGMXV2LeverageTradingPositionLib.OrderType.wrap(0),
-                    decreasePositionSwapType: IGMXV2LeverageTradingPositionLib.DecreasePositionSwapType.wrap(0),
+                numbers: IGMXV2OrderTypeLibrary.Numbers({
+                    orderType: IGMXV2OrderTypeLibrary.OrderType.wrap(0),
+                    decreasePositionSwapType: IGMXV2OrderTypeLibrary.DecreasePositionSwapType.wrap(0),
                     sizeDeltaUsd: 0,
                     initialCollateralDeltaAmount: 0,
                     triggerPrice: 0,
@@ -1715,41 +1720,41 @@ abstract contract TestBase is IntegrationTest {
                     updatedAtTime: 0,
                     validFromTime: 0
                 }),
-                flags: IGMXV2LeverageTradingPositionLib.Flags({
+                flags: IGMXV2OrderTypeLibrary.Flags({
                     isLong: true,
                     shouldUnwrapNativeToken: true,
                     isFrozen: true,
                     autoCancel: true
                 })
             }),
-            IGMXV2LeverageTradingPositionLib.EventLogData({
-                addressItems: IGMXV2LeverageTradingPositionLib.AddressItems({
-                    items: new IGMXV2LeverageTradingPositionLib.AddressKeyValue[](0),
-                    arrayItems: new IGMXV2LeverageTradingPositionLib.AddressArrayKeyValue[](0)
+            IGMXV2EventTypeLibrary.EventLogData({
+                addressItems: IGMXV2EventTypeLibrary.AddressItems({
+                    items: new IGMXV2EventTypeLibrary.AddressKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.AddressArrayKeyValue[](0)
                 }),
-                uintItems: IGMXV2LeverageTradingPositionLib.UintItems({
-                    items: new IGMXV2LeverageTradingPositionLib.UintKeyValue[](0),
-                    arrayItems: new IGMXV2LeverageTradingPositionLib.UintArrayKeyValue[](0)
+                uintItems: IGMXV2EventTypeLibrary.UintItems({
+                    items: new IGMXV2EventTypeLibrary.UintKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.UintArrayKeyValue[](0)
                 }),
-                intItems: IGMXV2LeverageTradingPositionLib.IntItems({
-                    items: new IGMXV2LeverageTradingPositionLib.IntKeyValue[](0),
-                    arrayItems: new IGMXV2LeverageTradingPositionLib.IntArrayKeyValue[](0)
+                intItems: IGMXV2EventTypeLibrary.IntItems({
+                    items: new IGMXV2EventTypeLibrary.IntKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.IntArrayKeyValue[](0)
                 }),
-                boolItems: IGMXV2LeverageTradingPositionLib.BoolItems({
-                    items: new IGMXV2LeverageTradingPositionLib.BoolKeyValue[](0),
-                    arrayItems: new IGMXV2LeverageTradingPositionLib.BoolArrayKeyValue[](0)
+                boolItems: IGMXV2EventTypeLibrary.BoolItems({
+                    items: new IGMXV2EventTypeLibrary.BoolKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.BoolArrayKeyValue[](0)
                 }),
-                bytesItems: IGMXV2LeverageTradingPositionLib.BytesItems({
-                    items: new IGMXV2LeverageTradingPositionLib.BytesKeyValue[](0),
-                    arrayItems: new IGMXV2LeverageTradingPositionLib.BytesArrayKeyValue[](0)
+                bytesItems: IGMXV2EventTypeLibrary.BytesItems({
+                    items: new IGMXV2EventTypeLibrary.BytesKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.BytesArrayKeyValue[](0)
                 }),
-                bytes32Items: IGMXV2LeverageTradingPositionLib.Bytes32Items({
-                    items: new IGMXV2LeverageTradingPositionLib.Bytes32KeyValue[](0),
-                    arrayItems: new IGMXV2LeverageTradingPositionLib.Bytes32ArrayKeyValue[](0)
+                bytes32Items: IGMXV2EventTypeLibrary.Bytes32Items({
+                    items: new IGMXV2EventTypeLibrary.Bytes32KeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.Bytes32ArrayKeyValue[](0)
                 }),
-                stringItems: IGMXV2LeverageTradingPositionLib.StringItems({
-                    items: new IGMXV2LeverageTradingPositionLib.StringKeyValue[](0),
-                    arrayItems: new IGMXV2LeverageTradingPositionLib.StringArrayKeyValue[](0)
+                stringItems: IGMXV2EventTypeLibrary.StringItems({
+                    items: new IGMXV2EventTypeLibrary.StringKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.StringArrayKeyValue[](0)
                 })
             })
         );
@@ -1761,8 +1766,8 @@ abstract contract TestBase is IntegrationTest {
         vm.prank(address(exchangeRouter));
         externalPosition.afterOrderExecution(
             "",
-            IGMXV2LeverageTradingPositionLib.Props({
-                addresses: IGMXV2LeverageTradingPositionLib.Addresses({
+            IGMXV2OrderTypeLibrary.Props({
+                addresses: IGMXV2OrderTypeLibrary.Addresses({
                     account: makeAddr("invalid account"),
                     receiver: address(0),
                     cancellationReceiver: address(0),
@@ -1772,9 +1777,9 @@ abstract contract TestBase is IntegrationTest {
                     initialCollateralToken: address(0),
                     swapPath: new address[](0)
                 }),
-                numbers: IGMXV2LeverageTradingPositionLib.Numbers({
-                    orderType: IGMXV2LeverageTradingPositionLib.OrderType.wrap(0),
-                    decreasePositionSwapType: IGMXV2LeverageTradingPositionLib.DecreasePositionSwapType.wrap(0),
+                numbers: IGMXV2OrderTypeLibrary.Numbers({
+                    orderType: IGMXV2OrderTypeLibrary.OrderType.wrap(0),
+                    decreasePositionSwapType: IGMXV2OrderTypeLibrary.DecreasePositionSwapType.wrap(0),
                     sizeDeltaUsd: 0,
                     initialCollateralDeltaAmount: 0,
                     triggerPrice: 0,
@@ -1785,41 +1790,41 @@ abstract contract TestBase is IntegrationTest {
                     updatedAtTime: 0,
                     validFromTime: 0
                 }),
-                flags: IGMXV2LeverageTradingPositionLib.Flags({
+                flags: IGMXV2OrderTypeLibrary.Flags({
                     isLong: true,
                     shouldUnwrapNativeToken: true,
                     isFrozen: true,
                     autoCancel: true
                 })
             }),
-            IGMXV2LeverageTradingPositionLib.EventLogData({
-                addressItems: IGMXV2LeverageTradingPositionLib.AddressItems({
-                    items: new IGMXV2LeverageTradingPositionLib.AddressKeyValue[](0),
-                    arrayItems: new IGMXV2LeverageTradingPositionLib.AddressArrayKeyValue[](0)
+            IGMXV2EventTypeLibrary.EventLogData({
+                addressItems: IGMXV2EventTypeLibrary.AddressItems({
+                    items: new IGMXV2EventTypeLibrary.AddressKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.AddressArrayKeyValue[](0)
                 }),
-                uintItems: IGMXV2LeverageTradingPositionLib.UintItems({
-                    items: new IGMXV2LeverageTradingPositionLib.UintKeyValue[](0),
-                    arrayItems: new IGMXV2LeverageTradingPositionLib.UintArrayKeyValue[](0)
+                uintItems: IGMXV2EventTypeLibrary.UintItems({
+                    items: new IGMXV2EventTypeLibrary.UintKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.UintArrayKeyValue[](0)
                 }),
-                intItems: IGMXV2LeverageTradingPositionLib.IntItems({
-                    items: new IGMXV2LeverageTradingPositionLib.IntKeyValue[](0),
-                    arrayItems: new IGMXV2LeverageTradingPositionLib.IntArrayKeyValue[](0)
+                intItems: IGMXV2EventTypeLibrary.IntItems({
+                    items: new IGMXV2EventTypeLibrary.IntKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.IntArrayKeyValue[](0)
                 }),
-                boolItems: IGMXV2LeverageTradingPositionLib.BoolItems({
-                    items: new IGMXV2LeverageTradingPositionLib.BoolKeyValue[](0),
-                    arrayItems: new IGMXV2LeverageTradingPositionLib.BoolArrayKeyValue[](0)
+                boolItems: IGMXV2EventTypeLibrary.BoolItems({
+                    items: new IGMXV2EventTypeLibrary.BoolKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.BoolArrayKeyValue[](0)
                 }),
-                bytesItems: IGMXV2LeverageTradingPositionLib.BytesItems({
-                    items: new IGMXV2LeverageTradingPositionLib.BytesKeyValue[](0),
-                    arrayItems: new IGMXV2LeverageTradingPositionLib.BytesArrayKeyValue[](0)
+                bytesItems: IGMXV2EventTypeLibrary.BytesItems({
+                    items: new IGMXV2EventTypeLibrary.BytesKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.BytesArrayKeyValue[](0)
                 }),
-                bytes32Items: IGMXV2LeverageTradingPositionLib.Bytes32Items({
-                    items: new IGMXV2LeverageTradingPositionLib.Bytes32KeyValue[](0),
-                    arrayItems: new IGMXV2LeverageTradingPositionLib.Bytes32ArrayKeyValue[](0)
+                bytes32Items: IGMXV2EventTypeLibrary.Bytes32Items({
+                    items: new IGMXV2EventTypeLibrary.Bytes32KeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.Bytes32ArrayKeyValue[](0)
                 }),
-                stringItems: IGMXV2LeverageTradingPositionLib.StringItems({
-                    items: new IGMXV2LeverageTradingPositionLib.StringKeyValue[](0),
-                    arrayItems: new IGMXV2LeverageTradingPositionLib.StringArrayKeyValue[](0)
+                stringItems: IGMXV2EventTypeLibrary.StringItems({
+                    items: new IGMXV2EventTypeLibrary.StringKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.StringArrayKeyValue[](0)
                 })
             })
         );

@@ -9,7 +9,10 @@ import {Bytes32Lib} from "tests/utils/libs/Bytes32Lib.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
-import {IIntegrationAdapter} from "tests/interfaces/internal/IIntegrationAdapter.sol";
+import {
+    IIntegrationAdapter,
+    IIntegrationManager as IIntegrationManagerTypeLibrary
+} from "tests/interfaces/internal/IIntegrationAdapter.sol";
 import {IIntegrationManager} from "tests/interfaces/internal/IIntegrationManager.sol";
 
 // Not a production type
@@ -111,7 +114,7 @@ abstract contract AdapterUtils is CoreUtilsBase {
         uint256[] memory _expectedMinIncomingAssetAmounts
     ) internal {
         (
-            IIntegrationAdapter.SpendAssetsHandleType actualSpendAssetsHandleType,
+            IIntegrationManagerTypeLibrary.SpendAssetsHandleType actualSpendAssetsHandleType,
             address[] memory actualSpendAssets,
             uint256[] memory actualMaxSpendAssetAmounts,
             address[] memory actualIncomingAssets,
@@ -124,7 +127,7 @@ abstract contract AdapterUtils is CoreUtilsBase {
 
         assertEq(
             _expectedSpendAssetsHandleTypeUint8,
-            IIntegrationAdapter.SpendAssetsHandleType.unwrap(actualSpendAssetsHandleType),
+            IIntegrationManagerTypeLibrary.SpendAssetsHandleType.unwrap(actualSpendAssetsHandleType),
             "assertParseAssetsForAction: _spendAssetsHandleType mismatch"
         );
         assertEq(_expectedSpendAssets, actualSpendAssets, "assertParseAssetsForAction: _spendAssets mismatch");

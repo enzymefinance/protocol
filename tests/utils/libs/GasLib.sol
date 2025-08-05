@@ -9,9 +9,9 @@ library GasLib {
         uint256 call1Gas = runCall(_contractAddress, _data);
         uint256 call2Gas = runCall(_contractAddress, _data);
 
-        console.log("Call 1 gas:", call1Gas);
-        console.log("Call 2 gas:", call2Gas);
-        console.log("Gas diff:", call1Gas - call2Gas);
+        console.log("Call 1 gas:", uint256(call1Gas));
+        console.log("Call 2 gas:", uint256(call2Gas));
+        console.log("Gas diff:", uint256(call1Gas - call2Gas));
     }
 
     function runCall(address _contractAddress, bytes memory _data) internal returns (uint256 gasSpent_) {

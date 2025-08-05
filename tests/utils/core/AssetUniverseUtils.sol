@@ -8,7 +8,10 @@ import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";
 
 import {IChainlinkAggregator} from "tests/interfaces/external/IChainlinkAggregator.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
-import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
+import {
+    IValueInterpreter,
+    IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinTypeLibrary
+} from "tests/interfaces/internal/IValueInterpreter.sol";
 
 abstract contract AssetUniverseUtils is CoreUtilsBase {
     // AGGREGATORS
@@ -84,7 +87,8 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
 
         removeIfSupportedAsset({_valueInterpreter: _valueInterpreter, _tokenAddress: _tokenAddress});
 
-        IValueInterpreter.RateAsset[] memory rateAssets = new IValueInterpreter.RateAsset[](1);
+        IChainlinkPriceFeedMixinTypeLibrary.RateAsset[] memory rateAssets =
+            new IChainlinkPriceFeedMixinTypeLibrary.RateAsset[](1);
         rateAssets[0] = formatChainlinkRateAsset(_rateAsset);
 
         vm.prank(_valueInterpreter.getOwner());

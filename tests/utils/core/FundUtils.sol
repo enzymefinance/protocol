@@ -13,7 +13,10 @@ import {IExtension} from "tests/interfaces/internal/IExtension.sol";
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IMigrationHookHandler} from "tests/interfaces/internal/IMigrationHookHandler.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
-import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
+import {
+    IValueInterpreter,
+    IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinTypeLibrary
+} from "tests/interfaces/internal/IValueInterpreter.sol";
 import {TestChainlinkAggregator} from "tests/utils/core/AssetUniverseUtils.sol";
 import {MockDefaultMigrationHookHandler} from "tests/utils/Mocks.sol";
 
@@ -82,7 +85,8 @@ abstract contract FundUtils is CoreUtilsBase {
         // register the denomination asset
         IValueInterpreter valueInterpreter =
             IValueInterpreter(IComptrollerLib(_fundDeployer.getComptrollerLib()).getValueInterpreter());
-        IValueInterpreter.RateAsset[] memory rateAssets = new IValueInterpreter.RateAsset[](1);
+        IChainlinkPriceFeedMixinTypeLibrary.RateAsset[] memory rateAssets =
+            new IChainlinkPriceFeedMixinTypeLibrary.RateAsset[](1);
         rateAssets[0] = formatChainlinkRateAsset(IChainlinkPriceFeedMixinProd.RateAsset.ETH);
 
         vm.startPrank(_fundDeployer.getOwner());
