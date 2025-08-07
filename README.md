@@ -28,20 +28,7 @@ v4 contract deployments can be found [here](https://docs.enzyme.finance/develope
 
 ### Prerequisites
 
-#### Automatic
-
-This repository comes with a reproducible development environment based on `nix` and `direnv`.
-
-For the best possible developer experience, make sure you have the following installed:
-
-- [nix](https://nix.dev)
-- [direnv](https://direnv.net)
-
-Once you have these installed, your isolated local development environment will be set up automatically whenever you navigate to this directory.
-
-#### Manual
-
-If you don't want to use `nix`, make sure to have the following installed:
+Make sure to have the following installed:
 
 - [foundry](https://github.com/foundry-rs/foundry)
 - [make](https://www.gnu.org/software/make)
