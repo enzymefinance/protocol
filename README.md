@@ -1,9 +1,9 @@
-# Enzyme Protocol
+# Enzyme Blue
 
 [![CI](../../actions/workflows/ci.yaml/badge.svg)](../../actions/workflows/ci.yaml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
-Enzyme is an Ethereum-based protocol for decentralized on-chain asset management. It is a protocol for people or entities to manage their wealth & the wealth of others within a customizable and safe environment. Enzyme empowers anyone to set up, manage and invest in customized on-chain investment vehicles.
+Enzyme Blue is an Ethereum-based protocol for decentralized on-chain asset management. It is a protocol for people or entities to manage their wealth & the wealth of others within a customizable and safe environment. It empowers anyone to set up, manage and invest in customized on-chain investment vehicles.
 
 ## Security Issues and Bug Bounty
 
@@ -17,14 +17,11 @@ Please **DO NOT** open a public issue.
 
 ## Using this Repository
 
-This is the branch for active development, and it contains:
-
-1. Not fully audited: work-in-progress system contracts changes
-2. Audited and in-use: "plugin" contracts (e.g., integrations, price feeds, policies, fees) and peripheral contracts (e.g., wrappers) that are backwards-compatible with v4.
-
-For deployed, in-production system contracts, see the relevant release branch (e.g., `v4`).
+This is the branch for active development of Enzyme Blue v4.
 
 v4 contract deployments can be found [here](https://docs.enzyme.finance/developers/contracts).
+
+This repository has been migrated from Hardhat to Foundry. Most tests for core v4 system contracts have not been ported from Hardhat. The legacy test suite & test coverage are in the [hardhat branch](https://github.com/enzymefinance/protocol/tree/hardhat).
 
 ### Prerequisites
 
