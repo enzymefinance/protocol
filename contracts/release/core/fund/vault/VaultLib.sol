@@ -66,6 +66,9 @@ contract VaultLib is VaultLibBase2, IVault {
         _;
     }
 
+    event AssetApprovalSet(address indexed asset, address indexed spender, uint256 amount);
+   
+
     constructor(
         address _externalPositionManager,
         address _protocolFeeReserve,
@@ -485,6 +488,7 @@ contract VaultLib is VaultLibBase2, IVault {
             assetContract.safeApprove(_target, 0);
         }
         assetContract.safeApprove(_target, _amount);
+        emit AssetApprovalSet(_asset, _target, _amount); // <-- New event added
     }
 
     /// @dev Helper to make a call on a external position contract
