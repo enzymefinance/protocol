@@ -11,8 +11,6 @@ import {ISingleAssetRedemptionQueueLib} from "tests/interfaces/internal/ISingleA
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {Uint256ArrayLib} from "tests/utils/libs/Uint256ArrayLib.sol";
 
-// This runs e2e tests against Enzyme v4 live deployments.
-// TODO: when GlobalConfigLib updated to include v5, refactor test against against v5
 contract SingleAssetRedemptionQueueTest is IntegrationTest {
     using Uint256ArrayLib for uint256[];
 
@@ -31,7 +29,7 @@ contract SingleAssetRedemptionQueueTest is IntegrationTest {
     ISingleAssetRedemptionQueueFactory internal factory;
 
     function setUp() public virtual override {
-        setUpLiveMainnetEnvironment(ETHEREUM_BLOCK_LATEST);
+        setUpStandaloneEnvironment();
 
         factory = __deployFactory({_libAddress: __deployLib()});
     }

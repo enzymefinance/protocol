@@ -674,7 +674,7 @@ abstract contract CurvePriceFeedTestArbitrumBase is CurvePriceFeedTestBase {
     function test_calcUnderlyingValues2Pool_success() public {
         __test_calcUnderlyingValues_success({
             _pool: ARBITRUM_2POOL_ADDRESS,
-            _invariantProxyAsset: ARBITRUM_USDC, // TODO: Update to `getUsdEthSimulatedAggregatorForVersion(version)` if we deploy a UsdEthSimualtedAggregator on Arbitrum
+            _invariantProxyAsset: ARBITRUM_USDC, // TODO: Update if we deploy a UsdEthSimualtedAggregator on Arbitrum
             _lpToken: ARBITRUM_2POOL_LP_TOKEN_ADDRESS,
             _gaugeToken: address(0),
             _poolCreationTimestamp: 1631449040,

@@ -87,9 +87,6 @@ abstract contract IntegrationTest is CoreUtils {
 
         core.persistent = getMainnetPersistentContracts();
         core.release = getMainnetReleaseContracts();
-
-        // No v5 release live
-        // core.release = getMainnetReleaseContracts();
     }
 
     function setUpLivePolygonEnvironment(uint256 _forkBlock) internal {
@@ -97,9 +94,6 @@ abstract contract IntegrationTest is CoreUtils {
 
         core.persistent = getPolygonPersistentContracts();
         core.release = getPolygonReleaseContracts();
-
-        // No v5 release live
-        // core.release = getPolygonReleaseContracts();
     }
 
     function setUpLiveArbitrumEnvironment(uint256 _forkBlock) internal {
@@ -107,9 +101,6 @@ abstract contract IntegrationTest is CoreUtils {
 
         core.persistent = getArbitrumPersistentContracts();
         core.release = getArbitrumReleaseContracts();
-
-        // No v5 release live
-        // core.release = getArbitrumReleaseContracts();
     }
 
     function setUpLiveBaseChainEnvironment(uint256 _forkBlock) internal {
@@ -117,9 +108,6 @@ abstract contract IntegrationTest is CoreUtils {
 
         core.persistent = getBaseChainPersistentContracts();
         core.release = getBaseChainReleaseContracts();
-
-        // No v5 release live
-        // core.release = getBaseReleaseContracts();
     }
 
     // Partially-live deployments (persistent layer only)

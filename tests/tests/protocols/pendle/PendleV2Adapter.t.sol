@@ -85,7 +85,7 @@ abstract contract TestBase is IntegrationTest {
             eps: 1e15
         });
 
-        // If v4, register all incoming assets to pass the asset universe validation:
+        // Register all incoming assets to pass the asset universe validation:
         // - underlyingAsset
         // - PT
         // - LP

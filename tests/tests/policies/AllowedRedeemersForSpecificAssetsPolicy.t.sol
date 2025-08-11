@@ -12,8 +12,6 @@ import {
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
-// TODO: Technically this only tests the current version (i.e., v5)... could make version-agnostic like integrations
-
 contract AllowedRedeemersForSpecificAssetsPolicy is IntegrationTest {
     IAllowedRedeemersForSpecificAssetsPolicy internal policy;
     address allowedRedeemer = makeAddr("AllowedRedeemer");
