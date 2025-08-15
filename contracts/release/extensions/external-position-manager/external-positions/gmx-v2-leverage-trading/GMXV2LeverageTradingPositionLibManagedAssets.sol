@@ -84,10 +84,12 @@ contract GMXV2LeverageTradingPositionLibManagedAssets is
 
         address[] memory markets = new address[](positions.length);
         IGMXV2Market.MarketPrices[] memory marketPrices = new IGMXV2Market.MarketPrices[](positions.length);
+        IGMXV2Market.Props[] memory marketInfos = new IGMXV2Market.Props[](positions.length);
         for (uint256 i; i < marketPrices.length; i++) {
             address marketAddress = positions[i].addresses.market;
             IGMXV2Market.Props memory market = __getMarketInfo(marketAddress);
             markets[i] = marketAddress;
+            marketInfos[i] = market;
 
             marketPrices[i] = IGMXV2Market.MarketPrices({
                 indexTokenPrice: __getTokenPrice(market.indexToken),
@@ -110,42 +112,35 @@ contract GMXV2LeverageTradingPositionLibManagedAssets is
         for (uint256 i; i < positionInfos.length; i++) {
             IGMXV2Position.PositionInfo memory positionInfo = positionInfos[i];
 
-            uint256 totalCollateralAmount = positionInfo.position.numbers.collateralAmount;
-            // We use priceImpactDiffUsd + pnlAfterPriceImpactUsd to get the total value of the position
-            // priceImpactDiffUsd reflects the price of the collateral that will be able to be claimed after withdrawal
-            // pnlAfterPriceImpactUsd reflects the value of the position after the price impact
-            // combining those two values we get the most accurate value of the position after withdrawal
-            // https://docs.gmx.io/docs/trading/v2#price-impact-rebates
-            if (positionInfo.executionPriceResult.priceImpactDiffUsd != 0) {
+            int256 netPnlAfterFeesUsd = positionInfo.basePnlUsd + positionInfo.executionPriceResult.totalImpactUsd;
+
+            int256 netPnlAfterFeesCollateralAmount;
+
+            if (netPnlAfterFeesUsd > 0) {
                 // use collateralTokenPrice max to price in favour of the GMX protocol, so the value of the position is closer to the real value after position decrease would happen.
                 // GMX protocol always prices in favour of itself, in order to prevent any potential price manipulation attacks.
-
-                totalCollateralAmount +=
-                    positionInfo.executionPriceResult.priceImpactDiffUsd / positionInfo.fees.collateralTokenPrice.max;
-            }
-
-            if (positionInfo.pnlAfterPriceImpactUsd > 0) {
-                // use collateralTokenPrice max to price in favour of the GMX protocol, so the value of the position is closer to the real value after position decrease would happen.
-                // GMX protocol always prices in favour of itself, in order to prevent any potential price manipulation attacks.
-                totalCollateralAmount +=
-                    uint256(positionInfo.pnlAfterPriceImpactUsd) / positionInfo.fees.collateralTokenPrice.max;
-            } else {
+                netPnlAfterFeesCollateralAmount =
+                    netPnlAfterFeesUsd / int256(positionInfo.fees.collateralTokenPrice.max); // safe to cast, collateral price is too low to overflow
+            } else if (netPnlAfterFeesUsd < 0) {
                 // use collateralTokenPrice min to price in favour of the GMX protocol, so the value of the position is closer to the real value after position decrease would happen.
                 // GMX protocol always prices in favour of itself, in order to prevent any potential price manipulation attacks.
-                uint256 lossCollateralAmount =
-                    uint256(-positionInfo.pnlAfterPriceImpactUsd) / positionInfo.fees.collateralTokenPrice.min;
+                netPnlAfterFeesCollateralAmount =
+                    netPnlAfterFeesUsd / int256(positionInfo.fees.collateralTokenPrice.min); // safe to cast, collateral price is too low to overflow
+            }
 
-                // loss can be greater than collateral amount, then we don't include it all.
-                // Debt is per position, not per account. That is why negative value is not included in the getDebtAssets() as only the deposited collateral can be recovered by the GMXV2 protocol.
-                if (lossCollateralAmount < totalCollateralAmount) {
-                    totalCollateralAmount -= lossCollateralAmount;
+            uint256 totalCollateralAmount = positionInfo.position.numbers.collateralAmount;
+
+            if (netPnlAfterFeesCollateralAmount > 0) {
+                totalCollateralAmount += uint256(netPnlAfterFeesCollateralAmount);
+            } else if (netPnlAfterFeesCollateralAmount < 0) {
+                if (totalCollateralAmount > uint256(-netPnlAfterFeesCollateralAmount)) {
+                    totalCollateralAmount -= uint256(-netPnlAfterFeesCollateralAmount);
                 } else {
                     totalCollateralAmount = 0;
                 }
             }
 
-            // subtract the fees that the position had to pay if it would be closed at this moment
-            if (positionInfo.fees.totalCostAmount < totalCollateralAmount) {
+            if (totalCollateralAmount > positionInfo.fees.totalCostAmount) {
                 totalCollateralAmount -= positionInfo.fees.totalCostAmount;
             } else {
                 totalCollateralAmount = 0;
@@ -155,22 +150,35 @@ contract GMXV2LeverageTradingPositionLibManagedAssets is
                 amounts_ = amounts_.addItem(totalCollateralAmount);
                 assets_ = assets_.addItem(positionInfo.position.addresses.collateralToken);
             }
+
+            // Claimable in the future funding fees
+            IGMXV2Market.Props memory marketInfo = marketInfos[i];
+
+            if (positionInfo.fees.funding.claimableLongTokenAmount != 0) {
+                assets_ = assets_.addItem(marketInfo.longToken);
+                amounts_ = amounts_.addItem(positionInfo.fees.funding.claimableLongTokenAmount);
+            }
+
+            if (positionInfo.fees.funding.claimableShortTokenAmount != 0) {
+                assets_ = assets_.addItem(marketInfo.shortToken);
+                amounts_ = amounts_.addItem(positionInfo.fees.funding.claimableShortTokenAmount);
+            }
         }
 
         // 2. Get pending orders: deposited collateral in market increase orders, plus execution fees of all orders
-        IGMXV2Order.Props[] memory orders = __getAccountOrders();
+        IGMXV2Reader.OrderInfo[] memory orderInfos = __getAccountOrders();
 
         uint256 totalExecutionFee;
 
-        for (uint256 i; i < orders.length; i++) {
-            IGMXV2Order.Props memory order = orders[i];
+        for (uint256 i; i < orderInfos.length; i++) {
+            IGMXV2Reader.OrderInfo memory orderInfo = orderInfos[i];
 
-            if (order.numbers.orderType == IGMXV2Order.OrderType.MarketIncrease) {
-                assets_ = assets_.addItem(order.addresses.initialCollateralToken);
-                amounts_ = amounts_.addItem(order.numbers.initialCollateralDeltaAmount);
+            if (orderInfo.order.numbers.orderType == IGMXV2Order.OrderType.MarketIncrease) {
+                assets_ = assets_.addItem(orderInfo.order.addresses.initialCollateralToken);
+                amounts_ = amounts_.addItem(orderInfo.order.numbers.initialCollateralDeltaAmount);
             }
 
-            totalExecutionFee += order.numbers.executionFee;
+            totalExecutionFee += orderInfo.order.numbers.executionFee;
         }
 
         if (totalExecutionFee != 0) {
@@ -218,6 +226,7 @@ contract GMXV2LeverageTradingPositionLibManagedAssets is
         // 5. Funding fees
         for (uint256 i; i < trackedMarkets.length; i++) {
             IGMXV2Market.Props memory marketInfo = __getMarketInfo(trackedMarkets[i]);
+
             uint256 fundingFeesLongToken =
                 __getClaimableFundingFees({_market: marketInfo.marketToken, _token: marketInfo.longToken});
 

@@ -41,6 +41,7 @@ interface IGMXV2Order {
         Addresses addresses;
         Numbers numbers;
         Flags flags;
+        bytes32[] dataList;
     }
 
     struct Addresses {
@@ -66,6 +67,7 @@ interface IGMXV2Order {
         uint256 minOutputAmount;
         uint256 updatedAtTime;
         uint256 validFromTime;
+        uint256 srcChainId;
     }
 
     struct Flags {

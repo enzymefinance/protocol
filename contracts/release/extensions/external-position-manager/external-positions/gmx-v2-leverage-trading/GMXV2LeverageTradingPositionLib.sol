@@ -75,14 +75,6 @@ contract GMXV2LeverageTradingPositionLib is
         _;
     }
 
-    /// @dev Assert that the account is external position. It used in a callback to check that order was created by the external position
-    modifier onlyExternalPosition(address _account) {
-        if (_account != address(this)) {
-            revert InvalidCallbackAccount();
-        }
-        _;
-    }
-
     constructor(
         uint256 _callbackGasLimit,
         IGMXV2DataStore _dataStore,
@@ -111,26 +103,42 @@ contract GMXV2LeverageTradingPositionLib is
     // CALLBACK HANDLERS //
     ///////////////////////
 
+    /// @dev Old way of handling the callback. It is for the transition period. After it, in the next release, we can remove this function.
+    function afterOrderExecution(bytes32, IGMXV2Order.Props memory _order, IGMXV2Event.EventLogData memory) external {
+        __afterOrderExecution({_marketAddress: _order.addresses.market, _account: _order.addresses.account});
+    }
+
+    /// @dev New way of handling the callback.
+    function afterOrderExecution(bytes32, IGMXV2Event.EventLogData memory _orderData, IGMXV2Event.EventLogData memory)
+        external
+    {
+        __afterOrderExecution({
+            _marketAddress: _orderData.addressItems.items[4].value,
+            _account: _orderData.addressItems.items[0].value
+        });
+    }
+
     /// @dev This is the callback called by GMX after every order execution. We implement the callback in order to track "claimable collateral" at the moment it is created, because otherwise it is not possible to calculate it purely on-chain.
     /// For decrease orders, we track the claimable collateral amount if the negative threshold of the price impact was exceeded
     /// We handle only decrease orders types (MarketDecrease, StopLossDecrease, LimitDecrease, Liquidation).
-    /// If new order types are added in the future, this function might need to be updated.
-    function afterOrderExecution(bytes32, IGMXV2Order.Props memory _order, IGMXV2Event.EventLogData memory)
-        external
-        onlyHandler
-        onlyExternalPosition(_order.addresses.account)
-    {
+    /// If new order types are added in the future, this function might need to be updated
+    function __afterOrderExecution(address _marketAddress, address _account) private onlyHandler {
+        // Assert that the account is external position. It used in a callback to check that order was created by the external position
+        if (_account != address(this)) {
+            revert InvalidCallbackAccount();
+        }
+
         // Duplicate GMX time key calculation logic.
         // https://github.com/gmx-io/gmx-synthetics/blob/5173cbeb196ed5596373acd71c75a5c7a60a98f5/contracts/market/MarketUtils.sol#L541
         uint256 timeKey = block.timestamp / DATA_STORE.getUint(CLAIMABLE_COLLATERAL_TIME_DIVISOR_DATA_STORE_KEY);
 
-        IGMXV2Market.Props memory market = __getMarketInfo(_order.addresses.market);
+        IGMXV2Market.Props memory market = __getMarketInfo(_marketAddress);
 
-        __handleClaimableCollateral({_market: _order.addresses.market, _token: market.longToken, _timeKey: timeKey});
+        __handleClaimableCollateral({_market: _marketAddress, _token: market.longToken, _timeKey: timeKey});
 
         // Some GMX markets have identical long and short tokens. In that case, we need to avoid adding the same claimable collateral twice.
         if (market.longToken != market.shortToken) {
-            __handleClaimableCollateral({_market: _order.addresses.market, _token: market.shortToken, _timeKey: timeKey});
+            __handleClaimableCollateral({_market: _marketAddress, _token: market.shortToken, _timeKey: timeKey});
         }
     }
 
@@ -299,12 +307,12 @@ contract GMXV2LeverageTradingPositionLib is
             activeMarkets = activeMarkets.addUniqueItem(positions[i].addresses.market);
         }
 
-        IGMXV2Order.Props[] memory orders = __getAccountOrders();
+        IGMXV2Reader.OrderInfo[] memory orderInfos = __getAccountOrders();
 
-        for (uint256 i; i < orders.length; i++) {
-            IGMXV2Order.Props memory order = orders[i];
-            if (order.numbers.orderType == IGMXV2Order.OrderType.MarketIncrease) {
-                activeMarkets = activeMarkets.addUniqueItem(order.addresses.market);
+        for (uint256 i; i < orderInfos.length; i++) {
+            IGMXV2Reader.OrderInfo memory orderInfo = orderInfos[i];
+            if (orderInfo.order.numbers.orderType == IGMXV2Order.OrderType.MarketIncrease) {
+                activeMarkets = activeMarkets.addUniqueItem(orderInfo.order.addresses.market);
             }
         }
 
@@ -404,12 +412,12 @@ contract GMXV2LeverageTradingPositionLib is
         }
 
         // track the assets of the pending market increase orders
-        IGMXV2Order.Props[] memory orders = __getAccountOrders();
+        IGMXV2Reader.OrderInfo[] memory orderInfos = __getAccountOrders();
 
-        for (uint256 i; i < orders.length; i++) {
-            IGMXV2Order.Props memory order = orders[i];
-            if (order.numbers.orderType == IGMXV2Order.OrderType.MarketIncrease) {
-                __trackMarketAssets(order.addresses.market);
+        for (uint256 i; i < orderInfos.length; i++) {
+            IGMXV2Reader.OrderInfo memory orderInfo = orderInfos[i];
+            if (orderInfo.order.numbers.orderType == IGMXV2Order.OrderType.MarketIncrease) {
+                __trackMarketAssets(orderInfo.order.addresses.market);
             }
         }
 
@@ -542,7 +550,8 @@ contract GMXV2LeverageTradingPositionLib is
             isLong: _createOrderArgs.isLong,
             shouldUnwrapNativeToken: false,
             autoCancel: _createOrderArgs.autoCancel,
-            referralCode: REFERRAL_CODE
+            referralCode: REFERRAL_CODE,
+            dataList: new bytes32[](0)
         });
     }
 

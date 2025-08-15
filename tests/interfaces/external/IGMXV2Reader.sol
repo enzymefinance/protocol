@@ -18,6 +18,11 @@ import {IGMXV2Position} from "./IGMXV2Position.sol";
 /// @title IGMXV2Reader Interface
 /// @author Enzyme Foundation <security@enzyme.finance>
 interface IGMXV2Reader {
+    struct OrderInfo {
+        bytes32 orderKey;
+        IGMXV2Order.Props order;
+    }
+
     function getOrder(address _dataStore, bytes32 _orderKey) external view returns (IGMXV2Order.Props memory order_);
 
     function getAccountPositions(address _dataStore, address _account, uint256 _start, uint256 _end)
@@ -30,5 +35,5 @@ interface IGMXV2Reader {
     function getAccountOrders(address _dataStore, address _account, uint256 _start, uint256 _end)
         external
         view
-        returns (IGMXV2Order.Props[] memory orders_);
+        returns (OrderInfo[] memory orders_);
 }

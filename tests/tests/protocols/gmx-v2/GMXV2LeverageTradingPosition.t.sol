@@ -28,9 +28,7 @@ import {IGMXV2RoleStore} from "tests/interfaces/external/IGMXV2RoleStore.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {
     IGMXV2LeverageTradingPositionLib,
-    GMXV2LeverageTradingPositionLibBase1 as GMXV2LeverageTradingPositionLibBase1TypeLibrary,
-    IGMXV2Event as IGMXV2EventTypeLibrary,
-    IGMXV2Order as IGMXV2OrderTypeLibrary
+    IGMXV2Event as IGMXV2EventTypeLibrary
 } from "tests/interfaces/internal/IGMXV2LeverageTradingPositionLib.sol";
 import {IGMXV2LeverageTradingPositionParser} from "tests/interfaces/internal/IGMXV2LeverageTradingPositionParser.sol";
 
@@ -38,14 +36,15 @@ import {AddressArrayLib} from "tests/utils/libs/AddressArrayLib.sol";
 
 // ARBITRUM CONSTANTS
 IGMXV2ChainlinkPriceFeedProvider constant ARBITRUM_GMXV2_CHAINLINK_PRICE_FEED_PROVIDER =
-    IGMXV2ChainlinkPriceFeedProvider(0x527FB0bCfF63C47761039bB386cFE181A92a4701);
+    IGMXV2ChainlinkPriceFeedProvider(0x38B8dB61b724b51e42A88Cb8eC564CD685a0f53B);
 address constant ARBITRUM_GMXV2_DATA_STORE_ADDRESS = 0xFD70de6b91282D8017aA4E741e9Ae325CAb992d8;
 IGMXV2ExchangeRouter constant ARBITRUM_GMXV2_EXCHANGE_ROUTER =
-    IGMXV2ExchangeRouter(0x900173A66dbD345006C51fA35fA3aB760FcD843b);
+    IGMXV2ExchangeRouter(0x87d66368cD08a7Ca42252f5ab44B2fb6d1Fb8d15);
 IGMXV2LiquidationHandler constant ARBITRUM_GMXV2_LIQUIDATION_HANDLER =
-    IGMXV2LiquidationHandler(0xdAb9bA9e3a301CCb353f18B4C8542BA2149E4010);
+    IGMXV2LiquidationHandler(0xdFc557EdF817bCd69F3b82d54f6338ecad2667CA);
+address constant ARBITRUM_GMXV2_ORACLE_ADDRESS = 0x7F01614cA5198Ec979B1aAd1DAF0DE7e0a215BDF;
 address constant ARBITRUM_GMXV2_REFERRAL_STORAGE_ADDRESS = 0xe6fab3F0c7199b0d34d7FbE83394fc0e0D06e99d;
-IGMXV2Reader constant ARBITRUM_GMXV2_READER = IGMXV2Reader(0x0537C767cDAC0726c76Bb89e92904fe28fd02fE1);
+IGMXV2Reader constant ARBITRUM_GMXV2_READER = IGMXV2Reader(0x65A6CC451BAfF7e7B4FDAb4157763aB4b6b44D0E);
 IGMXV2RoleStore constant ARBITRUM_GMXV2_ROLE_STORE = IGMXV2RoleStore(0x3c3d99FD298f679DBC2CEcd132b4eC4d0F5e6e72);
 
 address constant ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC = 0x70d95587d40A2caf56bd97485aB3Eec10Bee6336; // ETH/USD market, with WETH (Long) and USDC (Short) as collateral
@@ -79,6 +78,7 @@ abstract contract TestBase is IntegrationTest {
     address internal vaultProxyAddress;
 
     address internal dataStoreAddress;
+    address internal oracleAddress;
     IGMXV2ChainlinkPriceFeedProvider internal chainlinkPriceFeedProvider;
     IGMXV2ExchangeRouter internal exchangeRouter;
     IGMXV2Reader internal reader;
@@ -88,22 +88,26 @@ abstract contract TestBase is IntegrationTest {
 
     function __initialize(
         uint256 _chainId,
+        uint256 _forkBlock,
         address _dataStoreAddress,
         IGMXV2ChainlinkPriceFeedProvider _chainlinkPriceFeedProvider,
         IGMXV2Reader _reader,
         IGMXV2RoleStore _roleStore,
         uint256 _callbackGasLimit,
         IGMXV2ExchangeRouter _exchangerRouter,
+        address _oracleAddress,
         address _referralStorageAddress,
         address _uiFeeReceiverAddress
     ) internal {
         exchangeRouter = _exchangerRouter;
         dataStoreAddress = _dataStoreAddress;
+        oracleAddress = _oracleAddress;
         roleStore = _roleStore;
         reader = _reader;
         chainlinkPriceFeedProvider = _chainlinkPriceFeedProvider;
 
-        setUpNetworkEnvironment({_chainId: _chainId});
+        setUpNetworkEnvironment({_chainId: _chainId, _forkBlock: _forkBlock});
+
         executionFee = assetUnit(wrappedNativeToken) / 5;
 
         uint256 typeId = __deployPositionType(
@@ -325,8 +329,8 @@ abstract contract TestBase is IntegrationTest {
         return keccak256(abi.encode(keccak256(abi.encode("IS_ATOMIC_ORACLE_PROVIDER")), _provider));
     }
 
-    function __oracleProviderForTokenKey(address _token) internal pure returns (bytes32 key_) {
-        return keccak256(abi.encode(keccak256(abi.encode("ORACLE_PROVIDER_FOR_TOKEN")), _token));
+    function __oracleProviderForTokenKey(address _oracle, address _token) internal pure returns (bytes32 key_) {
+        return keccak256(abi.encode(keccak256(abi.encode("ORACLE_PROVIDER_FOR_TOKEN")), _oracle, _token));
     }
 
     function __claimableCollateralTimeDivisorKey() internal pure returns (bytes32 key_) {
@@ -403,10 +407,13 @@ abstract contract TestBase is IntegrationTest {
         vm.startPrank(__getController());
         for (uint256 i; i < tokens_.length; i++) {
             oldOracleProviders_ = oldOracleProviders_.addItem(
-                IGMXV2DataStore(dataStoreAddress).getAddress(__oracleProviderForTokenKey(tokens_[i]))
+                IGMXV2DataStore(dataStoreAddress).getAddress(
+                    __oracleProviderForTokenKey({_oracle: oracleAddress, _token: tokens_[i]})
+                )
             );
+
             IGMXV2DataStore(dataStoreAddress).setAddress({
-                _key: __oracleProviderForTokenKey(tokens_[i]),
+                _key: __oracleProviderForTokenKey({_oracle: oracleAddress, _token: tokens_[i]}),
                 _value: address(chainlinkPriceFeedProvider)
             });
         }
@@ -435,7 +442,7 @@ abstract contract TestBase is IntegrationTest {
         vm.startPrank(__getController());
         for (uint256 i; i < tokens.length; i++) {
             IGMXV2DataStore(dataStoreAddress).setAddress({
-                _key: __oracleProviderForTokenKey(tokens[i]),
+                _key: __oracleProviderForTokenKey({_oracle: ARBITRUM_GMXV2_ORACLE_ADDRESS, _token: tokens[i]}),
                 _value: oldOracleProviders[i]
             });
         }
@@ -486,7 +493,8 @@ abstract contract TestBase is IntegrationTest {
                 isLong: _isLong,
                 shouldUnwrapNativeToken: false,
                 autoCancel: false,
-                referralCode: ""
+                referralCode: "",
+                dataList: new bytes32[](0)
             })
         );
 
@@ -1312,7 +1320,7 @@ abstract contract TestBase is IntegrationTest {
         // set chainlink price feed provider as oracle provider
         for (uint256 i; i < tokens.length; i++) {
             IGMXV2DataStore(dataStoreAddress).setAddress({
-                _key: __oracleProviderForTokenKey(tokens[i]),
+                _key: __oracleProviderForTokenKey({_oracle: oracleAddress, _token: tokens[i]}),
                 _value: address(chainlinkPriceFeedProvider)
             });
         }
@@ -1323,22 +1331,33 @@ abstract contract TestBase is IntegrationTest {
         });
         vm.stopPrank();
 
-        // mock responses from the chainlink price feed provider to return some extremely small price to facilitate liquidations
-        for (uint256 i; i < tokens.length; i++) {
-            vm.mockCall({
-                callee: address(chainlinkPriceFeedProvider),
-                data: abi.encodeWithSelector(IGMXV2ChainlinkPriceFeedProvider.getOraclePrice.selector, tokens[i], ""),
-                returnData: abi.encode(
-                    IGMXV2ChainlinkPriceFeedProvider.ValidatedPrice({
-                        token: tokens[i],
-                        min: 1,
-                        max: 2,
-                        timestamp: block.timestamp,
-                        provider: address(chainlinkPriceFeedProvider)
-                    })
-                )
-            });
-        }
+        IGMXV2ChainlinkPriceFeedProvider.ValidatedPrice memory collateralTokenValidatedPrice =
+            chainlinkPriceFeedProvider.getOraclePrice({_token: _initialCollateralToken, _data: ""});
+
+        uint256 leverage =
+            _increaseOrderSizeDeltaUsd / (collateralTokenValidatedPrice.max * _increaseInitialCollateralDeltaAmount);
+
+        uint256 liquidationFactor = leverage * 2; // decrease index token price 2x position leverage, so we are certain that the liquidation will be triggered
+
+        IGMXV2ChainlinkPriceFeedProvider.ValidatedPrice memory indexTokenValidatedPrice =
+            chainlinkPriceFeedProvider.getOraclePrice({_token: marketInfo.indexToken, _data: ""});
+
+        // mock response from the chainlink price feed provider to return some small price for index token to facilitate liquidations
+        vm.mockCall({
+            callee: address(chainlinkPriceFeedProvider),
+            data: abi.encodeWithSelector(
+                IGMXV2ChainlinkPriceFeedProvider.getOraclePrice.selector, marketInfo.indexToken, ""
+            ),
+            returnData: abi.encode(
+                IGMXV2ChainlinkPriceFeedProvider.ValidatedPrice({
+                    token: marketInfo.indexToken,
+                    min: indexTokenValidatedPrice.min / liquidationFactor,
+                    max: indexTokenValidatedPrice.max / liquidationFactor,
+                    timestamp: block.timestamp,
+                    provider: address(chainlinkPriceFeedProvider)
+                })
+            )
+        });
 
         address[] memory providers = new address[](tokens.length);
         for (uint256 i; i < tokens.length; i++) {
@@ -1349,10 +1368,7 @@ abstract contract TestBase is IntegrationTest {
             IGMXV2Prices.SetPricesParams({tokens: tokens, providers: providers, data: new bytes[](tokens.length)});
 
         // expect the callback to be called when a liquidation is executed
-        vm.expectCall({
-            callee: address(externalPosition),
-            data: abi.encodeWithSelector(IGMXV2LeverageTradingPositionLib.afterOrderExecution.selector)
-        });
+        vm.expectCall({callee: address(externalPosition), data: abi.encodeWithSelector(0xffaf393f)}); // We cannot use IGMXV2LeverageTradingPositionLib.afterOrderExecution.selector because it is overloaded function, 0xffaf393f is the selector for "function afterOrderExecution(bytes32, EventLogData memory _orderData, EventLogData memory)"
 
         // execute liquidation
         vm.startPrank(__getLiquidationKeeper());
@@ -1694,37 +1710,44 @@ abstract contract TestBase is IntegrationTest {
     function test_afterOrderExecution_failsInvalidHandlerForCallback() public {
         vm.expectRevert(abi.encodeWithSelector(IGMXV2LeverageTradingPositionLib.InvalidHandler.selector));
 
+        IGMXV2EventTypeLibrary.AddressKeyValue[] memory items = new IGMXV2EventTypeLibrary.AddressKeyValue[](5);
+
+        items[0] = IGMXV2EventTypeLibrary.AddressKeyValue({key: "account", value: address(0)});
+        items[1] = IGMXV2EventTypeLibrary.AddressKeyValue({key: "receiver", value: address(0)});
+        items[2] = IGMXV2EventTypeLibrary.AddressKeyValue({key: "callbackContract", value: address(0)});
+        items[3] = IGMXV2EventTypeLibrary.AddressKeyValue({key: "uiFeeReceiver", value: address(0)});
+        items[4] = IGMXV2EventTypeLibrary.AddressKeyValue({key: "market", value: address(0)});
+
         externalPosition.afterOrderExecution(
             "",
-            IGMXV2OrderTypeLibrary.Props({
-                addresses: IGMXV2OrderTypeLibrary.Addresses({
-                    account: address(0),
-                    receiver: address(0),
-                    cancellationReceiver: address(0),
-                    callbackContract: address(0),
-                    uiFeeReceiver: address(0),
-                    market: address(0),
-                    initialCollateralToken: address(0),
-                    swapPath: new address[](0)
+            IGMXV2EventTypeLibrary.EventLogData({
+                addressItems: IGMXV2EventTypeLibrary.AddressItems({
+                    items: items,
+                    arrayItems: new IGMXV2EventTypeLibrary.AddressArrayKeyValue[](0)
                 }),
-                numbers: IGMXV2OrderTypeLibrary.Numbers({
-                    orderType: IGMXV2OrderTypeLibrary.OrderType.wrap(0),
-                    decreasePositionSwapType: IGMXV2OrderTypeLibrary.DecreasePositionSwapType.wrap(0),
-                    sizeDeltaUsd: 0,
-                    initialCollateralDeltaAmount: 0,
-                    triggerPrice: 0,
-                    acceptablePrice: 0,
-                    executionFee: 0,
-                    callbackGasLimit: 0,
-                    minOutputAmount: 0,
-                    updatedAtTime: 0,
-                    validFromTime: 0
+                uintItems: IGMXV2EventTypeLibrary.UintItems({
+                    items: new IGMXV2EventTypeLibrary.UintKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.UintArrayKeyValue[](0)
                 }),
-                flags: IGMXV2OrderTypeLibrary.Flags({
-                    isLong: true,
-                    shouldUnwrapNativeToken: true,
-                    isFrozen: true,
-                    autoCancel: true
+                intItems: IGMXV2EventTypeLibrary.IntItems({
+                    items: new IGMXV2EventTypeLibrary.IntKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.IntArrayKeyValue[](0)
+                }),
+                boolItems: IGMXV2EventTypeLibrary.BoolItems({
+                    items: new IGMXV2EventTypeLibrary.BoolKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.BoolArrayKeyValue[](0)
+                }),
+                bytesItems: IGMXV2EventTypeLibrary.BytesItems({
+                    items: new IGMXV2EventTypeLibrary.BytesKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.BytesArrayKeyValue[](0)
+                }),
+                bytes32Items: IGMXV2EventTypeLibrary.Bytes32Items({
+                    items: new IGMXV2EventTypeLibrary.Bytes32KeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.Bytes32ArrayKeyValue[](0)
+                }),
+                stringItems: IGMXV2EventTypeLibrary.StringItems({
+                    items: new IGMXV2EventTypeLibrary.StringKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.StringArrayKeyValue[](0)
                 })
             }),
             IGMXV2EventTypeLibrary.EventLogData({
@@ -1763,38 +1786,45 @@ abstract contract TestBase is IntegrationTest {
     function test_afterOrderExecution_failsInvalidCallbackAccount() public {
         vm.expectRevert(abi.encodeWithSelector(IGMXV2LeverageTradingPositionLib.InvalidCallbackAccount.selector));
 
+        IGMXV2EventTypeLibrary.AddressKeyValue[] memory items = new IGMXV2EventTypeLibrary.AddressKeyValue[](5);
+
+        items[0] = IGMXV2EventTypeLibrary.AddressKeyValue({key: "account", value: makeAddr("invalid account")});
+        items[1] = IGMXV2EventTypeLibrary.AddressKeyValue({key: "receiver", value: address(0)});
+        items[2] = IGMXV2EventTypeLibrary.AddressKeyValue({key: "callbackContract", value: address(0)});
+        items[3] = IGMXV2EventTypeLibrary.AddressKeyValue({key: "uiFeeReceiver", value: address(0)});
+        items[4] = IGMXV2EventTypeLibrary.AddressKeyValue({key: "market", value: makeAddr("market")});
+
         vm.prank(address(exchangeRouter));
         externalPosition.afterOrderExecution(
             "",
-            IGMXV2OrderTypeLibrary.Props({
-                addresses: IGMXV2OrderTypeLibrary.Addresses({
-                    account: makeAddr("invalid account"),
-                    receiver: address(0),
-                    cancellationReceiver: address(0),
-                    callbackContract: address(0),
-                    uiFeeReceiver: address(0),
-                    market: address(0),
-                    initialCollateralToken: address(0),
-                    swapPath: new address[](0)
+            IGMXV2EventTypeLibrary.EventLogData({
+                addressItems: IGMXV2EventTypeLibrary.AddressItems({
+                    items: items,
+                    arrayItems: new IGMXV2EventTypeLibrary.AddressArrayKeyValue[](0)
                 }),
-                numbers: IGMXV2OrderTypeLibrary.Numbers({
-                    orderType: IGMXV2OrderTypeLibrary.OrderType.wrap(0),
-                    decreasePositionSwapType: IGMXV2OrderTypeLibrary.DecreasePositionSwapType.wrap(0),
-                    sizeDeltaUsd: 0,
-                    initialCollateralDeltaAmount: 0,
-                    triggerPrice: 0,
-                    acceptablePrice: 0,
-                    executionFee: 0,
-                    callbackGasLimit: 0,
-                    minOutputAmount: 0,
-                    updatedAtTime: 0,
-                    validFromTime: 0
+                uintItems: IGMXV2EventTypeLibrary.UintItems({
+                    items: new IGMXV2EventTypeLibrary.UintKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.UintArrayKeyValue[](0)
                 }),
-                flags: IGMXV2OrderTypeLibrary.Flags({
-                    isLong: true,
-                    shouldUnwrapNativeToken: true,
-                    isFrozen: true,
-                    autoCancel: true
+                intItems: IGMXV2EventTypeLibrary.IntItems({
+                    items: new IGMXV2EventTypeLibrary.IntKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.IntArrayKeyValue[](0)
+                }),
+                boolItems: IGMXV2EventTypeLibrary.BoolItems({
+                    items: new IGMXV2EventTypeLibrary.BoolKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.BoolArrayKeyValue[](0)
+                }),
+                bytesItems: IGMXV2EventTypeLibrary.BytesItems({
+                    items: new IGMXV2EventTypeLibrary.BytesKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.BytesArrayKeyValue[](0)
+                }),
+                bytes32Items: IGMXV2EventTypeLibrary.Bytes32Items({
+                    items: new IGMXV2EventTypeLibrary.Bytes32KeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.Bytes32ArrayKeyValue[](0)
+                }),
+                stringItems: IGMXV2EventTypeLibrary.StringItems({
+                    items: new IGMXV2EventTypeLibrary.StringKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.StringArrayKeyValue[](0)
                 })
             }),
             IGMXV2EventTypeLibrary.EventLogData({
@@ -1893,7 +1923,7 @@ abstract contract TestBase is IntegrationTest {
 
         assertEq(
             postClosePositionsManagedAssets,
-            toArray(marketInfo.longToken, marketInfo.shortToken, address(wethToken)),
+            toArray(marketInfo.shortToken, address(wethToken)),
             "Incorrect post close managed assets"
         );
 
@@ -1915,11 +1945,13 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
     function __initialize() internal {
         __initialize({
             _chainId: ARBITRUM_CHAIN_ID,
+            _forkBlock: ARBITRUM_BLOCK_TIME_SENSITIVE_GMXV2,
             _dataStoreAddress: ARBITRUM_GMXV2_DATA_STORE_ADDRESS,
             _reader: ARBITRUM_GMXV2_READER,
             _roleStore: ARBITRUM_GMXV2_ROLE_STORE,
             _callbackGasLimit: 750_000, // 3 times more than the measured value for being safe that it will not revert, because of out-of-gas error
             _exchangerRouter: ARBITRUM_GMXV2_EXCHANGE_ROUTER,
+            _oracleAddress: ARBITRUM_GMXV2_ORACLE_ADDRESS,
             _referralStorageAddress: ARBITRUM_GMXV2_REFERRAL_STORAGE_ADDRESS,
             _uiFeeReceiverAddress: address(0),
             _chainlinkPriceFeedProvider: ARBITRUM_GMXV2_CHAINLINK_PRICE_FEED_PROVIDER
@@ -2371,12 +2403,6 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
 }
 
 contract GMXV2LeverageTradingPositionArbitrumTest is GMXV2LeverageTradingPositionTestBaseArbitrum {
-    function setUp() public override {
-        __initialize();
-    }
-}
-
-contract GMXV2LeverageTradingPositionArbitrumTestV4 is GMXV2LeverageTradingPositionTestBaseArbitrum {
     function setUp() public override {
         __initialize();
     }

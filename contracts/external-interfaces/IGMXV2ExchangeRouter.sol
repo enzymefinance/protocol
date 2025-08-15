@@ -26,6 +26,7 @@ interface IGMXV2ExchangeRouter {
         bool shouldUnwrapNativeToken;
         bool autoCancel;
         bytes32 referralCode;
+        bytes32[] dataList;
     }
 
     struct CreateOrderParamsAddresses {

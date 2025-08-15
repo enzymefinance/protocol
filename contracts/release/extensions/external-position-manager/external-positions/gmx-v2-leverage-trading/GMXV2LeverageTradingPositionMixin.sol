@@ -49,7 +49,7 @@ abstract contract GMXV2LeverageTradingPositionMixin {
         );
     }
 
-    function __getAccountOrders() internal view returns (IGMXV2Order.Props[] memory orders_) {
+    function __getAccountOrders() internal view returns (IGMXV2Reader.OrderInfo[] memory orders_) {
         return READER.getAccountOrders({
             _account: address(this),
             _dataStore: DATA_STORE,

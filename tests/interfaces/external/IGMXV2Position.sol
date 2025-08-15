@@ -30,6 +30,7 @@ interface IGMXV2Position {
         uint256 sizeInUsd;
         uint256 sizeInTokens;
         uint256 collateralAmount;
+        int256 pendingImpactAmount;
         uint256 borrowingFactor;
         uint256 fundingFeeAmountPerSize;
         uint256 longTokenClaimableFundingAmountPerSize;

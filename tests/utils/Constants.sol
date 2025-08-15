@@ -48,6 +48,7 @@ abstract contract Constants {
 
     uint256 internal constant ARBITRUM_BLOCK_LATEST = 278101140; // Nov 25th, 2024
     uint256 internal constant ARBITRUM_BLOCK_TIME_SENSITIVE = 231099000; // July 11th, 2024
+    uint256 internal constant ARBITRUM_BLOCK_TIME_SENSITIVE_GMXV2 = 368590175; // Aug 15th, 2025
 
     uint256 internal constant BASE_BLOCK_LATEST = 27583610; // March 14th, 2025
     uint256 internal constant BASE_CHAIN_BLOCK_TIME_SENSITIVE_ONE_INCH_V5 = 23218719; // Dec 3rd, 2024
