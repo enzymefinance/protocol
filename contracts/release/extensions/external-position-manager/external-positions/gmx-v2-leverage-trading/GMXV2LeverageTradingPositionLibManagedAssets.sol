@@ -9,6 +9,8 @@
 
 pragma solidity 0.8.19;
 
+import {Math} from "openzeppelin-solc-0.8/utils/math/Math.sol";
+
 import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {IGMXV2ChainlinkPriceFeedProvider} from "../../../../../external-interfaces/IGMXV2ChainlinkPriceFeedProvider.sol";
 import {IGMXV2DataStore} from "../../../../../external-interfaces/IGMXV2DataStore.sol";
@@ -37,9 +39,16 @@ contract GMXV2LeverageTradingPositionLibManagedAssets is
     AssetHelpers
 {
     using AddressArrayLib for address[];
+    using Math for uint256;
     using Uint256ArrayLib for uint256[];
 
-    bytes32 private constant ACCOUNT_POSITION_LIST_DATA_STORE_KEY = keccak256(abi.encode("ACCOUNT_POSITION_LIST"));
+    error InvalidClaimableFactor(uint256 claimableFactor);
+
+    bytes32 private constant CLAIMABLE_COLLATERAL_FACTOR_DATA_STORE_KEY =
+        keccak256(abi.encode("CLAIMABLE_COLLATERAL_FACTOR"));
+    bytes32 private constant CLAIMABLE_COLLATERAL_REDUCTION_FACTOR_DATA_STORE_KEY =
+        keccak256(abi.encode("CLAIMABLE_COLLATERAL_REDUCTION_FACTOR"));
+    uint256 private constant FLOAT_PRECISION = 10 ** 30; // 10^30 is the precision of the float in the GMX protocol
 
     IGMXV2ChainlinkPriceFeedProvider public immutable CHAINLINK_PRICE_FEED_PROVIDER;
     address public immutable REFERRAL_STORAGE_ADDRESS;
@@ -58,6 +67,86 @@ contract GMXV2LeverageTradingPositionLibManagedAssets is
         REFERRAL_STORAGE_ADDRESS = _referralStorageAddress;
         UI_FEE_RECEIVER_ADDRESS = _uiFeeReceiverAddress;
         WRAPPED_NATIVE_TOKEN = _wrappedNativeToken;
+    }
+
+    /// @dev Helper to apply factor to value
+    /// Duplicates the GMX logic https://github.com/gmx-io/gmx-synthetics/blob/f8838175869f7adb8533b0c529005adcb23889f6/contracts/utils/Precision.sol#L38
+    function __applyFactor(uint256 _value, uint256 _factor) private pure returns (uint256 result_) {
+        return Math.mulDiv(_value, _factor, FLOAT_PRECISION);
+    }
+
+    /// @dev Helper to get claimable collateral factor key
+    function __claimableCollateralFactorKey(address _market, address _token, uint256 _timeKey)
+        private
+        pure
+        returns (bytes32 key_)
+    {
+        return keccak256(abi.encode(CLAIMABLE_COLLATERAL_FACTOR_DATA_STORE_KEY, _market, _token, _timeKey));
+    }
+
+    /// @dev Helper to get claimable collateral factor key for account
+    function __claimableCollateralFactorForAccountKey(
+        address _market,
+        address _token,
+        uint256 _timeKey,
+        address _account
+    ) private pure returns (bytes32 key_) {
+        return keccak256(abi.encode(CLAIMABLE_COLLATERAL_FACTOR_DATA_STORE_KEY, _market, _token, _timeKey, _account));
+    }
+
+    /// @dev Helper to get claimable collateral reduction factor key
+    function __claimableCollateralReductionFactorKey(
+        address _market,
+        address _token,
+        uint256 _timeKey,
+        address _account
+    ) private pure returns (bytes32 key_) {
+        return keccak256(
+            abi.encode(CLAIMABLE_COLLATERAL_REDUCTION_FACTOR_DATA_STORE_KEY, _market, _token, _timeKey, _account)
+        );
+    }
+
+    /// @dev Helper to get claimable factor
+    /// Duplicates the GMX logic, but without taking into account claimable collateral delay, and assuming that collateral will be eventually claimable
+    /// https://github.com/gmx-io/gmx-synthetics/blob/f8838175869f7adb8533b0c529005adcb23889f6/contracts/market/MarketUtils.sol#L773
+    function __getClaimableFactor(address _market, address _token, uint256 _timeKey)
+        private
+        view
+        returns (uint256 claimableFactor_)
+    {
+        uint256 claimableFactorForTime =
+            DATA_STORE.getUint(__claimableCollateralFactorKey({_market: _market, _token: _token, _timeKey: _timeKey}));
+        uint256 claimableFactorForAccount = DATA_STORE.getUint(
+            __claimableCollateralFactorForAccountKey({
+                _market: _market,
+                _token: _token,
+                _timeKey: _timeKey,
+                _account: address(this)
+            })
+        );
+        uint256 claimableFactor =
+            claimableFactorForTime > claimableFactorForAccount ? claimableFactorForTime : claimableFactorForAccount;
+
+        uint256 claimableReductionFactor = DATA_STORE.getUint(
+            __claimableCollateralReductionFactorKey({
+                _market: _market,
+                _token: _token,
+                _timeKey: _timeKey,
+                _account: address(this)
+            })
+        );
+
+        if (claimableFactor == 0 && claimableReductionFactor == 0) {
+            claimableFactor = FLOAT_PRECISION;
+        }
+
+        if (claimableFactor > claimableReductionFactor) {
+            claimableFactor -= claimableReductionFactor;
+        } else {
+            claimableFactor = 0;
+        }
+
+        return claimableFactor;
     }
 
     /// @dev Get token price from Chainlink
@@ -112,29 +201,51 @@ contract GMXV2LeverageTradingPositionLibManagedAssets is
         for (uint256 i; i < positionInfos.length; i++) {
             IGMXV2Position.PositionInfo memory positionInfo = positionInfos[i];
 
-            int256 netPnlAfterFeesUsd = positionInfo.basePnlUsd + positionInfo.executionPriceResult.totalImpactUsd;
-
-            int256 netPnlAfterFeesCollateralAmount;
-
-            if (netPnlAfterFeesUsd > 0) {
+            int256 basePnlCollateralAmount;
+            if (positionInfo.basePnlUsd > 0) {
                 // use collateralTokenPrice max to price in favour of the GMX protocol, so the value of the position is closer to the real value after position decrease would happen.
                 // GMX protocol always prices in favour of itself, in order to prevent any potential price manipulation attacks.
-                netPnlAfterFeesCollateralAmount =
-                    netPnlAfterFeesUsd / int256(positionInfo.fees.collateralTokenPrice.max); // safe to cast, collateral price is too low to overflow
-            } else if (netPnlAfterFeesUsd < 0) {
+                basePnlCollateralAmount = positionInfo.basePnlUsd / int256(positionInfo.fees.collateralTokenPrice.max);
+            } else if (positionInfo.basePnlUsd < 0) {
                 // use collateralTokenPrice min to price in favour of the GMX protocol, so the value of the position is closer to the real value after position decrease would happen.
                 // GMX protocol always prices in favour of itself, in order to prevent any potential price manipulation attacks.
-                netPnlAfterFeesCollateralAmount =
-                    netPnlAfterFeesUsd / int256(positionInfo.fees.collateralTokenPrice.min); // safe to cast, collateral price is too low to overflow
+                basePnlCollateralAmount =
+                    -int256(uint256(-positionInfo.basePnlUsd).ceilDiv(positionInfo.fees.collateralTokenPrice.min));
+            }
+
+            int256 totalImpactCollateralAmount;
+            if (positionInfo.executionPriceResult.totalImpactUsd > 0) {
+                // use collateralTokenPrice max to price in favour of the GMX protocol, so the value of the position is closer to the real value after position decrease would happen.
+                // GMX protocol always prices in favour of itself, in order to prevent any potential price manipulation attacks.
+                totalImpactCollateralAmount = positionInfo.executionPriceResult.totalImpactUsd
+                    / int256(positionInfo.fees.collateralTokenPrice.max);
+            } else if (positionInfo.executionPriceResult.totalImpactUsd < 0) {
+                // use collateralTokenPrice min to price in favour of the GMX protocol, so the value of the position is closer to the real value after position decrease would happen.
+                // GMX protocol always prices in favour of itself, in order to prevent any potential price manipulation attacks.
+                totalImpactCollateralAmount = -int256(
+                    uint256(-positionInfo.executionPriceResult.totalImpactUsd).ceilDiv(
+                        positionInfo.fees.collateralTokenPrice.min
+                    )
+                );
             }
 
             uint256 totalCollateralAmount = positionInfo.position.numbers.collateralAmount;
 
-            if (netPnlAfterFeesCollateralAmount > 0) {
-                totalCollateralAmount += uint256(netPnlAfterFeesCollateralAmount);
-            } else if (netPnlAfterFeesCollateralAmount < 0) {
-                if (totalCollateralAmount > uint256(-netPnlAfterFeesCollateralAmount)) {
-                    totalCollateralAmount -= uint256(-netPnlAfterFeesCollateralAmount);
+            if (basePnlCollateralAmount > 0) {
+                totalCollateralAmount += uint256(basePnlCollateralAmount);
+            } else if (basePnlCollateralAmount < 0) {
+                if (totalCollateralAmount > uint256(-basePnlCollateralAmount)) {
+                    totalCollateralAmount -= uint256(-basePnlCollateralAmount);
+                } else {
+                    totalCollateralAmount = 0;
+                }
+            }
+
+            if (totalImpactCollateralAmount > 0) {
+                totalCollateralAmount += uint256(totalImpactCollateralAmount);
+            } else if (totalImpactCollateralAmount < 0) {
+                if (totalCollateralAmount > uint256(-totalImpactCollateralAmount)) {
+                    totalCollateralAmount -= uint256(-totalImpactCollateralAmount);
                 } else {
                     totalCollateralAmount = 0;
                 }
@@ -210,16 +321,30 @@ contract GMXV2LeverageTradingPositionLibManagedAssets is
             ClaimableCollateralInfo memory claimableCollateralInfo =
                 claimableCollateralKeyToClaimableCollateralInfo[key];
 
+            uint256 claimableFactor = __getClaimableFactor({
+                _market: claimableCollateralInfo.market,
+                _token: claimableCollateralInfo.token,
+                _timeKey: claimableCollateralInfo.timeKey
+            });
+
+            // Duplicates the GMX check for claimable factor https://github.com/gmx-io/gmx-synthetics/blob/f8838175869f7adb8533b0c529005adcb23889f6/contracts/market/MarketUtils.sol#L728
+            if (claimableFactor > FLOAT_PRECISION) {
+                revert InvalidClaimableFactor(claimableFactor);
+            }
+
             assets_ = assets_.addItem(claimableCollateralInfo.token);
             amounts_ = amounts_.addItem(
-                DATA_STORE.getUint(key)
+                __applyFactor({
+                    _value: DATA_STORE.getUint(key), // claimable amount
+                    _factor: claimableFactor
+                })
                     - DATA_STORE.getUint(
                         __claimedCollateralAmountKey({
                             _market: claimableCollateralInfo.market,
                             _token: claimableCollateralInfo.token,
                             _timeKey: claimableCollateralInfo.timeKey
                         })
-                    ) // claimable collateral - claimed collateral
+                    ) // adjusted claimable collateral - claimed collateral
             );
         }
 

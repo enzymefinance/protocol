@@ -148,6 +148,7 @@ ICompoundDebtPositionParser.sol: CompoundDebtPositionParser.abi.json
 IConvexVotingPositionLib.sol: ConvexVotingPositionLib.abi.json
 IConvexVotingPositionParser.sol: ConvexVotingPositionParser.abi.json
 IGMXV2LeverageTradingPositionLib.sol: GMXV2LeverageTradingPositionLib.abi.json
+IGMXV2LeverageTradingPositionLibManagedAssets.sol: GMXV2LeverageTradingPositionLibManagedAssets.abi.json
 IGMXV2LeverageTradingPositionParser.sol: GMXV2LeverageTradingPositionParser.abi.json
 IKilnStakingPositionLib.sol: KilnStakingPositionLib.abi.json
 IKilnStakingPositionParser.sol: KilnStakingPositionParser.abi.json

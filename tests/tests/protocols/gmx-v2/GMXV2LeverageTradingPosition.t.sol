@@ -30,6 +30,8 @@ import {
     IGMXV2LeverageTradingPositionLib,
     IGMXV2Event as IGMXV2EventTypeLibrary
 } from "tests/interfaces/internal/IGMXV2LeverageTradingPositionLib.sol";
+import {IGMXV2LeverageTradingPositionLibManagedAssets} from
+    "tests/interfaces/internal/IGMXV2LeverageTradingPositionLibManagedAssets.sol";
 import {IGMXV2LeverageTradingPositionParser} from "tests/interfaces/internal/IGMXV2LeverageTradingPositionParser.sol";
 
 import {AddressArrayLib} from "tests/utils/libs/AddressArrayLib.sol";
@@ -52,6 +54,7 @@ address constant ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_WETH = 0x450bb6774Dd8a756274
 address constant ARBITRUM_GMXV2_MARKET_BTC_USD_WBTC_WBTC = 0x7C11F78Ce78768518D743E81Fdfa2F860C6b9A77; // BTC/USD market, with WBTC (Long) and WBTC (Short) as collateral
 address constant ARBITRUM_GMXV2_MARKET_BTC_USD_WBTC_USDC = 0x47c031236e19d024b42f8AE6780E44A573170703; // BTC/USD market, with WBTC (Long) and USDC (Short) as collateral
 
+uint256 constant FLOAT_PRECISION = 10 ** 30;
 uint256 constant GMX_ONE_USD_UNIT = 10 ** 30;
 
 abstract contract TestBase is IntegrationTest {
@@ -62,6 +65,8 @@ abstract contract TestBase is IntegrationTest {
     event ClaimableCollateralAdded(bytes32 claimableCollateralKey, address token, address market, uint256 timeKey);
 
     event ClaimableCollateralRemoved(bytes32 claimableCollateralKey);
+
+    error InvalidClaimableFactor(uint256 claimableFactor);
 
     event TrackedAssetAdded(address asset);
 
@@ -347,6 +352,30 @@ abstract contract TestBase is IntegrationTest {
         returns (bytes32 key_)
     {
         return keccak256(abi.encode(keccak256(abi.encode("CLAIMABLE_COLLATERAL_FACTOR")), _market, _token, _timeKey));
+    }
+
+    function __claimableCollateralFactorForAccountKey(
+        address _market,
+        address _token,
+        uint256 _timeKey,
+        address _account
+    ) internal pure returns (bytes32 key_) {
+        return keccak256(
+            abi.encode(keccak256(abi.encode("CLAIMABLE_COLLATERAL_FACTOR")), _market, _token, _timeKey, _account)
+        );
+    }
+
+    function __claimableCollateralReductionFactorKey(
+        address _market,
+        address _token,
+        uint256 _timeKey,
+        address _account
+    ) private pure returns (bytes32 key_) {
+        return keccak256(
+            abi.encode(
+                keccak256(abi.encode("CLAIMABLE_COLLATERAL_REDUCTION_FACTOR")), _market, _token, _timeKey, _account
+            )
+        );
     }
 
     function __claimableCollateralAmountKey(address _market, address _token, uint256 _timeKey, address _account)
@@ -1421,6 +1450,318 @@ abstract contract TestBase is IntegrationTest {
     }
 
     function __test_claimCollateral_success(ClaimCollateralSuccessArgs memory _args) internal {
+        uint256 timeKey =
+            block.timestamp / IGMXV2DataStore(dataStoreAddress).getUint(__claimableCollateralTimeDivisorKey());
+
+        // allow claiming full collateral
+        vm.startPrank(__getController());
+        IGMXV2DataStore(dataStoreAddress).setUint(
+            __claimableCollateralFactorKey({
+                _market: _args.market,
+                _token: _args.initialCollateralLongToken,
+                _timeKey: timeKey
+            }),
+            FLOAT_PRECISION
+        );
+        vm.stopPrank();
+
+        (
+            uint256 claimableCollateral,
+            uint256 preClaimVaultTokenBalance,
+            bytes32 claimableCollateralKey,
+            uint256[] memory preClaimManagedAssetAmounts
+        ) = __test_claimCollateralBase_success(
+            ClaimCollateralBaseSuccessArgs({
+                market: _args.market,
+                initialCollateralLongToken: _args.initialCollateralLongToken,
+                increaseInitialCollateralDeltaAmount: _args.increaseInitialCollateralDeltaAmount,
+                increaseOrderSizeDeltaUsd: _args.increaseOrderSizeDeltaUsd,
+                userShortToken: _args.userShortToken,
+                userShortTokenDeltaAmount: _args.userShortTokenDeltaAmount,
+                userShortTokenSizeDeltaUsd: _args.userShortTokenSizeDeltaUsd,
+                timeKey: timeKey
+            })
+        );
+
+        assertEq(
+            IGMXV2DataStore(dataStoreAddress).getUint(
+                __claimedCollateralAmountKey({
+                    _market: _args.market,
+                    _token: _args.initialCollateralLongToken,
+                    _timeKey: timeKey,
+                    _account: address(externalPosition)
+                })
+            ),
+            claimableCollateral,
+            "Collateral not claimed"
+        );
+
+        (, uint256[] memory postClaimManagedAssetAmounts) = externalPosition.getManagedAssets();
+
+        uint256 postExpectedClaimableCollateral = preClaimManagedAssetAmounts[0] - claimableCollateral;
+        assertEq(
+            postExpectedClaimableCollateral == 0 ? new uint256[](0) : toArray(postExpectedClaimableCollateral),
+            postClaimManagedAssetAmounts,
+            "Incorrect managed assets post claim"
+        );
+
+        assertEq(
+            IERC20(_args.initialCollateralLongToken).balanceOf(vaultProxyAddress),
+            preClaimVaultTokenBalance + claimableCollateral,
+            "Incorrect vault token balance post claim"
+        );
+
+        assertEq(
+            externalPosition.getClaimableCollateralKeys().length,
+            0,
+            "Incorrect number of claimable collateral keys post claim"
+        );
+
+        assertEq(
+            externalPosition.getClaimableCollateralKeyToClaimableCollateralInfo(claimableCollateralKey).token,
+            address(0),
+            "Incorrect claimable collateral info token post claim"
+        );
+    }
+
+    function __test_claimCollateral_successWithTimeFactor(ClaimCollateralSuccessArgs memory _args) internal {
+        uint256 timeKey =
+            block.timestamp / IGMXV2DataStore(dataStoreAddress).getUint(__claimableCollateralTimeDivisorKey());
+
+        uint256 timeFactorDivisor = 4; // 25% of the collateral is claimable
+
+        // allow claiming full collateral
+        vm.startPrank(__getController());
+        IGMXV2DataStore(dataStoreAddress).setUint(
+            __claimableCollateralFactorKey({
+                _market: _args.market,
+                _token: _args.initialCollateralLongToken,
+                _timeKey: timeKey
+            }),
+            FLOAT_PRECISION / timeFactorDivisor
+        );
+        vm.stopPrank();
+
+        __test_claimCollateral_successWithFactor(
+            ClaimCollateralSuccessWithFactorArgs({
+                market: _args.market,
+                initialCollateralLongToken: _args.initialCollateralLongToken,
+                increaseInitialCollateralDeltaAmount: _args.increaseInitialCollateralDeltaAmount,
+                increaseOrderSizeDeltaUsd: _args.increaseOrderSizeDeltaUsd,
+                userShortToken: _args.userShortToken,
+                userShortTokenDeltaAmount: _args.userShortTokenDeltaAmount,
+                userShortTokenSizeDeltaUsd: _args.userShortTokenSizeDeltaUsd,
+                timeKey: timeKey,
+                collateralFactorDivisor: timeFactorDivisor
+            })
+        );
+    }
+
+    function __test_claimCollateral_successWithAccountFactor(ClaimCollateralSuccessArgs memory _args) internal {
+        uint256 timeKey =
+            block.timestamp / IGMXV2DataStore(dataStoreAddress).getUint(__claimableCollateralTimeDivisorKey());
+
+        uint256 accountFactorDivisor = 5; // 20% of the collateral is claimable
+
+        vm.startPrank(__getController());
+        IGMXV2DataStore(dataStoreAddress).setUint(
+            __claimableCollateralFactorForAccountKey({
+                _market: _args.market,
+                _token: _args.initialCollateralLongToken,
+                _timeKey: timeKey,
+                _account: address(externalPosition)
+            }),
+            FLOAT_PRECISION / accountFactorDivisor
+        );
+        vm.stopPrank();
+
+        __test_claimCollateral_successWithFactor(
+            ClaimCollateralSuccessWithFactorArgs({
+                market: _args.market,
+                initialCollateralLongToken: _args.initialCollateralLongToken,
+                increaseInitialCollateralDeltaAmount: _args.increaseInitialCollateralDeltaAmount,
+                increaseOrderSizeDeltaUsd: _args.increaseOrderSizeDeltaUsd,
+                userShortToken: _args.userShortToken,
+                userShortTokenDeltaAmount: _args.userShortTokenDeltaAmount,
+                userShortTokenSizeDeltaUsd: _args.userShortTokenSizeDeltaUsd,
+                timeKey: timeKey,
+                collateralFactorDivisor: accountFactorDivisor
+            })
+        );
+    }
+
+    function __test_claimCollateral_successWithTimeAndAccountFactor(ClaimCollateralSuccessArgs memory _args) internal {
+        uint256 timeKey =
+            block.timestamp / IGMXV2DataStore(dataStoreAddress).getUint(__claimableCollateralTimeDivisorKey());
+
+        uint256 timeFactorDivisor = 4; // 25% of the collateral is claimable
+        uint256 accountFactorDivisor = 5; // 20% of the collateral is claimable
+
+        vm.startPrank(__getController());
+        IGMXV2DataStore(dataStoreAddress).setUint(
+            __claimableCollateralFactorKey({
+                _market: _args.market,
+                _token: _args.initialCollateralLongToken,
+                _timeKey: timeKey
+            }),
+            FLOAT_PRECISION / timeFactorDivisor
+        );
+        IGMXV2DataStore(dataStoreAddress).setUint(
+            __claimableCollateralFactorForAccountKey({
+                _market: _args.market,
+                _token: _args.initialCollateralLongToken,
+                _timeKey: timeKey,
+                _account: address(externalPosition)
+            }),
+            FLOAT_PRECISION / accountFactorDivisor
+        );
+        vm.stopPrank();
+
+        __test_claimCollateral_successWithFactor(
+            ClaimCollateralSuccessWithFactorArgs({
+                market: _args.market,
+                initialCollateralLongToken: _args.initialCollateralLongToken,
+                increaseInitialCollateralDeltaAmount: _args.increaseInitialCollateralDeltaAmount,
+                increaseOrderSizeDeltaUsd: _args.increaseOrderSizeDeltaUsd,
+                userShortToken: _args.userShortToken,
+                userShortTokenDeltaAmount: _args.userShortTokenDeltaAmount,
+                userShortTokenSizeDeltaUsd: _args.userShortTokenSizeDeltaUsd,
+                timeKey: timeKey,
+                collateralFactorDivisor: timeFactorDivisor
+            })
+        );
+    }
+
+    function __test_claimCollateral_successWithTimeAndReductionFactor(ClaimCollateralSuccessArgs memory _args)
+        internal
+    {
+        uint256 timeKey =
+            block.timestamp / IGMXV2DataStore(dataStoreAddress).getUint(__claimableCollateralTimeDivisorKey());
+
+        uint256 oneHundredPercentFactor = 100;
+
+        uint256 timeFactor = 50 * FLOAT_PRECISION / oneHundredPercentFactor; // 50% of the collateral is claimable
+        uint256 reductionFactor = 30 * FLOAT_PRECISION / oneHundredPercentFactor; // reduction factor of 30% of the collateral is claimable
+
+        // allow claiming full collateral
+        vm.startPrank(__getController());
+        IGMXV2DataStore(dataStoreAddress).setUint(
+            __claimableCollateralFactorKey({
+                _market: _args.market,
+                _token: _args.initialCollateralLongToken,
+                _timeKey: timeKey
+            }),
+            timeFactor
+        );
+        IGMXV2DataStore(dataStoreAddress).setUint(
+            __claimableCollateralReductionFactorKey({
+                _market: _args.market,
+                _token: _args.initialCollateralLongToken,
+                _timeKey: timeKey,
+                _account: address(externalPosition)
+            }),
+            reductionFactor
+        );
+        vm.stopPrank();
+
+        __test_claimCollateral_successWithFactor(
+            ClaimCollateralSuccessWithFactorArgs({
+                market: _args.market,
+                initialCollateralLongToken: _args.initialCollateralLongToken,
+                increaseInitialCollateralDeltaAmount: _args.increaseInitialCollateralDeltaAmount,
+                increaseOrderSizeDeltaUsd: _args.increaseOrderSizeDeltaUsd,
+                userShortToken: _args.userShortToken,
+                userShortTokenDeltaAmount: _args.userShortTokenDeltaAmount,
+                userShortTokenSizeDeltaUsd: _args.userShortTokenSizeDeltaUsd,
+                timeKey: timeKey,
+                collateralFactorDivisor: FLOAT_PRECISION / (timeFactor - reductionFactor) // 20% of the collateral is claimable
+            })
+        );
+    }
+
+    struct ClaimCollateralSuccessWithFactorArgs {
+        address market;
+        address initialCollateralLongToken;
+        uint256 increaseInitialCollateralDeltaAmount;
+        uint256 increaseOrderSizeDeltaUsd;
+        address userShortToken;
+        uint256 userShortTokenDeltaAmount;
+        uint256 userShortTokenSizeDeltaUsd;
+        uint256 timeKey;
+        uint256 collateralFactorDivisor;
+    }
+
+    function __test_claimCollateral_successWithFactor(ClaimCollateralSuccessWithFactorArgs memory _args) internal {
+        (uint256 claimableCollateral, uint256 preClaimVaultTokenBalance, bytes32 claimableCollateralKey,) =
+        __test_claimCollateralBase_success(
+            ClaimCollateralBaseSuccessArgs({
+                market: _args.market,
+                initialCollateralLongToken: _args.initialCollateralLongToken,
+                increaseInitialCollateralDeltaAmount: _args.increaseInitialCollateralDeltaAmount,
+                increaseOrderSizeDeltaUsd: _args.increaseOrderSizeDeltaUsd,
+                userShortToken: _args.userShortToken,
+                userShortTokenDeltaAmount: _args.userShortTokenDeltaAmount,
+                userShortTokenSizeDeltaUsd: _args.userShortTokenSizeDeltaUsd,
+                timeKey: _args.timeKey
+            })
+        );
+
+        assertEq(
+            IGMXV2DataStore(dataStoreAddress).getUint(
+                __claimedCollateralAmountKey({
+                    _market: _args.market,
+                    _token: _args.initialCollateralLongToken,
+                    _timeKey: _args.timeKey,
+                    _account: address(externalPosition)
+                })
+            ),
+            claimableCollateral / _args.collateralFactorDivisor,
+            "Collateral not claimed"
+        );
+
+        (, uint256[] memory postClaimManagedAssetAmounts) = externalPosition.getManagedAssets();
+
+        assertEq(toArray(uint256(0)), postClaimManagedAssetAmounts, "Incorrect managed assets post claim");
+
+        assertEq(
+            IERC20(_args.initialCollateralLongToken).balanceOf(vaultProxyAddress),
+            preClaimVaultTokenBalance + claimableCollateral / _args.collateralFactorDivisor,
+            "Incorrect vault token balance post claim"
+        );
+
+        assertEq(
+            externalPosition.getClaimableCollateralKeys().length,
+            1,
+            "Incorrect number of claimable collateral keys post claim"
+        );
+
+        assertEq(
+            externalPosition.getClaimableCollateralKeyToClaimableCollateralInfo(claimableCollateralKey).token,
+            _args.initialCollateralLongToken,
+            "Incorrect claimable collateral info token post claim"
+        );
+    }
+
+    struct ClaimCollateralBaseSuccessArgs {
+        address market;
+        address initialCollateralLongToken;
+        uint256 increaseInitialCollateralDeltaAmount;
+        uint256 increaseOrderSizeDeltaUsd;
+        address userShortToken;
+        uint256 userShortTokenDeltaAmount;
+        uint256 userShortTokenSizeDeltaUsd;
+        uint256 timeKey;
+    }
+
+    function __test_claimCollateralBase_success(ClaimCollateralBaseSuccessArgs memory _args)
+        internal
+        returns (
+            uint256 claimableCollateral_,
+            uint256 preClaimVaultTokenBalance_,
+            bytes32 claimableCollateralKey_,
+            uint256[] memory preClaimManagedAssetAmounts_
+        )
+    {
         // set negative impact factor to 1 wei so that negative price impact exceeds threshold.
         // negative impact factor < negative price impact is necessary for claimable collateral to accrue
         vm.startPrank(__getController());
@@ -1470,58 +1811,41 @@ abstract contract TestBase is IntegrationTest {
             })
         );
 
-        uint256 timeKey =
-            block.timestamp / IGMXV2DataStore(dataStoreAddress).getUint(__claimableCollateralTimeDivisorKey());
-
         __executeOrderAndExpectClaimableCollateralAddedEmit({
             _market: _args.market,
             _initialCollateralToken: _args.initialCollateralLongToken,
-            _timeKey: timeKey
+            _timeKey: _args.timeKey
         });
 
         __sweep(); // sweep the outstanding execution fee
 
-        bytes32 claimableCollateralKey = externalPosition.getClaimableCollateralKeys()[0];
+        claimableCollateralKey_ = externalPosition.getClaimableCollateralKeys()[0];
 
         assertEq(
             externalPosition.getClaimableCollateralKeys().length, 1, "Incorrect number of claimable collateral keys"
         );
 
         assertEq(
-            externalPosition.getClaimableCollateralKeyToClaimableCollateralInfo(claimableCollateralKey).token,
+            externalPosition.getClaimableCollateralKeyToClaimableCollateralInfo(claimableCollateralKey_).token,
             _args.initialCollateralLongToken,
             "Incorrect claimable collateral info token"
         );
 
         (address[] memory preClaimManagedAssets, uint256[] memory preClaimManagedAssetAmounts) =
             externalPosition.getManagedAssets();
+        preClaimManagedAssetAmounts_ = preClaimManagedAssetAmounts;
 
         assertEq(preClaimManagedAssets.length, 1, "Incorrect number of managed assets pre claim");
 
-        uint256 preClaimVaultTokenBalance = IERC20(_args.initialCollateralLongToken).balanceOf(vaultProxyAddress);
-
-        // allow claiming full collateral
-        vm.startPrank(__getController());
-        IGMXV2DataStore(dataStoreAddress).setUint(
-            __claimableCollateralFactorKey({
-                _market: _args.market,
-                _token: _args.initialCollateralLongToken,
-                _timeKey: timeKey
-            }),
-            GMX_ONE_USD_UNIT
-        );
-        vm.stopPrank();
+        preClaimVaultTokenBalance_ = IERC20(_args.initialCollateralLongToken).balanceOf(vaultProxyAddress);
 
         vm.recordLogs();
-
-        expectEmit(address(externalPosition));
-        emit ClaimableCollateralRemoved(claimableCollateralKey);
 
         __claimCollateral(
             IGMXV2LeverageTradingPositionProd.ClaimCollateralActionArgs({
                 markets: toArray(_args.market),
                 tokens: toArray(_args.initialCollateralLongToken),
-                timeKeys: toArray(timeKey),
+                timeKeys: toArray(_args.timeKey),
                 exchangeRouter: address(exchangeRouter)
             })
         );
@@ -1532,49 +1856,121 @@ abstract contract TestBase is IntegrationTest {
             _assets: toArray(_args.initialCollateralLongToken)
         });
 
-        uint256 claimableCollateral = IGMXV2DataStore(dataStoreAddress).getUint(claimableCollateralKey);
-
-        assertEq(
-            IGMXV2DataStore(dataStoreAddress).getUint(
-                __claimedCollateralAmountKey({
-                    _market: _args.market,
-                    _token: _args.initialCollateralLongToken,
-                    _timeKey: timeKey,
-                    _account: address(externalPosition)
-                })
-            ),
-            claimableCollateral,
-            "Collateral not claimed"
-        );
-
-        (, uint256[] memory postClaimManagedAssetAmounts) = externalPosition.getManagedAssets();
-
-        uint256 postExpectedClaimableCollateral = preClaimManagedAssetAmounts[0] - claimableCollateral;
-        assertEq(
-            postExpectedClaimableCollateral == 0 ? new uint256[](0) : toArray(postExpectedClaimableCollateral),
-            postClaimManagedAssetAmounts,
-            "Incorrect managed assets post claim"
-        );
-
-        assertEq(
-            IERC20(_args.initialCollateralLongToken).balanceOf(vaultProxyAddress),
-            preClaimVaultTokenBalance + claimableCollateral,
-            "Incorrect vault token balance post claim"
-        );
-
-        assertEq(
-            externalPosition.getClaimableCollateralKeys().length,
-            0,
-            "Incorrect number of claimable collateral keys post claim"
-        );
-
-        assertEq(
-            externalPosition.getClaimableCollateralKeyToClaimableCollateralInfo(claimableCollateralKey).token,
-            address(0),
-            "Incorrect claimable collateral info token post claim"
-        );
+        claimableCollateral_ = IGMXV2DataStore(dataStoreAddress).getUint(claimableCollateralKey_);
     }
 
+    function test_claimCollateral_failsInvalidClaimableFactor() public {
+        address market = makeAddr("market");
+        address token = makeAddr("token");
+        uint256 timeKey = 23;
+        uint256 claimableAmount = 123;
+
+        uint256 claimableFactor = FLOAT_PRECISION + 1;
+
+        vm.startPrank(__getController());
+        IGMXV2DataStore(dataStoreAddress).setUint(
+            __claimableCollateralFactorKey({_market: market, _token: token, _timeKey: timeKey}), claimableFactor
+        );
+
+        IGMXV2DataStore(dataStoreAddress).setUint(
+            __claimableCollateralAmountKey({
+                _market: market,
+                _token: token,
+                _timeKey: timeKey,
+                _account: address(externalPosition)
+            }),
+            claimableAmount
+        );
+        vm.stopPrank();
+
+        IGMXV2EventTypeLibrary.AddressKeyValue[] memory items = new IGMXV2EventTypeLibrary.AddressKeyValue[](5);
+
+        items[0] = IGMXV2EventTypeLibrary.AddressKeyValue({key: "account", value: address(externalPosition)});
+        items[1] = IGMXV2EventTypeLibrary.AddressKeyValue({key: "receiver", value: address(0)});
+        items[2] = IGMXV2EventTypeLibrary.AddressKeyValue({key: "callbackContract", value: address(0)});
+        items[3] = IGMXV2EventTypeLibrary.AddressKeyValue({key: "uiFeeReceiver", value: address(0)});
+        items[4] = IGMXV2EventTypeLibrary.AddressKeyValue({key: "market", value: market});
+
+        vm.prank(address(exchangeRouter));
+        externalPosition.afterOrderExecution(
+            "",
+            IGMXV2EventTypeLibrary.EventLogData({
+                addressItems: IGMXV2EventTypeLibrary.AddressItems({
+                    items: items,
+                    arrayItems: new IGMXV2EventTypeLibrary.AddressArrayKeyValue[](0)
+                }),
+                uintItems: IGMXV2EventTypeLibrary.UintItems({
+                    items: new IGMXV2EventTypeLibrary.UintKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.UintArrayKeyValue[](0)
+                }),
+                intItems: IGMXV2EventTypeLibrary.IntItems({
+                    items: new IGMXV2EventTypeLibrary.IntKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.IntArrayKeyValue[](0)
+                }),
+                boolItems: IGMXV2EventTypeLibrary.BoolItems({
+                    items: new IGMXV2EventTypeLibrary.BoolKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.BoolArrayKeyValue[](0)
+                }),
+                bytesItems: IGMXV2EventTypeLibrary.BytesItems({
+                    items: new IGMXV2EventTypeLibrary.BytesKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.BytesArrayKeyValue[](0)
+                }),
+                bytes32Items: IGMXV2EventTypeLibrary.Bytes32Items({
+                    items: new IGMXV2EventTypeLibrary.Bytes32KeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.Bytes32ArrayKeyValue[](0)
+                }),
+                stringItems: IGMXV2EventTypeLibrary.StringItems({
+                    items: new IGMXV2EventTypeLibrary.StringKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.StringArrayKeyValue[](0)
+                })
+            }),
+            IGMXV2EventTypeLibrary.EventLogData({
+                addressItems: IGMXV2EventTypeLibrary.AddressItems({
+                    items: new IGMXV2EventTypeLibrary.AddressKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.AddressArrayKeyValue[](0)
+                }),
+                uintItems: IGMXV2EventTypeLibrary.UintItems({
+                    items: new IGMXV2EventTypeLibrary.UintKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.UintArrayKeyValue[](0)
+                }),
+                intItems: IGMXV2EventTypeLibrary.IntItems({
+                    items: new IGMXV2EventTypeLibrary.IntKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.IntArrayKeyValue[](0)
+                }),
+                boolItems: IGMXV2EventTypeLibrary.BoolItems({
+                    items: new IGMXV2EventTypeLibrary.BoolKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.BoolArrayKeyValue[](0)
+                }),
+                bytesItems: IGMXV2EventTypeLibrary.BytesItems({
+                    items: new IGMXV2EventTypeLibrary.BytesKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.BytesArrayKeyValue[](0)
+                }),
+                bytes32Items: IGMXV2EventTypeLibrary.Bytes32Items({
+                    items: new IGMXV2EventTypeLibrary.Bytes32KeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.Bytes32ArrayKeyValue[](0)
+                }),
+                stringItems: IGMXV2EventTypeLibrary.StringItems({
+                    items: new IGMXV2EventTypeLibrary.StringKeyValue[](0),
+                    arrayItems: new IGMXV2EventTypeLibrary.StringArrayKeyValue[](0)
+                })
+            })
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IGMXV2LeverageTradingPositionLibManagedAssets.InvalidClaimableFactor.selector, claimableFactor
+            )
+        );
+
+        __claimCollateral(
+            IGMXV2LeverageTradingPositionProd.ClaimCollateralActionArgs({
+                markets: toArray(market),
+                tokens: toArray(token),
+                timeKeys: toArray(timeKey),
+                exchangeRouter: address(exchangeRouter)
+            })
+        );
+    }
     // TESTS
 
     function test_receiveCallFromVault_failsInvalidActionId() public {
@@ -2383,6 +2779,62 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
 
     function test_claimCollateral_success() public {
         __test_claimCollateral_success(
+            ClaimCollateralSuccessArgs({
+                market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
+                initialCollateralLongToken: ARBITRUM_WETH,
+                increaseInitialCollateralDeltaAmount: 1 * assetUnit(IERC20(ARBITRUM_WETH)),
+                increaseOrderSizeDeltaUsd: 8_000 * GMX_ONE_USD_UNIT, // 8k USD
+                userShortToken: ARBITRUM_USDC,
+                userShortTokenDeltaAmount: 8_000_000 * assetUnit(IERC20(ARBITRUM_USDC)), // 8mln USD
+                userShortTokenSizeDeltaUsd: 8_000_000 * GMX_ONE_USD_UNIT
+            })
+        );
+    }
+
+    function test_claimCollateral_successWithTimeFactor() public {
+        __test_claimCollateral_successWithTimeFactor(
+            ClaimCollateralSuccessArgs({
+                market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
+                initialCollateralLongToken: ARBITRUM_WETH,
+                increaseInitialCollateralDeltaAmount: 1 * assetUnit(IERC20(ARBITRUM_WETH)),
+                increaseOrderSizeDeltaUsd: 8_000 * GMX_ONE_USD_UNIT, // 8k USD
+                userShortToken: ARBITRUM_USDC,
+                userShortTokenDeltaAmount: 8_000_000 * assetUnit(IERC20(ARBITRUM_USDC)), // 8mln USD
+                userShortTokenSizeDeltaUsd: 8_000_000 * GMX_ONE_USD_UNIT
+            })
+        );
+    }
+
+    function test_claimCollateral_successWithAccountFactor() public {
+        __test_claimCollateral_successWithAccountFactor(
+            ClaimCollateralSuccessArgs({
+                market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
+                initialCollateralLongToken: ARBITRUM_WETH,
+                increaseInitialCollateralDeltaAmount: 1 * assetUnit(IERC20(ARBITRUM_WETH)),
+                increaseOrderSizeDeltaUsd: 8_000 * GMX_ONE_USD_UNIT, // 8k USD
+                userShortToken: ARBITRUM_USDC,
+                userShortTokenDeltaAmount: 8_000_000 * assetUnit(IERC20(ARBITRUM_USDC)), // 8mln USD
+                userShortTokenSizeDeltaUsd: 8_000_000 * GMX_ONE_USD_UNIT
+            })
+        );
+    }
+
+    function test_claimCollateral_successWithTimeAndAccountFactor() public {
+        __test_claimCollateral_successWithTimeAndAccountFactor(
+            ClaimCollateralSuccessArgs({
+                market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
+                initialCollateralLongToken: ARBITRUM_WETH,
+                increaseInitialCollateralDeltaAmount: 1 * assetUnit(IERC20(ARBITRUM_WETH)),
+                increaseOrderSizeDeltaUsd: 8_000 * GMX_ONE_USD_UNIT, // 8k USD
+                userShortToken: ARBITRUM_USDC,
+                userShortTokenDeltaAmount: 8_000_000 * assetUnit(IERC20(ARBITRUM_USDC)), // 8mln USD
+                userShortTokenSizeDeltaUsd: 8_000_000 * GMX_ONE_USD_UNIT
+            })
+        );
+    }
+
+    function test_claimCollateral_successWithTimeAndReductionFactor() public {
+        __test_claimCollateral_successWithTimeAndReductionFactor(
             ClaimCollateralSuccessArgs({
                 market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
                 initialCollateralLongToken: ARBITRUM_WETH,
