@@ -229,36 +229,11 @@ contract GMXV2LeverageTradingPositionLibManagedAssets is
                 );
             }
 
-            uint256 totalCollateralAmount = positionInfo.position.numbers.collateralAmount;
+            int256 totalCollateralAmount = int256(positionInfo.position.numbers.collateralAmount)
+                + basePnlCollateralAmount + totalImpactCollateralAmount - int256(positionInfo.fees.totalCostAmount);
 
-            if (basePnlCollateralAmount > 0) {
-                totalCollateralAmount += uint256(basePnlCollateralAmount);
-            } else if (basePnlCollateralAmount < 0) {
-                if (totalCollateralAmount > uint256(-basePnlCollateralAmount)) {
-                    totalCollateralAmount -= uint256(-basePnlCollateralAmount);
-                } else {
-                    totalCollateralAmount = 0;
-                }
-            }
-
-            if (totalImpactCollateralAmount > 0) {
-                totalCollateralAmount += uint256(totalImpactCollateralAmount);
-            } else if (totalImpactCollateralAmount < 0) {
-                if (totalCollateralAmount > uint256(-totalImpactCollateralAmount)) {
-                    totalCollateralAmount -= uint256(-totalImpactCollateralAmount);
-                } else {
-                    totalCollateralAmount = 0;
-                }
-            }
-
-            if (totalCollateralAmount > positionInfo.fees.totalCostAmount) {
-                totalCollateralAmount -= positionInfo.fees.totalCostAmount;
-            } else {
-                totalCollateralAmount = 0;
-            }
-
-            if (totalCollateralAmount != 0) {
-                amounts_ = amounts_.addItem(totalCollateralAmount);
+            if (totalCollateralAmount > 0) {
+                amounts_ = amounts_.addItem(uint256(totalCollateralAmount));
                 assets_ = assets_.addItem(positionInfo.position.addresses.collateralToken);
             }
 
