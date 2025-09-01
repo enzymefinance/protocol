@@ -72,3 +72,17 @@ If you are looking for the legacy test suite & test coverage please refer to the
 See [our contributing instructions](.github/CONTRIBUTING.md).
 
 Please note that all repositories hosted under this organization follow our [Code of Conduct](.github/CODE_OF_CONDUCT.md), make sure to review and follow it.
+
+By contributing, you agree your contribution is licensed under GPL-3.0,
+and may also be sublicensed by Enzyme Foundation under alternative terms (e.g., BUSL-1.1).
+
+## Licensing
+
+- Public: GPL-3.0 (see [LICENSES/GPL-3.0](LICENSES/GPL-3.0))
+- Alternative Terms: The copyright holder, Enzyme Foundation, may license this code under
+  alternative terms (e.g., BUSL-1.1) for affiliated/internal products.
+
+SPDX identifiers:
+
+- Source files in this repo use: `GPL-3.0`.
+- Vendored third-party files retain their original identifiers (e.g., `MIT` for OpenZeppelin).
