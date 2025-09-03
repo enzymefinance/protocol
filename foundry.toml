@@ -13,7 +13,10 @@ optimizer = true
 optimizer_runs = 200
 
 # Ignore compiler warnings that should be intentionally-skipped
-ignored_warnings_from = ["contracts/release/extensions/integration-manager/integrations/utils/0.8.19/bases/GenericWrappingAdapterBase.sol"]
+ignored_warnings_from = [
+    "contracts/release/extensions/integration-manager/integrations/utils/0.8.19/bases/GenericWrappingAdapterBase.sol",
+    "contracts/templates/"
+]
 
 # NOTE: Specifying shanghai as the evm_version seems required for the Goerli tests to pass
 evm_version = "cancun"
