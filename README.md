@@ -39,11 +39,15 @@ git clone [GIT_REPOSITORY_URL]
 
 ### Compile Contracts
 
-Generate internal interfaces for foundry deployment and tests:
+Compile contracts, build artifacts, and generate internal interfaces for foundry deployment and tests:
 
 ```sh
-make build
+make
 ```
+
+#### Interface Generation
+
+Interfaces are only generated for items listed in this [interfaces file](/tests/interfaces/interfaces.txt).
 
 ### Run Tests
 
