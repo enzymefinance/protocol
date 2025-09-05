@@ -35,8 +35,8 @@ contract CompoundDebtPositionParser is IExternalPositionParser {
     /// @param _externalPosition The _externalPosition to be called
     /// @param _actionId The _actionId for the callOnExternalPosition
     /// @param _encodedActionArgs The encoded parameters for the callOnExternalPosition
-    /// @return assetsToTransfer_ The assets to be transfered from the Vault
-    /// @return amountsToTransfer_ The amounts to be transfered from the Vault
+    /// @return assetsToTransfer_ The assets to be transferred from the Vault
+    /// @return amountsToTransfer_ The amounts to be transferred from the Vault
     /// @return assetsToReceive_ The assets to be received at the Vault
     function parseAssetsForAction(address _externalPosition, uint256 _actionId, bytes memory _encodedActionArgs)
         external

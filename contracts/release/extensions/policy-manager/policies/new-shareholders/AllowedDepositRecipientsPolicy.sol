@@ -34,7 +34,7 @@ contract AllowedDepositRecipientsPolicy is AddressListRegistryPolicyBase {
     }
 
     /// @notice Provides a constant string identifier for a policy
-    /// @return identifier_ The identifer string
+    /// @return identifier_ The identifier string
     function identifier() external pure override returns (string memory identifier_) {
         return "ALLOWED_DEPOSIT_RECIPIENTS";
     }

@@ -850,7 +850,7 @@ abstract contract SweepTest is TestBase {
             _assets: uniquePurchaseTokens
         });
 
-        // The purchaseToken should be transfered to the vault
+        // The purchaseToken should be transferred to the vault
         assertEq(
             vaultPurchaseTokenBalancePostSweep - vaultPurchaseTokenBalancePreSweep,
             purchaseTokenAmountToSweep,
