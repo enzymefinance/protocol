@@ -168,6 +168,8 @@ IMorphoBluePositionLib.sol: MorphoBluePositionLib.abi.json
 IMorphoBluePositionParser.sol: MorphoBluePositionParser.abi.json
 IAlicePositionLib.sol: AlicePositionLib.abi.json
 IAlicePositionParser.sol: AlicePositionParser.abi.json
+IAliceV2PositionLib.sol: AliceV2PositionLib.abi.json
+IAliceV2PositionParser.sol: AliceV2PositionParser.abi.json
 IMysoV3OptionWritingPositionLib.sol: MysoV3OptionWritingPositionLib.abi.json
 IMysoV3OptionWritingPositionParser.sol: MysoV3OptionWritingPositionParser.abi.json
 
