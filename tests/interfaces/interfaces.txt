@@ -124,6 +124,7 @@ IParaSwapV5Adapter.sol: ParaSwapV5Adapter.abi.json
 IParaSwapV6Adapter.sol: ParaSwapV6Adapter.abi.json
 IAaveV2Adapter.sol: AaveV2Adapter.abi.json
 IBalancerV2LiquidityAdapter.sol: BalancerV2LiquidityAdapter.abi.json
+IBebopBlendAdapter.sol: BebopBlendAdapter.abi.json
 ICompoundAdapter.sol: CompoundAdapter.abi.json
 IERC4626Adapter.sol: ERC4626Adapter.abi.json
 IZeroExV4Adapter.sol: ZeroExV4Adapter.abi.json
