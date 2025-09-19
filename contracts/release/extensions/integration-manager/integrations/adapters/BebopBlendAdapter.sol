@@ -109,6 +109,8 @@ contract BebopBlendAdapter is IBebopBlendAdapter, AdapterBase {
                 _vaultProxy: _vaultProxy,
                 _actionArgs: abi.decode(encodedActionArgs, (SwapSingleActionArgs))
             });
+        } else {
+            revert BebopBlendAdapter__InvalidAction();
         }
     }
 
@@ -143,7 +145,7 @@ contract BebopBlendAdapter is IBebopBlendAdapter, AdapterBase {
         incomingAssets_[0] = _actionArgs.order.maker_token;
 
         minIncomingAssetAmounts_ = new uint256[](1);
-        minIncomingAssetAmounts_[0] = _actionArgs.order.maker_amount;
+        minIncomingAssetAmounts_[0] = _actionArgs.minIncomingAssetAmount;
 
         spendAssetsHandleType_ = IIntegrationManager.SpendAssetsHandleType.Transfer;
     }

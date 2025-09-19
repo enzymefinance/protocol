@@ -105,14 +105,20 @@ abstract contract TestBase is IntegrationTest {
         });
     }
 
-    function __swapSingle(IBebopBlend.Single memory _order, bytes memory _signature) internal {
+    function __swapSingle(IBebopBlend.Single memory _order, bytes memory _signature, uint256 _minIncomingAssetAmount)
+        internal
+    {
         IBebopBlendProd.MakerSignature memory makerSignature =
             IBebopBlendProd.MakerSignature({signatureBytes: _signature, flags: 0});
 
         __action({
             _actionId: IBebopBlendAdapterProd.Action.SwapSingle,
             _encodedActionArgs: abi.encode(
-                IBebopBlendAdapterProd.SwapSingleActionArgs({order: _order, makerSignature: makerSignature})
+                IBebopBlendAdapterProd.SwapSingleActionArgs({
+                    order: _order,
+                    makerSignature: makerSignature,
+                    minIncomingAssetAmount: _minIncomingAssetAmount
+                })
             )
         });
     }
@@ -168,7 +174,7 @@ abstract contract TestBase is IntegrationTest {
 
         vm.expectRevert(IBebopBlendAdapter.BebopBlendAdapter__SwapSingle__UntrustedMaker.selector);
 
-        __swapSingle({_order: order, _signature: signature});
+        __swapSingle({_order: order, _signature: signature, _minIncomingAssetAmount: 1});
     }
 
     function test_swapSingle_failsWithInvalidReceiver() public {
@@ -193,12 +199,13 @@ abstract contract TestBase is IntegrationTest {
         vm.expectRevert(
             abi.encodeWithSelector(IBebopBlendAdapter.BebopBlendAdapter__SwapSingle__InvalidReceiver.selector)
         );
-        __swapSingle({_order: order, _signature: signature});
+        __swapSingle({_order: order, _signature: signature, _minIncomingAssetAmount: 1});
     }
 
     function test_swapSingle_success() public {
         uint256 takerAmount = takerToken.balanceOf(address(vaultProxy)) / 5;
         uint256 makerAmount = makerToken.balanceOf(trustedMaker);
+        uint256 minIncomingAssetAmount = makerAmount / 3;
 
         // Create signed order
         (IBebopBlend.Single memory order, bytes memory signature) = __createSignedSingleOrder({
@@ -214,7 +221,7 @@ abstract contract TestBase is IntegrationTest {
         vm.recordLogs();
 
         // Execute swap
-        __swapSingle({_order: order, _signature: signature});
+        __swapSingle({_order: order, _signature: signature, _minIncomingAssetAmount: minIncomingAssetAmount});
 
         // Assert adapter assets for action
         assertAdapterAssetsForAction({
@@ -223,7 +230,7 @@ abstract contract TestBase is IntegrationTest {
             _spendAssets: toArray(address(takerToken)),
             _maxSpendAssetAmounts: toArray(takerAmount),
             _incomingAssets: toArray(address(makerToken)),
-            _minIncomingAssetAmounts: toArray(makerAmount)
+            _minIncomingAssetAmounts: toArray(minIncomingAssetAmount)
         });
 
         uint256 expectedFulfilledMakerAmount = makerAmount * takerAmount / takerAmount;

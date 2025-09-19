@@ -22,9 +22,12 @@ interface IBebopBlendAdapter {
 
     /// @param order Single order payload, passed-through to Bebop
     /// @param makerSignature MakerSignature payload, passed-through to Bebop
+    /// @param minIncomingAssetAmount The minimum amount of the incoming asset to receive
+    /// @dev `minIncomingAssetAmount` should take into account taker fees
     struct SwapSingleActionArgs {
         IBebopBlend.Single order;
         IBebopBlend.MakerSignature makerSignature;
+        uint256 minIncomingAssetAmount;
     }
 
     function isAllowedMaker(address _who) external view returns (bool isAllowedMaker_);
