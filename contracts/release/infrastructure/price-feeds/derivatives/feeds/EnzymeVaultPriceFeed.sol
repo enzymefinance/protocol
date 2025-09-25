@@ -11,11 +11,9 @@
 
 pragma solidity 0.8.19;
 
-import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {IDispatcher} from "../../../../../persistent/dispatcher/IDispatcher.sol";
 import {IFundValueCalculatorRouter} from
     "../../../../../persistent/fund-value-calculator/IFundValueCalculatorRouter.sol";
-import {IComptroller} from "../../../../core/fund/comptroller/IComptroller.sol";
 import {IDerivativePriceFeed} from "../IDerivativePriceFeed.sol";
 
 /// @title EnzymeVaultPriceFeed Contract

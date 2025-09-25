@@ -11,7 +11,6 @@ pragma solidity 0.8.19;
 
 import {IGMXV2DataStore} from "../../../../../external-interfaces/IGMXV2DataStore.sol";
 import {IGMXV2Market} from "../../../../../external-interfaces/IGMXV2Market.sol";
-import {IGMXV2Order} from "../../../../../external-interfaces/IGMXV2Order.sol";
 import {IGMXV2Position} from "../../../../../external-interfaces/IGMXV2Position.sol";
 import {IGMXV2Reader} from "../../../../../external-interfaces/IGMXV2Reader.sol";
 

@@ -13,7 +13,6 @@ pragma solidity 0.8.19;
 
 import {ISmarDexOracleMiddleware} from "../../../../external-interfaces/ISmarDexOracleMiddleware.sol";
 import {ISmarDexUsdnProtocol} from "../../../../external-interfaces/ISmarDexUsdnProtocol.sol";
-import {PriceFeedHelpersLib} from "../utils/PriceFeedHelpersLib.sol";
 import {RateAggregatorBase} from "./utils/RateAggregatorBase.sol";
 import {RateUsdAggregatorBase} from "./utils/RateUsdAggregatorBase.sol";
 

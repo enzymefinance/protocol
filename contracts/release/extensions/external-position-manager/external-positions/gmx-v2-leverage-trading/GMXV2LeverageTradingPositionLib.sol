@@ -18,7 +18,6 @@ import {IGMXV2ExchangeRouter} from "../../../../../external-interfaces/IGMXV2Exc
 import {IGMXV2Market} from "../../../../../external-interfaces/IGMXV2Market.sol";
 import {IGMXV2Order} from "../../../../../external-interfaces/IGMXV2Order.sol";
 import {IGMXV2Position} from "../../../../../external-interfaces/IGMXV2Position.sol";
-import {IGMXV2Price} from "../../../../../external-interfaces/IGMXV2Price.sol";
 import {IGMXV2Reader} from "../../../../../external-interfaces/IGMXV2Reader.sol";
 import {IGMXV2RoleStore} from "../../../../../external-interfaces/IGMXV2RoleStore.sol";
 import {IWETH} from "../../../../../external-interfaces/IWETH.sol";
