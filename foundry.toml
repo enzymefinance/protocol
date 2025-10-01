@@ -36,3 +36,17 @@ base = "${ETHEREUM_NODE_BASE}"
 [etherscan]
 mainnet = { key = "${ETHERSCAN_API_KEY_MAINNET}", chain = "mainnet" }
 polygon = { key = "${ETHERSCAN_API_KEY_POLYGON}", chain = "polygon" }
+
+[lint]
+# Several lints fail on acronyms like "ERC" instead of "Erc", so we exclude those
+exclude_lints = [
+    "pascal-case-struct",
+    "mixed-case-function",
+    "mixed-case-variable",
+    "unaliased-plain-import",
+    "asm-keccak256"
+]
+ignore = [
+    "contracts/external-interfaces/**/*.sol",
+    "tests/**/*.sol"
+]

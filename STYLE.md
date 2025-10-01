@@ -115,12 +115,12 @@ See the [tests README](/tests/README.md) for further conventions used in test su
 
 Some of our style choices are enforceable by a linter and formatting rules.
 
-Using a linter is not a substitute for understanding the style guide, however, since some of our style choices do not have rules that can be enforced by these linters yet.
+Using a linter is not a substitute for understanding the style guide, however, since most of our style choices do not have rules that can be enforced by these linters yet.
 
 ### Linting
 
-We use [solhint](https://github.com/protofire/solhint) for linting Solidity code. We extend solhint's [recommended rules](https://github.com/protofire/solhint/blob/master/docs/rules.md) with a few of our own, which can be found in `.solhint.json`.
+We use [foundry](https://github.com/foundry-rs/foundry) for linting via `forge lint`.
 
 ### Formatting
 
-We use [foundry](https://github.com/foundry-rs/foundry) for formatting our Solidity code.
+We use [foundry](https://github.com/foundry-rs/foundry) for formatting via `forge fmt`.

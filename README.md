@@ -29,7 +29,6 @@ Make sure to have the following installed:
 
 - [foundry](https://github.com/foundry-rs/foundry)
 - [make](https://www.gnu.org/software/make)
-- [bun](https://bun.sh)
 
 Then, clone this repository:
 

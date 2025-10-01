@@ -1,3 +1,0 @@
-# Ignore third party contracts.
-contracts/release/utils/BalancerV2FixedPoint.sol
-contracts/release/utils/BalancerV2LogExpMath.sol

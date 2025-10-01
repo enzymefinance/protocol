@@ -18,7 +18,6 @@ endif
 .RECIPEPREFIX = >
 
 GIT := git
-BUNX := bunx
 CAST := cast
 FORGE := forge
 
@@ -55,7 +54,8 @@ test: ## Run the entire test suite
 
 .PHONY: lint
 lint: ## Check linting on all contract source files
-> $(BUNX) solhint $(CONTRACTS_DIR)/**/*.sol $(TESTS_DIR)/**/*.sol
+## TODO: upcoming foundry version will support error on lint failure
+> $(FORGE) lint 
 > $(FORGE) fmt --check $(CONTRACTS_DIR) $(TESTS_DIR)
 
 .PHONY: format
@@ -69,9 +69,7 @@ clean: ## Remove all untracked files and directories and bust any caches
 
 $(ARTIFACTS_DIR)/.sentinel: $(shell find $(CONTRACTS_DIR) -type f -name "*.sol")
 > mkdir -p $(@D)
-> # Remove this once the `forge build` command supports a more capable version of the `--skip` option.
-> export FOUNDRY_TEST=this-directory-does-not-exist
-> $(FORGE) build --sizes --extra-output-files abi
+> $(FORGE) build $(CONTRACTS_DIR) --sizes --extra-output-files abi
 > touch $@
 
 $(INTERFACES_DIR)/.sentinel: $(INTERFACES_FILE) $(ARTIFACTS_DIR)/.sentinel
