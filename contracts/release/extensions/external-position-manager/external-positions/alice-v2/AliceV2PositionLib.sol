@@ -73,7 +73,7 @@ contract AliceV2PositionLib is IAliceV2Position, AliceV2PositionLibBase1, AssetH
     // EXTERNAL FUNCTIONS //
     ////////////////////////
 
-    function notifySettle(address _token, uint256, bytes32 _referenceId) external override {
+    function notifySettle(address, uint256, bytes32 _referenceId) external override {
         if (msg.sender != address(ALICE_INSTANT_ORDER_V2)) {
             revert InvalidSender();
         }
@@ -91,15 +91,23 @@ contract AliceV2PositionLib is IAliceV2Position, AliceV2PositionLibBase1, AssetH
             revert OrderNotSettledOrCancelled();
         }
 
+        // Find the stored order details
+        OrderDetails memory orderDetails = getOrderDetails({_orderId: orderId});
+
         // Remove the order from storage
         __removeOrder({_orderId: orderId});
 
         // Remove the reference ID from storage
         __removeReferenceId({_referenceId: _referenceId});
 
-        // Push the assets back to the vault
+        // Push the assets back to the vault. Sweeping both assets in case Alice offchain logic fails.
         __retrieveAssetBalance({
-            _asset: IERC20(_token),
+            _asset: IERC20(orderDetails.outgoingAssetAddress),
+            _receiver: IExternalPositionProxy(address(this)).getVaultProxy()
+        });
+
+        __retrieveAssetBalance({
+            _asset: IERC20(orderDetails.incomingAssetAddress),
             _receiver: IExternalPositionProxy(address(this)).getVaultProxy()
         });
     }
@@ -131,9 +139,14 @@ contract AliceV2PositionLib is IAliceV2Position, AliceV2PositionLibBase1, AssetH
         // Remove the reference ID from storage
         __removeReferenceId({_referenceId: _referenceId});
 
-        // Push the refunded sell asset back to the vault
+        // Push the assets back to the vault. Sweeping both assets in case Alice offchain logic fails.
         __retrieveAssetBalance({
             _asset: IERC20(orderDetails.outgoingAssetAddress),
+            _receiver: IExternalPositionProxy(address(this)).getVaultProxy()
+        });
+
+        __retrieveAssetBalance({
+            _asset: IERC20(orderDetails.incomingAssetAddress),
             _receiver: IExternalPositionProxy(address(this)).getVaultProxy()
         });
     }
