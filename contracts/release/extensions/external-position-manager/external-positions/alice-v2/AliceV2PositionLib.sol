@@ -215,8 +215,6 @@ contract AliceV2PositionLib is IAliceV2Position, AliceV2PositionLibBase1, AssetH
         IAliceV2Position.RefundOrderActionArgs memory refundOrderArgs =
             abi.decode(_actionsArgs, (IAliceV2Position.RefundOrderActionArgs));
 
-        OrderDetails memory orderDetails = getOrderDetails({_orderId: refundOrderArgs.orderId});
-
         // Remove the order from storage
         __removeOrder({_orderId: refundOrderArgs.orderId});
 
@@ -231,14 +229,8 @@ contract AliceV2PositionLib is IAliceV2Position, AliceV2PositionLibBase1, AssetH
             _timestamp: refundOrderArgs.timestamp
         });
 
-        // Return the refunded outgoing asset back to the vault
-        IERC20 outgoingAsset = IERC20(orderDetails.outgoingAssetAddress);
-
-        if (address(outgoingAsset) == ALICEV2_NATIVE_ASSET_ADDRESS) {
-            Address.sendValue(payable(msg.sender), address(this).balance);
-        } else {
-            outgoingAsset.safeTransfer(msg.sender, outgoingAsset.balanceOf(address(this)));
-        }
+        // Return the refunded outgoing asset back to the vault using the existing helper
+        __retrieveAssetBalance({_asset: IERC20(refundOrderArgs.tokenToSell), _receiver: msg.sender});
     }
 
     /// @dev Helper to place an order with a reference ID
