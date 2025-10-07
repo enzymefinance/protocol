@@ -1,0 +1,38 @@
+name: Gate PRs to collaborators
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  close:
+    if: ${{ !contains('OWNER,MEMBER,COLLABORATOR', github.event.pull_request.author_association) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: `This repo doesn't accept PRs from non-collaborators. Open an issue instead or contact the team. Auto-closing.`
+            });
+
+      - name: Close PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              state: 'closed'
+            });
