@@ -14,6 +14,7 @@ pragma solidity 0.8.19;
 import {IAliceInstantOrderV2} from "../../../../../external-interfaces/IAliceInstantOrderV2.sol";
 import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {AddressArrayLib} from "../../../../../utils/0.8.19/AddressArrayLib.sol";
+import {Uint256ArrayLib} from "../../../../../utils/0.8.19/Uint256ArrayLib.sol";
 import {IExternalPositionParser} from "../../IExternalPositionParser.sol";
 import {AliceV2PositionLibBase1} from "./bases/AliceV2PositionLibBase1.sol";
 import {IAliceV2Position} from "./IAliceV2Position.sol";
@@ -23,12 +24,17 @@ import {IAliceV2Position} from "./IAliceV2Position.sol";
 /// @notice Parser for Morpho Positions
 contract AliceV2PositionParser is IExternalPositionParser {
     using AddressArrayLib for address[];
+    using Uint256ArrayLib for uint256[];
 
     address public constant ALICE_NATIVE_ETH = address(0);
     IAliceInstantOrderV2 public immutable ALICE_V2_ORDER_MANAGER;
     address public immutable WRAPPED_NATIVE_TOKEN_ADDRESS;
 
     error InvalidActionId();
+
+    error DuplicateOrderId();
+
+    error UnknownOrderId();
 
     constructor(address _aliceV2OrderManagerAddress, address _wrappedNativeAssetAddress) {
         ALICE_V2_ORDER_MANAGER = IAliceInstantOrderV2(_aliceV2OrderManagerAddress);
@@ -64,6 +70,9 @@ contract AliceV2PositionParser is IExternalPositionParser {
         } else if (_actionId == uint256(IAliceV2Position.Actions.Sweep)) {
             IAliceV2Position.SweepActionArgs memory sweepArgs =
                 abi.decode(_encodedActionArgs, (IAliceV2Position.SweepActionArgs));
+
+            // Validate input: check for duplicates and unknown order IDs
+            __validateSweepOrderIds(_externalPositionAddress, sweepArgs.orderIds);
 
             // Sweep can return either the outgoing or incoming asset (depending on if order is settled or cancelled) so we need to include both
             for (uint256 i; i < sweepArgs.orderIds.length; i++) {
@@ -122,6 +131,23 @@ contract AliceV2PositionParser is IExternalPositionParser {
     /// @dev Parses AliceV2 Native Asset into the wrapped native asset, otherwise returns the asset unchanged.
     function __parseAliceV2Asset(address _rawAssetAddress) private view returns (address parsedAssetAddress_) {
         return _rawAssetAddress == ALICE_NATIVE_ETH ? WRAPPED_NATIVE_TOKEN_ADDRESS : _rawAssetAddress;
+    }
+
+    /// @dev Helper to validate sweep order IDs for duplicates and unknown orders
+    function __validateSweepOrderIds(address _externalPositionAddress, uint256[] memory _orderIds) private view {
+        // Check for duplicates using Uint256ArrayLib helper
+        if (!_orderIds.isUniqueSet()) {
+            revert DuplicateOrderId();
+        }
+
+        // Check for unknown order IDs
+        for (uint256 i; i < _orderIds.length; i++) {
+            AliceV2PositionLibBase1.OrderDetails memory orderDetails =
+                IAliceV2Position(_externalPositionAddress).getOrderDetails(_orderIds[i]);
+            if (orderDetails.outgoingAssetAddress == address(0) && orderDetails.incomingAssetAddress == address(0)) {
+                revert UnknownOrderId();
+            }
+        }
     }
 
     /// @notice Parse and validate input arguments to be used when initializing a newly-deployed ExternalPositionProxy

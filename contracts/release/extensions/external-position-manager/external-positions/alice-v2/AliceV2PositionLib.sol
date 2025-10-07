@@ -40,6 +40,8 @@ contract AliceV2PositionLib is IAliceV2Position, AliceV2PositionLibBase1, AssetH
 
     error OrderNotSettledOrCancelled();
 
+    error InvalidReferenceId();
+
     constructor(address _aliceV2OrderManagerAddress, address _wrappedNativeAssetAddress) {
         ALICE_INSTANT_ORDER_V2 = IAliceInstantOrderV2(_aliceV2OrderManagerAddress);
         WRAPPED_NATIVE_TOKEN = IWETH(_wrappedNativeAssetAddress);
@@ -76,9 +78,14 @@ contract AliceV2PositionLib is IAliceV2Position, AliceV2PositionLibBase1, AssetH
             revert InvalidSender();
         }
 
+        // Validate that the reference ID is pending and has been created by this external position
+        if (!isPendingReferenceId(_referenceId)) {
+            revert InvalidReferenceId();
+        }
+
         uint256 orderId = uint256(_referenceId);
 
-        // Verify that order has actually been settled or cancelled._referenceId
+        // Verify that order has actually been settled or cancelled.
         // Prevents external parties from triggering a `notifySettle` through a malicious order.
         if (!__isOrderSettledOrCancelled({_orderId: orderId})) {
             revert OrderNotSettledOrCancelled();
@@ -86,6 +93,9 @@ contract AliceV2PositionLib is IAliceV2Position, AliceV2PositionLibBase1, AssetH
 
         // Remove the order from storage
         __removeOrder({_orderId: orderId});
+
+        // Remove the reference ID from storage
+        __removeReferenceId({_referenceId: _referenceId});
 
         // Push the assets back to the vault
         __retrieveAssetBalance({
@@ -99,9 +109,14 @@ contract AliceV2PositionLib is IAliceV2Position, AliceV2PositionLibBase1, AssetH
             revert InvalidSender();
         }
 
+        // Validate that the reference ID is pending and has been created by this external position
+        if (!isPendingReferenceId(_referenceId)) {
+            revert InvalidReferenceId();
+        }
+
         uint256 orderId = uint256(_referenceId);
 
-        // Verify that order has actually been settled or cancelled._referenceId
+        // Verify that order has actually been settled or cancelled.
         // Prevents external parties from triggering a `notifySettle` through a malicious order.
         if (!__isOrderSettledOrCancelled({_orderId: orderId})) {
             revert OrderNotSettledOrCancelled();
@@ -112,6 +127,9 @@ contract AliceV2PositionLib is IAliceV2Position, AliceV2PositionLibBase1, AssetH
 
         // Remove the order from storage
         __removeOrder({_orderId: orderId});
+
+        // Remove the reference ID from storage
+        __removeReferenceId({_referenceId: _referenceId});
 
         // Push the refunded sell asset back to the vault
         __retrieveAssetBalance({
@@ -230,6 +248,12 @@ contract AliceV2PositionLib is IAliceV2Position, AliceV2PositionLibBase1, AssetH
 
         uint256 nativeAssetAmount = __prepareOrder(placeOrderArgs);
 
+        // Generate a unique reference ID for this external position
+        bytes32 referenceId = bytes32(ALICE_INSTANT_ORDER_V2.getMostRecentOrderId() + 1);
+
+        // Track the reference ID
+        __addReferenceId({_referenceId: referenceId});
+
         // Place the order
         ALICE_INSTANT_ORDER_V2.placeOrder{value: nativeAssetAmount}({
             _tokenToSell: placeOrderArgs.tokenToSell,
@@ -237,7 +261,7 @@ contract AliceV2PositionLib is IAliceV2Position, AliceV2PositionLibBase1, AssetH
             _quantityToSell: placeOrderArgs.quantityToSell,
             _limitAmountToGet: placeOrderArgs.limitAmountToGet,
             _receiver: address(this),
-            _referenceId: bytes32(ALICE_INSTANT_ORDER_V2.getMostRecentOrderId())
+            _referenceId: referenceId
         });
     }
 
@@ -249,6 +273,12 @@ contract AliceV2PositionLib is IAliceV2Position, AliceV2PositionLibBase1, AssetH
         orderIdToOrderDetails[orderId] = _orderDetails;
 
         emit OrderIdAdded(orderId, _orderDetails);
+    }
+
+    /// @dev Helper to add a reference ID to storage
+    function __addReferenceId(bytes32 _referenceId) private {
+        referenceIdToIsPending[_referenceId] = true;
+        emit ReferenceIdAdded(_referenceId);
     }
 
     /// @dev Helper to check whether an order has settled or been cancelled
@@ -269,6 +299,12 @@ contract AliceV2PositionLib is IAliceV2Position, AliceV2PositionLibBase1, AssetH
         delete orderIdToOrderDetails[_orderId];
 
         emit OrderIdRemoved(_orderId);
+    }
+
+    /// @dev Helper to remove a reference ID from storage
+    function __removeReferenceId(bytes32 _referenceId) private {
+        delete referenceIdToIsPending[_referenceId];
+        emit ReferenceIdRemoved(_referenceId);
     }
 
     /// @dev Helper to send the balance of an AliceV2 order asset to the Vault
@@ -366,5 +402,11 @@ contract AliceV2PositionLib is IAliceV2Position, AliceV2PositionLibBase1, AssetH
     /// @return orderIds_ The orderIds
     function getOrderIds() public view override returns (uint256[] memory orderIds_) {
         return orderIds;
+    }
+
+    /// @notice Get whether a referenceId belongs to a pending order or not
+    /// @return isPending_ Whether the referenceId belongs to a pending order or not
+    function isPendingReferenceId(bytes32 _referenceId) public view override returns (bool isPending_) {
+        return referenceIdToIsPending[_referenceId];
     }
 }

@@ -29,7 +29,13 @@ abstract contract AliceV2PositionLibBase1 {
 
     event OrderIdRemoved(uint256 indexed orderId);
 
+    event ReferenceIdAdded(bytes32 indexed referenceId);
+
+    event ReferenceIdRemoved(bytes32 indexed referenceId);
+
     uint256[] internal orderIds;
 
     mapping(uint256 orderId => OrderDetails) orderIdToOrderDetails;
+
+    mapping(bytes32 referenceId => bool isPending) internal referenceIdToIsPending;
 }

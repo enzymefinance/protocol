@@ -48,4 +48,6 @@ interface IAliceV2Position is IExternalPosition {
         returns (AliceV2PositionLibBase1.OrderDetails memory orderDetails_);
 
     function getOrderIds() external view returns (uint256[] memory orderIds_);
+
+    function isPendingReferenceId(bytes32 _referenceId) external view returns (bool isPending_);
 }

@@ -522,6 +522,8 @@ abstract contract AliceTestBase is IntegrationTest {
 
         // The orderId should have been added to storage
         assertEq(toArray(orderId), aliceExternalPosition.getOrderIds(), "Incorrect orderIds");
+        // The reference ID should have been added to storage
+        assertTrue(aliceExternalPosition.isPendingReferenceId(bytes32(orderId)), "Incorrect reference ID");
 
         // The order details should have been added to storage
         AliceV2PositionLibBase1TypeLibrary.OrderDetails memory orderDetails =
@@ -878,7 +880,7 @@ abstract contract AliceTestBase is IntegrationTest {
     }
 
     function test_notifySettle_failsWithNotSettledOrCancelledOrder() public {
-        BuildAndPlaceOrderOutput memory orderOutput = __buildAndPlaceOrder({_inverse: false});
+        BuildAndPlaceOrderOutput memory orderOutput = __buildAndPlaceOrderWithRefId({_inverse: false});
 
         // Attempt to call notifySettle on an order that hasn't been settled or cancelled
         vm.expectRevert(IAliceV2PositionLib.OrderNotSettledOrCancelled.selector);
@@ -905,12 +907,199 @@ abstract contract AliceTestBase is IntegrationTest {
     }
 
     function test_notifyCancel_failsWithNotSettledOrCancelledOrder() public {
-        BuildAndPlaceOrderOutput memory orderOutput = __buildAndPlaceOrder({_inverse: false});
+        BuildAndPlaceOrderOutput memory orderOutput = __buildAndPlaceOrderWithRefId({_inverse: false});
 
         // Attempt to call notifyCancel on an order that hasn't been settled or cancelled
         vm.expectRevert(IAliceV2PositionLib.OrderNotSettledOrCancelled.selector);
         vm.prank(address(aliceOrderManager));
         aliceExternalPosition.notifyCancel({_referenceId: bytes32(orderOutput.orderId)});
+    }
+
+    function test_sweep_failsWithDuplicateOrderIds() public {
+        BuildAndPlaceOrderOutput memory orderOutput = __buildAndPlaceOrder({_inverse: false});
+
+        // Cancel the order so that funds are available for sweeping
+        __cancelOrder({
+            _orderId: orderOutput.orderId,
+            _limitAmountToGet: orderOutput.limitAmountToGet,
+            _timestamp: orderOutput.timestamp
+        });
+
+        // Attempt to sweep with duplicate order IDs
+        vm.expectRevert(abi.encodeWithSelector(IAliceV2PositionParser.DuplicateOrderId.selector));
+        __sweep(IAliceV2PositionProd.SweepActionArgs({orderIds: toArray(orderOutput.orderId, orderOutput.orderId)}));
+    }
+
+    function test_sweep_failsWithUnknownOrderId() public {
+        BuildAndPlaceOrderOutput memory orderOutput = __buildAndPlaceOrder({_inverse: false});
+
+        // Cancel the order so that funds are available for sweeping
+        __cancelOrder({
+            _orderId: orderOutput.orderId,
+            _limitAmountToGet: orderOutput.limitAmountToGet,
+            _timestamp: orderOutput.timestamp
+        });
+
+        // Attempt to sweep with an unknown order ID
+        uint256 unknownOrderId = 999999;
+        vm.expectRevert(abi.encodeWithSelector(IAliceV2PositionParser.UnknownOrderId.selector));
+        __sweep(IAliceV2PositionProd.SweepActionArgs({orderIds: toArray(unknownOrderId)}));
+    }
+
+    function test_sweep_failsWithMixedValidAndUnknownOrderIds() public {
+        BuildAndPlaceOrderOutput memory orderOutput = __buildAndPlaceOrder({_inverse: false});
+
+        // Cancel the order so that funds are available for sweeping
+        __cancelOrder({
+            _orderId: orderOutput.orderId,
+            _limitAmountToGet: orderOutput.limitAmountToGet,
+            _timestamp: orderOutput.timestamp
+        });
+
+        // Attempt to sweep with a mix of valid and unknown order IDs
+        uint256 unknownOrderId = 999999;
+        vm.expectRevert(abi.encodeWithSelector(IAliceV2PositionParser.UnknownOrderId.selector));
+        __sweep(IAliceV2PositionProd.SweepActionArgs({orderIds: toArray(orderOutput.orderId, unknownOrderId)}));
+    }
+
+    function test_parseAssetsForAction_failsWithDuplicateOrderIds() public {
+        BuildAndPlaceOrderOutput memory orderOutput = __buildAndPlaceOrder({_inverse: false});
+
+        // Cancel the order so that funds are available for sweeping
+        __cancelOrder({
+            _orderId: orderOutput.orderId,
+            _limitAmountToGet: orderOutput.limitAmountToGet,
+            _timestamp: orderOutput.timestamp
+        });
+
+        // Attempt to parse assets with duplicate order IDs
+        address parserAddress = externalPositionManager.getExternalPositionParserForType(aliceTypeId);
+        vm.expectRevert(abi.encodeWithSelector(IAliceV2PositionParser.DuplicateOrderId.selector));
+        IAliceV2PositionParser(parserAddress).parseAssetsForAction(
+            address(aliceExternalPosition),
+            uint256(IAliceV2PositionProd.Actions.Sweep),
+            abi.encode(
+                IAliceV2PositionProd.SweepActionArgs({orderIds: toArray(orderOutput.orderId, orderOutput.orderId)})
+            )
+        );
+    }
+
+    function test_parseAssetsForAction_failsWithUnknownOrderId() public {
+        BuildAndPlaceOrderOutput memory orderOutput = __buildAndPlaceOrder({_inverse: false});
+
+        // Cancel the order so that funds are available for sweeping
+        __cancelOrder({
+            _orderId: orderOutput.orderId,
+            _limitAmountToGet: orderOutput.limitAmountToGet,
+            _timestamp: orderOutput.timestamp
+        });
+
+        // Attempt to parse assets with an unknown order ID
+        uint256 unknownOrderId = 999999;
+        address parserAddress = externalPositionManager.getExternalPositionParserForType(aliceTypeId);
+        vm.expectRevert(abi.encodeWithSelector(IAliceV2PositionParser.UnknownOrderId.selector));
+        IAliceV2PositionParser(parserAddress).parseAssetsForAction(
+            address(aliceExternalPosition),
+            uint256(IAliceV2PositionProd.Actions.Sweep),
+            abi.encode(IAliceV2PositionProd.SweepActionArgs({orderIds: toArray(unknownOrderId)}))
+        );
+    }
+
+    function test_notifySettle_failsWithInvalidReferenceId() public {
+        // Create a regular order (no reference id)
+        BuildAndPlaceOrderOutput memory orderOutput = __buildAndPlaceOrder({_inverse: false});
+
+        __settleOrder({
+            _orderId: orderOutput.orderId,
+            _limitAmountToGet: orderOutput.limitAmountToGet,
+            _timestamp: orderOutput.timestamp,
+            _settlementAmount: orderOutput.limitAmountToGet * 2
+        });
+
+        // Attempt to call notifySettle
+        vm.expectRevert(IAliceV2PositionLib.InvalidReferenceId.selector);
+        vm.prank(address(aliceOrderManager));
+        aliceExternalPosition.notifySettle(
+            address(orderOutput.incomingAsset), orderOutput.limitAmountToGet, bytes32(orderOutput.orderId)
+        );
+    }
+
+    function test_notifyCancel_failsWithInvalidReferenceId() public {
+        // Create a regular order (no reference id)
+        BuildAndPlaceOrderOutput memory orderOutput = __buildAndPlaceOrder({_inverse: false});
+
+        __cancelOrder({
+            _orderId: orderOutput.orderId,
+            _limitAmountToGet: orderOutput.limitAmountToGet,
+            _timestamp: orderOutput.timestamp
+        });
+
+        // Attempt to call notifyCancel
+        vm.expectRevert(abi.encodeWithSelector(IAliceV2PositionLib.InvalidReferenceId.selector));
+        vm.prank(address(aliceOrderManager));
+        aliceExternalPosition.notifyCancel({_referenceId: bytes32(orderOutput.orderId)});
+    }
+
+    function test_placeOrderWithRefId_tracksReferenceId() public {
+        // Place an order with reference ID
+        BuildAndPlaceOrderOutput memory orderOutput = __buildAndPlaceOrderWithRefId({_inverse: false});
+
+        // Verify the order was created
+        assertEq(orderOutput.orderId, aliceExternalPosition.getOrderIds()[0], "Incorrect orderId");
+        assertTrue(aliceExternalPosition.isPendingReferenceId(bytes32(orderOutput.orderId)), "Incorrect reference ID");
+
+        // Verify the reference ID is tracked as pending
+        uint256 orderId = orderOutput.orderId;
+        bytes32 expectedReferenceId = bytes32(orderId);
+
+        // Verify that notifySettle works with the correct reference ID
+        // First settle the order externally
+        __settleOrder({
+            _orderId: orderId,
+            _limitAmountToGet: orderOutput.limitAmountToGet,
+            _timestamp: block.timestamp,
+            _settlementAmount: orderOutput.limitAmountToGet * 2
+        });
+
+        // Now notifySettle should work with the tracked reference ID
+        vm.prank(address(aliceOrderManager));
+        aliceExternalPosition.notifySettle(address(buyToken), 0, expectedReferenceId);
+
+        // Verify the order was removed
+        assertEq(aliceExternalPosition.getOrderIds().length, 0, "Order should be removed");
+
+        // Verify the reference ID is no longer pending
+        assertFalse(
+            aliceExternalPosition.isPendingReferenceId(expectedReferenceId), "Reference ID should not be pending"
+        );
+    }
+
+    function test_referenceIdManipulationAttack_prevented() public {
+        // This test simulates the attack described in the audit
+        // 1. Create a regular order
+        BuildAndPlaceOrderOutput memory orderOutput = __buildAndPlaceOrder({_inverse: false});
+        uint256 orderId = orderOutput.orderId;
+
+        // 2. Settle the order so WETH is held within the EP
+        __settleOrder({
+            _orderId: orderId,
+            _limitAmountToGet: orderOutput.limitAmountToGet,
+            _timestamp: orderOutput.timestamp,
+            _settlementAmount: orderOutput.limitAmountToGet * 2
+        });
+
+        // 3. Attempt to manipulate by calling notifySettle with a malicious reference ID
+        // that was NOT created by this EP (using a different order ID)
+        bytes32 maliciousReferenceId = bytes32(orderId);
+
+        // This should fail because the reference ID wasn't tracked by this EP
+        vm.expectRevert(abi.encodeWithSelector(IAliceV2PositionLib.InvalidReferenceId.selector));
+        vm.prank(address(aliceOrderManager));
+        aliceExternalPosition.notifySettle(address(buyToken), 0, maliciousReferenceId);
+
+        // Verify the order is still tracked (attack failed)
+        assertEq(aliceExternalPosition.getOrderIds().length, 1, "Order should still be tracked");
+        assertEq(aliceExternalPosition.getOrderIds()[0], orderId, "Order ID should match");
     }
 }
 
