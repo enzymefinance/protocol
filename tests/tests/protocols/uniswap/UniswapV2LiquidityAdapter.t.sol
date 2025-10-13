@@ -186,6 +186,8 @@ abstract contract UniswapV2LiquidityAdapterTestBase is IntegrationTest, UniswapV
             "Incorrect token1 balance after lend"
         );
         assertGt(postLendPoolTokenVaultBalance, preLendPoolTokenVaultBalance, "Incorrect poolToken balance after lend");
+        assertEq(token0.balanceOf(address(uniswapV2LiquidityAdapter)), 0, "Adapter has remaining token0 balance");
+        assertEq(token1.balanceOf(address(uniswapV2LiquidityAdapter)), 0, "Adapter has remaining token1 balance");
     }
 
     function test_redeem_success() public {

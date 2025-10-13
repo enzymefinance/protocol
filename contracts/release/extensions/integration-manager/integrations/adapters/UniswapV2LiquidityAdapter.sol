@@ -35,7 +35,12 @@ contract UniswapV2LiquidityAdapter is AdapterBase, UniswapV2ActionsMixin {
     /// @notice Lends assets for pool tokens on Uniswap
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
-    function lend(address _vaultProxy, bytes calldata _actionData, bytes calldata) external onlyIntegrationManager {
+    /// @param _assetData Parsed spend assets and incoming assets data for this action
+    function lend(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
+        external
+        onlyIntegrationManager
+        postActionSpendAssetsTransferHandler(_vaultProxy, _assetData)
+    {
         (
             address[2] memory outgoingAssets,
             uint256[2] memory maxOutgoingAssetAmounts,
