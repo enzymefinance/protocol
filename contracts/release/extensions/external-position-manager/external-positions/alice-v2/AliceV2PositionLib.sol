@@ -213,6 +213,12 @@ contract AliceV2PositionLib is IAliceV2Position, AliceV2PositionLibBase1, AssetH
 
             OrderDetails memory orderDetails = getOrderDetails({_orderId: orderId});
 
+            // If a reference ID exists for this order, remove it
+            // This could theoretically happen if the callback methods fail for an order placed with reference ID
+            if (isPendingReferenceId(bytes32(orderId))) {
+                __removeReferenceId({_referenceId: bytes32(orderId)});
+            }
+
             __removeOrder({_orderId: orderId});
 
             // If the order is settled or cancelled, the EP could have received:

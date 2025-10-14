@@ -1101,6 +1101,36 @@ abstract contract AliceTestBase is IntegrationTest {
         assertEq(aliceExternalPosition.getOrderIds().length, 1, "Order should still be tracked");
         assertEq(aliceExternalPosition.getOrderIds()[0], orderId, "Order ID should match");
     }
+
+    function test_sweep_removesReferenceIdForOrderWithRefId() public {
+        // 1. Place an order with reference ID
+        BuildAndPlaceOrderOutput memory orderOutput = __buildAndPlaceOrderWithRefId({_inverse: false});
+        uint256 orderId = orderOutput.orderId;
+        bytes32 referenceId = bytes32(orderId);
+
+        // 2. Cancel the order so that funds are available for sweeping
+        __cancelOrder({
+            _orderId: orderId,
+            _limitAmountToGet: orderOutput.limitAmountToGet,
+            _timestamp: orderOutput.timestamp
+        });
+
+        // 3. Sweep the order
+        __sweep(IAliceV2PositionProd.SweepActionArgs({orderIds: toArray(orderId)}));
+
+        // 4. Verify that both the order and reference ID have been removed
+        assertEq(aliceExternalPosition.getOrderIds().length, 0, "Order should be removed from storage");
+        assertFalse(
+            aliceExternalPosition.isPendingReferenceId(referenceId), "Reference ID should be removed from storage"
+        );
+
+        // Verify the order details are cleared
+        assertEq(
+            0,
+            aliceExternalPosition.getOrderDetails({_orderId: orderId}).outgoingAmount,
+            "Order details should be cleared"
+        );
+    }
 }
 
 contract AliceWbtcUsdcTestEthereum is AliceTestBase {
