@@ -265,7 +265,7 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
     }
 
     // Quickly identify if a test is Curve on mainnet, or Convex/sidechain
-    function __isCurveMainnetTest() internal view returns (bool isBalancerMainnet_) {
+    function __isCurveMainnetTest() internal view returns (bool isCurveMainnet_) {
         return !isConvex && address(crvToken) == ETHEREUM_CRV;
     }
 }

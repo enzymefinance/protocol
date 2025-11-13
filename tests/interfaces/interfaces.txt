@@ -123,7 +123,6 @@ IYearnVaultV2Adapter.sol: YearnVaultV2Adapter.abi.json
 IParaSwapV5Adapter.sol: ParaSwapV5Adapter.abi.json
 IParaSwapV6Adapter.sol: ParaSwapV6Adapter.abi.json
 IAaveV2Adapter.sol: AaveV2Adapter.abi.json
-IBalancerV2LiquidityAdapter.sol: BalancerV2LiquidityAdapter.abi.json
 IBebopBlendAdapter.sol: BebopBlendAdapter.abi.json
 ICompoundAdapter.sol: CompoundAdapter.abi.json
 IERC4626Adapter.sol: ERC4626Adapter.abi.json
@@ -180,11 +179,8 @@ IValueInterpreter.sol: ValueInterpreter.abi.json
 # Price feeds
 IDerivativePriceFeed.sol: IDerivativePriceFeed.abi.json
 ICurvePriceFeed.sol: CurvePriceFeed.abi.json
-IBalancerV2WeightedPoolPriceFeed.sol: BalancerV2WeightedPoolPriceFeed.abi.json
-IBalancerV2StablePoolPriceFeed.sol: BalancerV2StablePoolPriceFeed.abi.json
 ICompoundPriceFeed.sol: CompoundPriceFeed.abi.json
 IUniswapV2PoolPriceFeed.sol: UniswapV2PoolPriceFeed.abi.json
-IBalancerV2GaugeTokenPriceFeed.sol: BalancerV2GaugeTokenPriceFeed.abi.json
 IRevertingPriceFeed.sol: RevertingPriceFeed.abi.json
 IYearnVaultV2PriceFeed.sol: YearnVaultV2PriceFeed.abi.json
 IChainlinkPriceFeedMixin.sol: ChainlinkPriceFeedMixin.abi.json
