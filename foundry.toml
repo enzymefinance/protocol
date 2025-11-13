@@ -38,13 +38,16 @@ mainnet = { key = "${ETHERSCAN_API_KEY_MAINNET}", chain = "mainnet" }
 polygon = { key = "${ETHERSCAN_API_KEY_POLYGON}", chain = "polygon" }
 
 [lint]
-# Several lints fail on acronyms like "ERC" instead of "Erc", so we exclude those
+# Several lints fail on acronyms like "ERC" instead of "Erc", so we exclude those.
+# Some other lints are helpful but there are many violations in the codebase already. We could inline-exclude those.
 exclude_lints = [
     "pascal-case-struct",
     "mixed-case-function",
     "mixed-case-variable",
     "unaliased-plain-import",
-    "asm-keccak256"
+    "asm-keccak256",
+    "unwrapped-modifier-logic",
+    "unsafe-typecast"
 ]
 ignore = [
     "contracts/external-interfaces/**/*.sol",

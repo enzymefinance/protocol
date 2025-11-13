@@ -16,7 +16,6 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IFundValueCalculator} from "../../persistent/fund-value-calculator/IFundValueCalculator.sol";
 import {IComptroller} from "../core/fund/comptroller/IComptroller.sol";
 import {IVault} from "../core/fund/vault/IVault.sol";
-import {IFeeManager} from "../extensions/fee-manager/IFeeManager.sol";
 import {IProtocolFeeTracker} from "../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
 import {IValueInterpreter} from "../infrastructure/value-interpreter/IValueInterpreter.sol";
 

@@ -15,7 +15,6 @@ pragma experimental ABIEncoderV2;
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
 import {IERC20} from "../../../../external-interfaces/IERC20.sol";
 import {MakerDaoMath} from "../../../../utils/0.6.12/MakerDaoMath.sol";
-import {IVault} from "../../../core/fund/vault/IVault.sol";
 import {IFeeManager} from "../IFeeManager.sol";
 import {IManagementFee} from "./interfaces/IManagementFee.sol";
 import {FeeBase} from "./utils/FeeBase.sol";
