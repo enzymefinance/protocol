@@ -73,7 +73,9 @@ contract TransferAssetsAdapter is ITransferAssetsAdapter, AdapterBase {
             uint256[] memory
         )
     {
-        if (_selector != TRANSFER_SELECTOR) revert TransferAssetsAdapter__ParseAssetsForAction__InvalidSelector();
+        if (_selector != TRANSFER_SELECTOR) {
+            revert TransferAssetsAdapter__ParseAssetsForAction__InvalidSelector();
+        }
 
         TransferERC20CallArgs memory callArgs = abi.decode(_actionData, (TransferERC20CallArgs));
 

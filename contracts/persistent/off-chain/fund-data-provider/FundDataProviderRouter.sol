@@ -75,22 +75,23 @@ contract FundDataProviderRouter {
         } catch {}
 
         try IValueInterpreterGetter(
-            address(
-                FundValueCalculatorRouter(getFundValueCalculatorRouter()).getFundValueCalculatorForVault(_vaultProxy)
-            )
-        ).getValueInterpreter() returns (address valueInterpreter_) {
+                address(
+                    FundValueCalculatorRouter(getFundValueCalculatorRouter())
+                        .getFundValueCalculatorForVault(_vaultProxy)
+                )
+            ).getValueInterpreter() returns (
+            address valueInterpreter_
+        ) {
             ethConversionIsValid_ = true;
-            gavInEth_ = IValueInterpreter(valueInterpreter_).calcCanonicalAssetValue({
-                _baseAsset: denominationAsset_,
-                _amount: gavInDenominationAsset_,
-                _quoteAsset: WETH_TOKEN
-            });
+            gavInEth_ = IValueInterpreter(valueInterpreter_)
+                .calcCanonicalAssetValue({
+                    _baseAsset: denominationAsset_, _amount: gavInDenominationAsset_, _quoteAsset: WETH_TOKEN
+                });
 
-            navInEth_ = IValueInterpreter(valueInterpreter_).calcCanonicalAssetValue({
-                _baseAsset: denominationAsset_,
-                _amount: navInDenominationAsset_,
-                _quoteAsset: WETH_TOKEN
-            });
+            navInEth_ = IValueInterpreter(valueInterpreter_)
+                .calcCanonicalAssetValue({
+                    _baseAsset: denominationAsset_, _amount: navInDenominationAsset_, _quoteAsset: WETH_TOKEN
+                });
         } catch {}
 
         return (

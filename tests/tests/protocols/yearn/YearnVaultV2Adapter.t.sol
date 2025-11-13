@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IIntegrationManager as IIntegrationManagerProd} from
-    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {
+    IIntegrationManager as IIntegrationManagerProd
+} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -45,8 +46,7 @@ abstract contract YearnVaultV2AdapterTestBase is IntegrationTest {
         });
 
         adapter = __deployAdapter({
-            _integrationManagerAddress: address(core.release.integrationManager),
-            _priceFeed: priceFeed
+            _integrationManagerAddress: address(core.release.integrationManager), _priceFeed: priceFeed
         });
     }
 
@@ -134,8 +134,8 @@ abstract contract YearnVaultV2AdapterTestBase is IntegrationTest {
         uint256 yVaultSharesBefore = IERC20(_yVaultAddress).balanceOf(vaultProxyAddress);
         uint256 preLendUnderlyingBalance = underlying.balanceOf(vaultProxyAddress);
 
-        uint256 estimatedIncomingYVaultSharesAmount =
-            _outgoingUnderlyingAmount * 10 ** underlying.decimals() / IYearnVaultV2Vault(_yVaultAddress).pricePerShare();
+        uint256 estimatedIncomingYVaultSharesAmount = _outgoingUnderlyingAmount * 10 ** underlying.decimals()
+            / IYearnVaultV2Vault(_yVaultAddress).pricePerShare();
 
         uint256 minIncomingYVaultSharesAmount = estimatedIncomingYVaultSharesAmount * 999 / 1000; // 0.1% slippage, cause price moves slightly when we deposit
 
@@ -177,9 +177,7 @@ abstract contract YearnVaultV2AdapterTestBase is IntegrationTest {
         vm.expectRevert("__parseAssetsForLend: Unsupported yVault");
 
         __lend({
-            _yVaultAddress: makeAddr("fake yVault"),
-            _outgoingUnderlyingAmount: 1,
-            _minIncomingYVaultSharesAmount: 1
+            _yVaultAddress: makeAddr("fake yVault"), _outgoingUnderlyingAmount: 1, _minIncomingYVaultSharesAmount: 1
         });
     }
 
@@ -188,9 +186,7 @@ abstract contract YearnVaultV2AdapterTestBase is IntegrationTest {
         __registerYVault(_yVaultAddress);
 
         increaseTokenBalance({
-            _token: IERC20(_yVaultAddress),
-            _to: vaultProxyAddress,
-            _amount: _maxOutgoingYVaultSharesAmount * 3
+            _token: IERC20(_yVaultAddress), _to: vaultProxyAddress, _amount: _maxOutgoingYVaultSharesAmount * 3
         }); // multiply by 3 to test balance after redeem with non-zero value
 
         IERC20 underlying = IYearnVaultV2Vault(_yVaultAddress).token();
@@ -271,13 +267,15 @@ abstract contract YearnVaultV2AdapterTestBaseEthereum is YearnVaultV2AdapterTest
         // test with 18 decimals asset
         __test_redeem_success({
             _yVaultAddress: ETHEREUM_YEARN_VAULT_V2_WETH_VAULT,
-            _maxOutgoingYVaultSharesAmount: 13 * assetUnit(IYearnVaultV2Vault(ETHEREUM_YEARN_VAULT_V2_WETH_VAULT).token())
+            _maxOutgoingYVaultSharesAmount: 13
+                * assetUnit(IYearnVaultV2Vault(ETHEREUM_YEARN_VAULT_V2_WETH_VAULT).token())
         });
 
         // test with non-18 decimals asset, USDT has 6 decimals
         __test_redeem_success({
             _yVaultAddress: ETHEREUM_YEARN_VAULT_V2_USDT_VAULT,
-            _maxOutgoingYVaultSharesAmount: 19 * assetUnit(IYearnVaultV2Vault(ETHEREUM_YEARN_VAULT_V2_USDT_VAULT).token())
+            _maxOutgoingYVaultSharesAmount: 19
+                * assetUnit(IYearnVaultV2Vault(ETHEREUM_YEARN_VAULT_V2_USDT_VAULT).token())
         });
     }
 }

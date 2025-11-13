@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {ICompoundDebtPosition as ICompoundDebtPositionProd} from
-    "contracts/release/extensions/external-position-manager/external-positions/compound-debt/ICompoundDebtPosition.sol";
+import {
+    ICompoundDebtPosition as ICompoundDebtPositionProd
+} from "contracts/release/extensions/external-position-manager/external-positions/compound-debt/ICompoundDebtPosition.sol";
 
 import {Math} from "openzeppelin-solc-0.8/utils/math/Math.sol";
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
@@ -105,9 +106,7 @@ abstract contract TestBase is IntegrationTest {
         ICompoundV2Comptroller _compoundV2Comptroller
     ) internal returns (uint256 typeId_, address compoundV2PriceFeed_) {
         compoundV2PriceFeed_ = __deployCompoundV2PriceFeed({
-            _fundDeployerAddress: _fundDeployerAddress,
-            _wethToken: _wethToken,
-            _cETH: _cETH
+            _fundDeployerAddress: _fundDeployerAddress, _wethToken: _wethToken, _cETH: _cETH
         });
 
         // Deploy CompoundV2 Debt type contracts
@@ -364,9 +363,7 @@ abstract contract BorrowTest is TestBase {
         __dealCTokenAndAddCollateral({_cTokens: _cTokensCollateral, _amounts: _cTokensCollateralAmounts});
 
         (address[] memory uniqueTokensToBorrow, uint256[] memory uniqueTokensToBorrowAmounts) = aggregateAssetAmounts({
-            _rawAssets: _underlyingsToBorrow,
-            _rawAmounts: _underlyingsToBorrowAmounts,
-            _ceilingAtMax: false
+            _rawAssets: _underlyingsToBorrow, _rawAmounts: _underlyingsToBorrowAmounts, _ceilingAtMax: false
         });
 
         // expect the correct event for every borrowed underlying
@@ -378,9 +375,7 @@ abstract contract BorrowTest is TestBase {
         vm.recordLogs();
 
         __borrowAssets({
-            _underlyings: _underlyingsToBorrow,
-            _amounts: _underlyingsToBorrowAmounts,
-            _cTokens: _cTokensCollateral
+            _underlyings: _underlyingsToBorrow, _amounts: _underlyingsToBorrowAmounts, _cTokens: _cTokensCollateral
         });
 
         // Assert assetsToReceive was correctly formatted (borrowed assets)
@@ -438,8 +433,7 @@ abstract contract BorrowTest is TestBase {
 
     function test_borrow_failsProblemWhileBorrowingFromCompound() public {
         __dealCTokenAndAddCollateral({
-            _cTokens: toArray(address(cETH)),
-            _amounts: toArray(10 * assetUnit(IERC20(address(cETH))))
+            _cTokens: toArray(address(cETH)), _amounts: toArray(10 * assetUnit(IERC20(address(cETH))))
         });
 
         uint256 amountToBorrow = 8 * assetUnit(wethToken);
@@ -542,8 +536,7 @@ abstract contract RepayBorrowTest is TestBase {
     function __test_repayBorrow_failsToRepay(address _cToken) public {
         // Add collateral
         __dealCTokenAndAddCollateral({
-            _cTokens: toArray(_cToken),
-            _amounts: toArray(100 * assetUnit(IERC20(address(cETH))))
+            _cTokens: toArray(_cToken), _amounts: toArray(100 * assetUnit(IERC20(address(cETH))))
         });
 
         address underlying = __getCTokenUnderlying(ICompoundV2CERC20(_cToken));
@@ -551,9 +544,7 @@ abstract contract RepayBorrowTest is TestBase {
 
         // Borrow some assets so we have something to repay
         __borrowAssets({
-            _underlyings: toArray(underlying),
-            _amounts: toArray(amountToBorrow),
-            _cTokens: toArray(_cToken)
+            _underlyings: toArray(underlying), _amounts: toArray(amountToBorrow), _cTokens: toArray(_cToken)
         });
 
         vm.mockCall({
@@ -570,8 +561,7 @@ abstract contract RepayBorrowTest is TestBase {
     function test_repayBorrow_errorWhileCallingAccrueInterest() public {
         // Add collateral
         __dealCTokenAndAddCollateral({
-            _cTokens: toArray(address(cETH)),
-            _amounts: toArray(100 * assetUnit(IERC20(address(cETH))))
+            _cTokens: toArray(address(cETH)), _amounts: toArray(100 * assetUnit(IERC20(address(cETH))))
         });
 
         uint256 amountToBorrow = assetUnit(wethToken);
@@ -612,9 +602,7 @@ abstract contract ClaimCompTest is TestBase {
 
         vm.prank(compoundV2Comptroller.admin());
         compoundV2Comptroller._setCompSpeeds({
-            _cTokens: _cTokens,
-            _supplySpeeds: distributionSpeeds,
-            _borrowSpeeds: distributionSpeeds
+            _cTokens: _cTokens, _supplySpeeds: distributionSpeeds, _borrowSpeeds: distributionSpeeds
         });
 
         // add collateral to be able to accrue some rewards
@@ -707,9 +695,7 @@ contract CompoundV2DebtPositionTestEthereum is CompoundV2DebtPositionTest {
         amountsToRemove[4] = 10_000 * assetUnit(IERC20(cTokens[4]));
 
         __test_removeCollateral_success({
-            _cTokens: cTokens,
-            _amountsToAdd: amountsToAdd,
-            _amountsToRemove: amountsToRemove
+            _cTokens: cTokens, _amountsToAdd: amountsToAdd, _amountsToRemove: amountsToRemove
         });
     }
 

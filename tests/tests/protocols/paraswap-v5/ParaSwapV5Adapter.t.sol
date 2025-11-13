@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IIntegrationManager as IIntegrationManagerProd} from
-    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
-import {IParaSwapV5Adapter as IParaSwapV5AdapterProd} from
-    "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/IParaSwapV5Adapter.sol";
+import {
+    IIntegrationManager as IIntegrationManagerProd
+} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {
+    IParaSwapV5Adapter as IParaSwapV5AdapterProd
+} from "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/IParaSwapV5Adapter.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -90,9 +92,9 @@ abstract contract ParaSwapV5AdapterBaseTest is IntegrationTest {
         // Ensure that all assets are registered
         addPrimitivesWithTestAggregator({
             _valueInterpreter: core.release.valueInterpreter,
-            _tokenAddresses: (
-                toArray(address(outgoingAsset1), address(outgoingAsset2), address(incomingAsset1), address(incomingAsset2))
-            ),
+            _tokenAddresses: (toArray(
+                    address(outgoingAsset1), address(outgoingAsset2), address(incomingAsset1), address(incomingAsset2)
+                )),
             _skipIfRegistered: true
         });
 
@@ -320,9 +322,7 @@ abstract contract ParaSwapV5AdapterBaseTest is IntegrationTest {
 
         bytes memory swapData = __encodeMultiSwapData({
             _path: __paraSwapV5ConstructUniV2ForkPaths({
-                _incomingAssetAddress: address(incomingAsset1),
-                _payloads: payloads,
-                _percents: percents
+                _incomingAssetAddress: address(incomingAsset1), _payloads: payloads, _percents: percents
             })
         });
 
@@ -373,9 +373,7 @@ abstract contract ParaSwapV5AdapterBaseTest is IntegrationTest {
         percents[1] = fiftyPercent;
 
         IParaSwapV5AugustusSwapper.Path[] memory multiSwapPath = __paraSwapV5ConstructUniV2ForkPaths({
-            _incomingAssetAddress: address(incomingAsset1),
-            _payloads: payloads,
-            _percents: percents
+            _incomingAssetAddress: address(incomingAsset1), _payloads: payloads, _percents: percents
         });
 
         IParaSwapV5AugustusSwapper.MegaSwapPath[] memory megaSwapPath = new IParaSwapV5AugustusSwapper.MegaSwapPath[](2);

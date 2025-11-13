@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IIntegrationManager as IIntegrationManagerProd} from
-    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {
+    IIntegrationManager as IIntegrationManagerProd
+} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {AddressArrayLib} from "tests/utils/libs/AddressArrayLib.sol";
@@ -73,9 +74,7 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
         address[] memory tokensToRegister = toArray(address(poolBpt), address(stakingToken));
         tokensToRegister = tokensToRegister.mergeArray(poolAssetAddresses);
         addPrimitivesWithTestAggregator({
-            _valueInterpreter: core.release.valueInterpreter,
-            _tokenAddresses: tokensToRegister,
-            _skipIfRegistered: true
+            _valueInterpreter: core.release.valueInterpreter, _tokenAddresses: tokensToRegister, _skipIfRegistered: true
         });
     }
 
@@ -109,8 +108,9 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
         uint256 _minIncomingBptAmount,
         IBalancerV2Vault.PoolBalanceChange memory _request
     ) internal {
-        bytes memory actionArgs =
-            abi.encode(address(stakingToken), poolId, _minIncomingBptAmount, _spendAssets, _spendAssetAmounts, _request);
+        bytes memory actionArgs = abi.encode(
+            address(stakingToken), poolId, _minIncomingBptAmount, _spendAssets, _spendAssetAmounts, _request
+        );
 
         vm.prank(fundOwner);
         callOnIntegration({
@@ -195,10 +195,7 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
         returns (IBalancerV2Vault.PoolBalanceChange memory request_)
     {
         return IBalancerV2Vault.PoolBalanceChange({
-            assets: poolAssetAddresses,
-            limits: _limits,
-            userData: _userData,
-            useInternalBalance: false
+            assets: poolAssetAddresses, limits: _limits, userData: _userData, useInternalBalance: false
         });
     }
 
@@ -332,19 +329,18 @@ abstract contract BalancerPoolTest is PoolTestBase {
                 _selector: ICurveMinter.toggle_approve_mint.selector
             });
             vm.prank(fundOwner);
-            IComptrollerLib(comptrollerProxyAddress).vaultCallOnContract({
-                _contract: ETHEREUM_MINTER_ADDRESS,
-                _selector: ICurveMinter.toggle_approve_mint.selector,
-                _encodedArgs: abi.encode(address(adapter))
-            });
+            IComptrollerLib(comptrollerProxyAddress)
+                .vaultCallOnContract({
+                    _contract: ETHEREUM_MINTER_ADDRESS,
+                    _selector: ICurveMinter.toggle_approve_mint.selector,
+                    _encodedArgs: abi.encode(address(adapter))
+                });
 
             // Make sure the gauge has some weight so it earns BAL rewards via the Minter
             uint256 totalWeight = ICurveGaugeController(ETHEREUM_GAUGE_CONTROLLER_ADDRESS).get_total_weight();
             vm.prank(ETHEREUM_AUTHORIZER_ADAPTER_ADDRESS);
-            ICurveGaugeController(ETHEREUM_GAUGE_CONTROLLER_ADDRESS).change_gauge_weight({
-                _gauge: address(stakingToken),
-                _weight: totalWeight / 10
-            });
+            ICurveGaugeController(ETHEREUM_GAUGE_CONTROLLER_ADDRESS)
+                .change_gauge_weight({_gauge: address(stakingToken), _weight: totalWeight / 10});
         }
 
         // Seed the vault with bpt and stake them to start accruing rewards
@@ -394,9 +390,7 @@ abstract contract BalancerPoolTest is PoolTestBase {
         deal({token: address(spendAsset), to: vaultProxyAddress, give: maxSpendAssetAmount});
 
         IBalancerV2Vault.PoolBalanceChange memory request = __constructRequestTokenInForExactBptOut({
-            _bptAmountOut: incomingBptAmount,
-            _tokenIn: spendAsset,
-            _maxTokenInAmount: maxSpendAssetAmount
+            _bptAmountOut: incomingBptAmount, _tokenIn: spendAsset, _maxTokenInAmount: maxSpendAssetAmount
         });
 
         vm.recordLogs();
@@ -508,8 +502,7 @@ abstract contract BalancerPoolTest is PoolTestBase {
         }
 
         IBalancerV2Vault.PoolBalanceChange memory request = __constructRequestBptInForExactTokensOut({
-            _verboseAmountsOut: verboseIncomingAssetAmounts,
-            _maxBptAmountIn: preTxStakingTokenBalance
+            _verboseAmountsOut: verboseIncomingAssetAmounts, _maxBptAmountIn: preTxStakingTokenBalance
         });
 
         vm.recordLogs();
@@ -594,11 +587,7 @@ abstract contract BalancerPoolTest is PoolTestBase {
 
         IBalancerV2Vault.BatchSwapStep[] memory swaps = new IBalancerV2Vault.BatchSwapStep[](1);
         swaps[0] = IBalancerV2Vault.BatchSwapStep({
-            poolId: poolId,
-            assetInIndex: 0,
-            assetOutIndex: 1,
-            amount: outgoingAssetAmount,
-            userData: ""
+            poolId: poolId, assetInIndex: 0, assetOutIndex: 1, amount: outgoingAssetAmount, userData: ""
         });
 
         vm.expectRevert(formatError("takeOrder: leftover intermediary"));
@@ -629,11 +618,7 @@ abstract contract BalancerPoolTest is PoolTestBase {
 
         IBalancerV2Vault.BatchSwapStep[] memory swaps = new IBalancerV2Vault.BatchSwapStep[](1);
         swaps[0] = IBalancerV2Vault.BatchSwapStep({
-            poolId: poolId,
-            assetInIndex: 0,
-            assetOutIndex: 1,
-            amount: outgoingAssetAmount,
-            userData: ""
+            poolId: poolId, assetInIndex: 0, assetOutIndex: 1, amount: outgoingAssetAmount, userData: ""
         });
 
         vm.recordLogs();
@@ -691,14 +676,11 @@ abstract contract BalancerPoolTest is PoolTestBase {
 
         IBalancerV2Vault.BatchSwapStep[] memory swaps = new IBalancerV2Vault.BatchSwapStep[](2);
         swaps[0] = IBalancerV2Vault.BatchSwapStep({
-            poolId: poolId,
-            assetInIndex: 0,
-            assetOutIndex: 1,
-            amount: outgoingAssetAmount,
-            userData: ""
+            poolId: poolId, assetInIndex: 0, assetOutIndex: 1, amount: outgoingAssetAmount, userData: ""
         });
-        swaps[1] =
-            IBalancerV2Vault.BatchSwapStep({poolId: poolId, assetInIndex: 1, assetOutIndex: 2, amount: 0, userData: ""});
+        swaps[1] = IBalancerV2Vault.BatchSwapStep({
+            poolId: poolId, assetInIndex: 1, assetOutIndex: 2, amount: 0, userData: ""
+        });
 
         vm.recordLogs();
 
@@ -768,11 +750,7 @@ abstract contract BalancerPoolTest is PoolTestBase {
 
         IBalancerV2Vault.BatchSwapStep[] memory swaps = new IBalancerV2Vault.BatchSwapStep[](1);
         swaps[0] = IBalancerV2Vault.BatchSwapStep({
-            poolId: poolId,
-            assetInIndex: 0,
-            assetOutIndex: 1,
-            amount: outgoingAssetAmount,
-            userData: ""
+            poolId: poolId, assetInIndex: 0, assetOutIndex: 1, amount: outgoingAssetAmount, userData: ""
         });
 
         vm.recordLogs();
@@ -835,11 +813,7 @@ abstract contract BalancerPoolTest is PoolTestBase {
 
         IBalancerV2Vault.BatchSwapStep[] memory swaps = new IBalancerV2Vault.BatchSwapStep[](1);
         swaps[0] = IBalancerV2Vault.BatchSwapStep({
-            poolId: poolId,
-            assetInIndex: 0,
-            assetOutIndex: 1,
-            amount: stakingTokenAmount,
-            userData: ""
+            poolId: poolId, assetInIndex: 0, assetOutIndex: 1, amount: stakingTokenAmount, userData: ""
         });
 
         vm.recordLogs();

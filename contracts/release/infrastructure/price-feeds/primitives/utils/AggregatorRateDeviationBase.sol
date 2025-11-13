@@ -35,7 +35,9 @@ abstract contract AggregatorRateDeviationBase is RateAggregatorBase {
         address _marketAggregatorAddress,
         uint256 _deviationToleranceBps
     )
-        RateAggregatorBase(_thisAggregatorDecimals, _quoteConversionAggregatorAddress, _quoteConversionAggregatorInverted)
+        RateAggregatorBase(
+            _thisAggregatorDecimals, _quoteConversionAggregatorAddress, _quoteConversionAggregatorInverted
+        )
     {
         DEVIATION_TOLERANCE_BPS = _deviationToleranceBps;
         MARKET_AGGREGATOR_ADDRESS = _marketAggregatorAddress;
@@ -86,16 +88,12 @@ abstract contract AggregatorRateDeviationBase is RateAggregatorBase {
         // Scale the market rate to the precision of the ideal rate
         ratePrecision_ = _idealRatePrecision;
         marketRate = PriceFeedHelpersLib.convertRatePrecision({
-            _rate: marketRate,
-            _fromPrecision: MARKET_AGGREGATOR_PRECISION,
-            _toPrecision: ratePrecision_
+            _rate: marketRate, _fromPrecision: MARKET_AGGREGATOR_PRECISION, _toPrecision: ratePrecision_
         });
 
         // Select the rate based on deviation tolerance
         rate_ = PriceFeedHelpersLib.selectRateByToleranceDeviation({
-            _idealRate: _idealRate,
-            _marketRate: marketRate,
-            _deviationToleranceBps: DEVIATION_TOLERANCE_BPS
+            _idealRate: _idealRate, _marketRate: marketRate, _deviationToleranceBps: DEVIATION_TOLERANCE_BPS
         });
 
         // Select the oldest timestamp

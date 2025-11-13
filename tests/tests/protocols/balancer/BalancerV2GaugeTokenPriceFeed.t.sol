@@ -49,8 +49,7 @@ abstract contract BalancerV2GaugeTokenPriceFeedTestBaseEthereum is BalancerV2Gau
 
     function test_calcUnderlyingValues_success() public {
         __test_calcUnderlyingValues_success({
-            _derivative: ETHEREUM_USDC_DAI_USDT_POOL_GAUGE_ADDRESS,
-            _lpToken: ETHEREUM_USDC_DAI_USDT_POOL_ADDRESS
+            _derivative: ETHEREUM_USDC_DAI_USDT_POOL_GAUGE_ADDRESS, _lpToken: ETHEREUM_USDC_DAI_USDT_POOL_ADDRESS
         });
     }
 
@@ -66,8 +65,7 @@ abstract contract BalancerV2GaugeTokenPriceFeedTestBasePolygon is BalancerV2Gaug
 
     function test_calcUnderlyingValues_success() public {
         __test_calcUnderlyingValues_success({
-            _derivative: POLYGON_TRICRYPTO_POOL_GAUGE_ADDRESS,
-            _lpToken: POLYGON_TRICRYPTO_POOL_ADDRESS
+            _derivative: POLYGON_TRICRYPTO_POOL_GAUGE_ADDRESS, _lpToken: POLYGON_TRICRYPTO_POOL_ADDRESS
         });
     }
 

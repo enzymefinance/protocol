@@ -23,24 +23,23 @@ abstract contract GasRelayerTestBase is IntegrationTest, GSNUtils {
         (fundOwner, fundOwnerPrivateKey) = makeAddrAndKey("FundOwner");
 
         // Deploy fund
-        (address comptrollerProxyAddress, address vaultProxyAddress) = core.release.fundDeployer.createNewFund({
-            _fundOwner: fundOwner,
-            _fundName: "Test Fund",
-            _fundSymbol: "TF",
-            _denominationAsset: address(wethToken),
-            _sharesActionTimelock: 0,
-            _feeManagerConfigData: "",
-            _policyManagerConfigData: ""
-        });
+        (address comptrollerProxyAddress, address vaultProxyAddress) = core.release.fundDeployer
+            .createNewFund({
+                _fundOwner: fundOwner,
+                _fundName: "Test Fund",
+                _fundSymbol: "TF",
+                _denominationAsset: address(wethToken),
+                _sharesActionTimelock: 0,
+                _feeManagerConfigData: "",
+                _policyManagerConfigData: ""
+            });
 
         comptrollerProxy = IComptrollerLib(comptrollerProxyAddress);
         vaultProxy = IVaultLib(payable(vaultProxyAddress));
 
         // Seed with plenty of wrapped native asset to use gas relaying
         increaseTokenBalance({
-            _token: wrappedNativeToken,
-            _to: address(vaultProxy),
-            _amount: assetUnit(wrappedNativeToken) * 100
+            _token: wrappedNativeToken, _to: address(vaultProxy), _amount: assetUnit(wrappedNativeToken) * 100
         });
 
         // Deploy paymaster for fund

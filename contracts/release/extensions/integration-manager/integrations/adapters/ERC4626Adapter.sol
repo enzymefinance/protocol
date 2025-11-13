@@ -33,9 +33,7 @@ contract ERC4626Adapter is AdapterBase {
             __decodeAssetData(_assetData);
 
         __approveAssetMaxAsNeeded({
-            _asset: spendAssets[0],
-            _target: incomingAssets[0],
-            _neededAmount: spendAssetAmounts[0]
+            _asset: spendAssets[0], _target: incomingAssets[0], _neededAmount: spendAssetAmounts[0]
         });
 
         IERC4626(incomingAssets[0]).deposit({assets: spendAssetAmounts[0], receiver: _vaultProxy});

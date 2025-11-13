@@ -51,10 +51,11 @@ contract HelperDataReaderRouter {
     function getVaultTrackedAssetsAmounts(address _vaultProxy) external returns (bytes memory data, uint8 version) {
         HelperDataReaderInfo memory helperDataReaderInfo = getHelperDataReaderForVault(_vaultProxy);
 
-        return (
-            helperDataReaderInfo.helperDataReader.getVaultTrackedAssetsAmounts(_vaultProxy),
-            helperDataReaderInfo.version
-        );
+        return
+            (
+                helperDataReaderInfo.helperDataReader.getVaultTrackedAssetsAmounts(_vaultProxy),
+                helperDataReaderInfo.version
+            );
     }
 
     function getVaultActiveExternalPositionsDetails(address _vaultProxy)

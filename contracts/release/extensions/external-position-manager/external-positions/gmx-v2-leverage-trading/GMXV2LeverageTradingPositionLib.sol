@@ -112,8 +112,7 @@ contract GMXV2LeverageTradingPositionLib is
         external
     {
         __afterOrderExecution({
-            _marketAddress: _orderData.addressItems.items[4].value,
-            _account: _orderData.addressItems.items[0].value
+            _marketAddress: _orderData.addressItems.items[4].value, _account: _orderData.addressItems.items[0].value
         });
     }
 
@@ -178,8 +177,7 @@ contract GMXV2LeverageTradingPositionLib is
             // set the callback contract on the GMX ExchangeRouter, it will be called on liquidations and auto deleveraging
             // the callback will be set only once per market. MarketIncrease is the good place to set this, as it is the first necessary action to build a GMXV2 position
             __setSavedCallbackContract({
-                _exchangeRouter: createOrderArgs.exchangeRouter,
-                _market: createOrderArgs.addresses.market
+                _exchangeRouter: createOrderArgs.exchangeRouter, _market: createOrderArgs.addresses.market
             });
 
             __createMarketIncreaseOrder(createOrderArgs);
@@ -200,18 +198,14 @@ contract GMXV2LeverageTradingPositionLib is
     {
         address orderVaultAddress = __getOrderVaultAddress(_createOrderArgs.exchangeRouter);
 
-        IERC20(_createOrderArgs.addresses.initialCollateralToken).safeTransfer({
-            _to: orderVaultAddress,
-            _value: _createOrderArgs.numbers.initialCollateralDeltaAmount
-        });
+        IERC20(_createOrderArgs.addresses.initialCollateralToken)
+            .safeTransfer({_to: orderVaultAddress, _value: _createOrderArgs.numbers.initialCollateralDeltaAmount});
 
         // if the collateral is the wrapped native token, the execution fee is already included in the initialCollateralDeltaAmount
         // related code: https://github.com/gmx-io/gmx-synthetics/blob/5173cbeb196ed5596373acd71c75a5c7a60a98f5/contracts/order/OrderUtils.sol#L81
         if (_createOrderArgs.addresses.initialCollateralToken != address(WRAPPED_NATIVE_TOKEN)) {
-            IERC20(address(WRAPPED_NATIVE_TOKEN)).safeTransfer({
-                _to: orderVaultAddress,
-                _value: _createOrderArgs.numbers.executionFee
-            });
+            IERC20(address(WRAPPED_NATIVE_TOKEN))
+                .safeTransfer({_to: orderVaultAddress, _value: _createOrderArgs.numbers.executionFee});
         }
 
         IGMXV2ExchangeRouter(_createOrderArgs.exchangeRouter).createOrder(__getCreateOrderParams(_createOrderArgs));
@@ -227,10 +221,11 @@ contract GMXV2LeverageTradingPositionLib is
     function __createMarketDecreaseOrder(IGMXV2LeverageTradingPosition.CreateOrderActionArgs memory _createOrderArgs)
         private
     {
-        IERC20(address(WRAPPED_NATIVE_TOKEN)).safeTransfer({
-            _to: __getOrderVaultAddress(_createOrderArgs.exchangeRouter),
-            _value: _createOrderArgs.numbers.executionFee
-        });
+        IERC20(address(WRAPPED_NATIVE_TOKEN))
+            .safeTransfer({
+                _to: __getOrderVaultAddress(_createOrderArgs.exchangeRouter),
+                _value: _createOrderArgs.numbers.executionFee
+            });
 
         IGMXV2ExchangeRouter(_createOrderArgs.exchangeRouter).createOrder(__getCreateOrderParams(_createOrderArgs));
     }
@@ -243,21 +238,23 @@ contract GMXV2LeverageTradingPositionLib is
         __assertHandler(updateOrderArgs.exchangeRouter);
 
         if (updateOrderArgs.executionFeeIncrease != 0) {
-            IERC20(address(WRAPPED_NATIVE_TOKEN)).safeTransfer({
-                _to: __getOrderVaultAddress(updateOrderArgs.exchangeRouter),
-                _value: updateOrderArgs.executionFeeIncrease
-            });
+            IERC20(address(WRAPPED_NATIVE_TOKEN))
+                .safeTransfer({
+                    _to: __getOrderVaultAddress(updateOrderArgs.exchangeRouter),
+                    _value: updateOrderArgs.executionFeeIncrease
+                });
         }
 
-        IGMXV2ExchangeRouter(updateOrderArgs.exchangeRouter).updateOrder({
-            _key: updateOrderArgs.key,
-            _sizeDeltaUsd: updateOrderArgs.sizeDeltaUsd,
-            _acceptablePrice: updateOrderArgs.acceptablePrice,
-            _triggerPrice: updateOrderArgs.triggerPrice,
-            _minOutputAmount: updateOrderArgs.minOutputAmount,
-            _validFromTime: updateOrderArgs.validFromTime,
-            _autoCancel: updateOrderArgs.autoCancel
-        });
+        IGMXV2ExchangeRouter(updateOrderArgs.exchangeRouter)
+            .updateOrder({
+                _key: updateOrderArgs.key,
+                _sizeDeltaUsd: updateOrderArgs.sizeDeltaUsd,
+                _acceptablePrice: updateOrderArgs.acceptablePrice,
+                _triggerPrice: updateOrderArgs.triggerPrice,
+                _minOutputAmount: updateOrderArgs.minOutputAmount,
+                _validFromTime: updateOrderArgs.validFromTime,
+                _autoCancel: updateOrderArgs.autoCancel
+            });
     }
 
     /// @dev Helper to handle the cancellation of an order via the GMX ExchangeRouter
@@ -276,10 +273,8 @@ contract GMXV2LeverageTradingPositionLib is
 
         // if the order was a market increase order, transfer the collateral back to the vault
         if (order.numbers.orderType == IGMXV2Order.OrderType.MarketIncrease) {
-            IERC20(order.addresses.initialCollateralToken).safeTransfer({
-                _to: msg.sender,
-                _value: order.numbers.initialCollateralDeltaAmount
-            });
+            IERC20(order.addresses.initialCollateralToken)
+                .safeTransfer({_to: msg.sender, _value: order.numbers.initialCollateralDeltaAmount});
         }
     }
 
@@ -291,11 +286,10 @@ contract GMXV2LeverageTradingPositionLib is
 
         __assertHandler(claimFundingFeesArgs.exchangeRouter);
 
-        IGMXV2ExchangeRouter(claimFundingFeesArgs.exchangeRouter).claimFundingFees({
-            _markets: claimFundingFeesArgs.markets,
-            _tokens: claimFundingFeesArgs.tokens,
-            _receiver: msg.sender
-        });
+        IGMXV2ExchangeRouter(claimFundingFeesArgs.exchangeRouter)
+            .claimFundingFees({
+                _markets: claimFundingFeesArgs.markets, _tokens: claimFundingFeesArgs.tokens, _receiver: msg.sender
+            });
 
         // Retrieve all active markets from the current positions
         IGMXV2Position.Props[] memory positions = __getAccountPositions();
@@ -331,11 +325,10 @@ contract GMXV2LeverageTradingPositionLib is
             // A claimed market could still have claimable funding fees if one of the tokens has outstanding fees but was not specified in the claimableFundingFeesArgs
             if (
                 __getClaimableFundingFees({_market: marketInfo.marketToken, _token: marketInfo.longToken})
-                    + (
-                        marketInfo.longToken == marketInfo.shortToken
-                            ? 0
-                            : __getClaimableFundingFees({_market: claimedMarket, _token: marketInfo.shortToken})
-                    ) == 0
+                        + (marketInfo.longToken == marketInfo.shortToken
+                                ? 0
+                                : __getClaimableFundingFees({_market: claimedMarket, _token: marketInfo.shortToken}))
+                    == 0
             ) {
                 __removeTrackedMarket(claimedMarket);
             }
@@ -350,12 +343,13 @@ contract GMXV2LeverageTradingPositionLib is
 
         __assertHandler(claimCollateralArgs.exchangeRouter);
 
-        IGMXV2ExchangeRouter(claimCollateralArgs.exchangeRouter).claimCollateral({
-            _markets: claimCollateralArgs.markets,
-            _tokens: claimCollateralArgs.tokens,
-            _timeKeys: claimCollateralArgs.timeKeys,
-            _receiver: msg.sender
-        });
+        IGMXV2ExchangeRouter(claimCollateralArgs.exchangeRouter)
+            .claimCollateral({
+                _markets: claimCollateralArgs.markets,
+                _tokens: claimCollateralArgs.tokens,
+                _timeKeys: claimCollateralArgs.timeKeys,
+                _receiver: msg.sender
+            });
 
         // collateral can be released for the user in several rounds, so we need to check if all the collateral was claimed
         // if it was claimed entirely, clean up claimable collateral keys, and don't track them anymore
@@ -463,10 +457,8 @@ contract GMXV2LeverageTradingPositionLib is
     /// @dev Helper to set the saved callback contract on the GMX ExchangeRouter, it will be called on liquidations and auto deleveraging
     function __setSavedCallbackContract(address _exchangeRouter, address _market) private {
         if (!marketToIsCallbackContractSet[_market]) {
-            IGMXV2ExchangeRouter(_exchangeRouter).setSavedCallbackContract({
-                _market: _market,
-                _callbackContract: address(this)
-            });
+            IGMXV2ExchangeRouter(_exchangeRouter)
+                .setSavedCallbackContract({_market: _market, _callbackContract: address(this)});
 
             marketToIsCallbackContractSet[_market] = true;
 
@@ -519,18 +511,18 @@ contract GMXV2LeverageTradingPositionLib is
         view
         returns (IGMXV2ExchangeRouter.CreateOrderParams memory createOrderParams_)
     {
-        IGMXV2ExchangeRouter.CreateOrderParamsAddresses memory createOrderParamsAddresses = IGMXV2ExchangeRouter
-            .CreateOrderParamsAddresses({
-            receiver: address(this),
-            cancellationReceiver: address(this),
-            callbackContract: _createOrderArgs.orderType == IGMXV2Order.OrderType.MarketIncrease
-                ? address(0)
-                : address(this),
-            uiFeeReceiver: UI_FEE_RECEIVER_ADDRESS,
-            market: _createOrderArgs.addresses.market,
-            initialCollateralToken: _createOrderArgs.addresses.initialCollateralToken,
-            swapPath: new address[](0)
-        });
+        IGMXV2ExchangeRouter.CreateOrderParamsAddresses memory createOrderParamsAddresses =
+            IGMXV2ExchangeRouter.CreateOrderParamsAddresses({
+                receiver: address(this),
+                cancellationReceiver: address(this),
+                callbackContract: _createOrderArgs.orderType == IGMXV2Order.OrderType.MarketIncrease
+                    ? address(0)
+                    : address(this),
+                uiFeeReceiver: UI_FEE_RECEIVER_ADDRESS,
+                market: _createOrderArgs.addresses.market,
+                initialCollateralToken: _createOrderArgs.addresses.initialCollateralToken,
+                swapPath: new address[](0)
+            });
 
         return IGMXV2ExchangeRouter.CreateOrderParams({
             addresses: createOrderParamsAddresses,
@@ -540,7 +532,9 @@ contract GMXV2LeverageTradingPositionLib is
                 triggerPrice: _createOrderArgs.numbers.triggerPrice,
                 acceptablePrice: _createOrderArgs.numbers.acceptablePrice,
                 executionFee: _createOrderArgs.numbers.executionFee,
-                callbackGasLimit: _createOrderArgs.orderType == IGMXV2Order.OrderType.MarketIncrease ? 0 : CALLBACK_GAS_LIMIT,
+                callbackGasLimit: _createOrderArgs.orderType == IGMXV2Order.OrderType.MarketIncrease
+                    ? 0
+                    : CALLBACK_GAS_LIMIT,
                 minOutputAmount: _createOrderArgs.numbers.minOutputAmount,
                 validFromTime: _createOrderArgs.numbers.validFromTime
             }),

@@ -55,11 +55,12 @@ abstract contract PricelessAssetBypassMixin {
             "startAssetBypassTimelock: Sender is not the VaultProxy of the associated ComptrollerProxy"
         );
 
-        try IValueInterpreter(getPricelessAssetBypassValueInterpreter()).calcCanonicalAssetValue(
-            _asset,
-            1, // Any value >0 will attempt to retrieve a rate
-            getPricelessAssetBypassWethToken() // Any valid asset would do
-        ) {
+        try IValueInterpreter(getPricelessAssetBypassValueInterpreter())
+            .calcCanonicalAssetValue(
+                _asset,
+                1, // Any value >0 will attempt to retrieve a rate
+                getPricelessAssetBypassWethToken() // Any valid asset would do
+            ) {
             revert("startAssetBypassTimelock: Asset has a price");
         } catch {
             comptrollerProxyToAssetToBypassWindowStart[comptrollerProxy][_asset] =
@@ -111,9 +112,10 @@ abstract contract PricelessAssetBypassMixin {
         uint256 _baseAssetAmount,
         address _quoteAsset
     ) internal returns (uint256 value_) {
-        try IValueInterpreter(getPricelessAssetBypassValueInterpreter()).calcCanonicalAssetValue(
-            _baseAsset, _baseAssetAmount, _quoteAsset
-        ) returns (uint256 result) {
+        try IValueInterpreter(getPricelessAssetBypassValueInterpreter())
+            .calcCanonicalAssetValue(_baseAsset, _baseAssetAmount, _quoteAsset) returns (
+            uint256 result
+        ) {
             return result;
         } catch {
             require(

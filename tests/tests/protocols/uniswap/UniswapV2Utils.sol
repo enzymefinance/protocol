@@ -1,4 +1,4 @@
-    // SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";

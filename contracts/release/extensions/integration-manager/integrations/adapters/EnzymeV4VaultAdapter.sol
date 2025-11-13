@@ -82,8 +82,7 @@ contract EnzymeV4VaultAdapter is AdapterBase {
         });
 
         uint256 sharesReceived = comptrollerProxy.buyShares({
-            _investmentAmount: _actionArgs.investmentAmount,
-            _minSharesQuantity: _actionArgs.minSharesQuantity
+            _investmentAmount: _actionArgs.investmentAmount, _minSharesQuantity: _actionArgs.minSharesQuantity
         });
 
         IERC20(_actionArgs.vaultProxy).safeTransfer({_to: _vaultProxyAddress, _value: sharesReceived});
@@ -94,12 +93,13 @@ contract EnzymeV4VaultAdapter is AdapterBase {
         address _vaultProxyAddress,
         IEnzymeV4VaultAdapter.RedeemSharesForSpecificAssetsActionArgs memory _actionArgs
     ) private {
-        IComptroller(IVault(_actionArgs.vaultProxy).getAccessor()).redeemSharesForSpecificAssets({
-            _recipient: _vaultProxyAddress,
-            _sharesQuantity: _actionArgs.sharesQuantity,
-            _payoutAssets: _actionArgs.payoutAssets,
-            _payoutAssetPercentages: _actionArgs.payoutAssetPercentages
-        });
+        IComptroller(IVault(_actionArgs.vaultProxy).getAccessor())
+            .redeemSharesForSpecificAssets({
+                _recipient: _vaultProxyAddress,
+                _sharesQuantity: _actionArgs.sharesQuantity,
+                _payoutAssets: _actionArgs.payoutAssets,
+                _payoutAssetPercentages: _actionArgs.payoutAssetPercentages
+            });
     }
 
     //==================================================================================================================
@@ -127,7 +127,9 @@ contract EnzymeV4VaultAdapter is AdapterBase {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        if (_selector != ACTION_SELECTOR) revert EnzymeV4VaultAdapter__InvalidAction();
+        if (_selector != ACTION_SELECTOR) {
+            revert EnzymeV4VaultAdapter__InvalidAction();
+        }
 
         (IEnzymeV4VaultAdapter.Action actionId, bytes memory encodedActionArgs) =
             abi.decode(_actionData, (IEnzymeV4VaultAdapter.Action, bytes));

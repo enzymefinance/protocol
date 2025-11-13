@@ -13,8 +13,7 @@ contract GSNRecipientMixinTest is IntegrationTest {
         setUpStandaloneEnvironment();
 
         (uint256 listId,) = createRegisteredAddressList({
-            _addressListRegistry: core.persistent.addressListRegistry,
-            _item: trustedForwarder
+            _addressListRegistry: core.persistent.addressListRegistry, _item: trustedForwarder
         });
 
         gsnRecipient = __deployGSNRecipient({_trustedForwardersListId: listId});
@@ -60,9 +59,8 @@ contract GSNRecipientMixinTest is IntegrationTest {
 
         // Must make low-level call to pass sender in extra data
         vm.prank(trustedForwarder);
-        (, bytes memory returnData) = address(gsnRecipient).call(
-            abi.encodeWithSelector(IGSNRecipientMixinHarness.exposed_msgSender.selector, actualSender)
-        );
+        (, bytes memory returnData) = address(gsnRecipient)
+            .call(abi.encodeWithSelector(IGSNRecipientMixinHarness.exposed_msgSender.selector, actualSender));
         address canonicalSender = abi.decode(returnData, (address));
 
         assertEq(canonicalSender, actualSender, "Actual sender not recognized");

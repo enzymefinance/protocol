@@ -177,10 +177,8 @@ contract AliceV2PositionLib is IAliceV2Position, AliceV2PositionLibBase1, AssetH
             WRAPPED_NATIVE_TOKEN.withdraw(nativeAssetAmount);
         } else {
             // Approve the spend asset
-            IERC20(outgoingAssetAddress).safeApprove({
-                _spender: address(ALICE_INSTANT_ORDER_V2),
-                _value: _placeOrderArgs.quantityToSell
-            });
+            IERC20(outgoingAssetAddress)
+                .safeApprove({_spender: address(ALICE_INSTANT_ORDER_V2), _value: _placeOrderArgs.quantityToSell});
         }
     }
 

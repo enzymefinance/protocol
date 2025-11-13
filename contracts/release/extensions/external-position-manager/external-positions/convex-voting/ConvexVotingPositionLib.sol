@@ -12,8 +12,9 @@ pragma experimental ABIEncoderV2;
 
 import {IConvexBaseRewardPool} from "../../../../../external-interfaces/IConvexBaseRewardPool.sol";
 import {IConvexCvxLockerV2} from "../../../../../external-interfaces/IConvexCvxLockerV2.sol";
-import {IConvexVlCvxExtraRewardDistribution} from
-    "../../../../../external-interfaces/IConvexVlCvxExtraRewardDistribution.sol";
+import {
+    IConvexVlCvxExtraRewardDistribution
+} from "../../../../../external-interfaces/IConvexVlCvxExtraRewardDistribution.sol";
 import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {ISnapshotDelegateRegistry} from "../../../../../external-interfaces/ISnapshotDelegateRegistry.sol";
 import {IVotiumMultiMerkleStash} from "../../../../../external-interfaces/IVotiumMultiMerkleStash.sol";

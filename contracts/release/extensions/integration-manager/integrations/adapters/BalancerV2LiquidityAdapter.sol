@@ -73,8 +73,7 @@ contract BalancerV2LiquidityAdapter is BalancerV2LiquidityAdapterBase, CurveGaug
     /// @param _actionData Data specific to this action
     function lend(address _vaultProxy, bytes calldata _actionData, bytes calldata) external onlyIntegrationManager {
         (
-            bytes32 poolId,
-            ,
+            bytes32 poolId,,
             address[] memory spendAssets,
             uint256[] memory spendAssetAmounts,
             IBalancerV2Vault.PoolBalanceChange memory request
@@ -94,8 +93,7 @@ contract BalancerV2LiquidityAdapter is BalancerV2LiquidityAdapterBase, CurveGaug
         (
             bytes32 poolId,
             uint256 spendBptAmount,
-            address[] memory expectedIncomingTokens,
-            ,
+            address[] memory expectedIncomingTokens,,
             IBalancerV2Vault.PoolBalanceChange memory request
         ) = __decodeLpActionCallArgs(_actionData);
 

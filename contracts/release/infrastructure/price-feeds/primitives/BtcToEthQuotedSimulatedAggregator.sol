@@ -11,8 +11,9 @@
 
 pragma solidity 0.8.19;
 
-import {TwoAggregatorsWithCommonQuoteSimulatedAggregator} from
-    "./utils/TwoAggregatorsWithCommonQuoteSimulatedAggregator.sol";
+import {
+    TwoAggregatorsWithCommonQuoteSimulatedAggregator
+} from "./utils/TwoAggregatorsWithCommonQuoteSimulatedAggregator.sol";
 
 /// @title BtcToEthQuotedSimulatedAggregator Contract
 /// @author Enzyme Foundation <security@enzyme.finance>

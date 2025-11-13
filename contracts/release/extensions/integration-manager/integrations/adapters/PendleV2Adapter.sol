@@ -107,9 +107,7 @@ contract PendleV2Adapter is IPendleV2Adapter, AdapterBase {
 
         // Grant max SY token allowance to the Router
         __approveAssetMaxAsNeeded({
-            _asset: address(syToken),
-            _target: address(PENDLE_ROUTER),
-            _neededAmount: syTokenAmount
+            _asset: address(syToken), _target: address(PENDLE_ROUTER), _neededAmount: syTokenAmount
         });
 
         // Unused since we do not need to perform a limit order
@@ -142,9 +140,7 @@ contract PendleV2Adapter is IPendleV2Adapter, AdapterBase {
 
         // Grant max SY token allowance to the Router
         __approveAssetMaxAsNeeded({
-            _asset: address(syToken),
-            _target: address(PENDLE_ROUTER),
-            _neededAmount: syTokenAmount
+            _asset: address(syToken), _target: address(PENDLE_ROUTER), _neededAmount: syTokenAmount
         });
 
         // Unused since we do not need to perform a limit order
@@ -168,9 +164,7 @@ contract PendleV2Adapter is IPendleV2Adapter, AdapterBase {
     ) private {
         // Grant max LP token allowance to the Router
         __approveAssetMaxAsNeeded({
-            _asset: address(_actionArgs.market),
-            _target: address(PENDLE_ROUTER),
-            _neededAmount: _actionArgs.lpAmount
+            _asset: address(_actionArgs.market), _target: address(PENDLE_ROUTER), _neededAmount: _actionArgs.lpAmount
         });
 
         // Remove liquidity, receive SY and PT
@@ -205,9 +199,7 @@ contract PendleV2Adapter is IPendleV2Adapter, AdapterBase {
     ) private {
         // Grant max LP token allowance to the Router
         __approveAssetMaxAsNeeded({
-            _asset: address(_actionArgs.market),
-            _target: address(PENDLE_ROUTER),
-            _neededAmount: _actionArgs.lpAmount
+            _asset: address(_actionArgs.market), _target: address(PENDLE_ROUTER), _neededAmount: _actionArgs.lpAmount
         });
 
         // Unused since we do not need to perform a limit order.
@@ -235,17 +227,13 @@ contract PendleV2Adapter is IPendleV2Adapter, AdapterBase {
     }
 
     /// @dev Helper to sell a Pendle PT for the underlying token of the SY
-    function __sellPrincipalToken(address _vaultProxyAddress, SellPrincipalTokenActionArgs memory _actionArgs)
-        private
-    {
+    function __sellPrincipalToken(address _vaultProxyAddress, SellPrincipalTokenActionArgs memory _actionArgs) private {
         (IPendleV2StandardizedYield syToken, IPendleV2PrincipalToken principalToken, address yieldTokenAddress) =
             _actionArgs.market.readTokens();
 
         // Grant max PT allowance to the Router
         __approveAssetMaxAsNeeded({
-            _asset: address(principalToken),
-            _target: address(PENDLE_ROUTER),
-            _neededAmount: _actionArgs.ptAmount
+            _asset: address(principalToken), _target: address(PENDLE_ROUTER), _neededAmount: _actionArgs.ptAmount
         });
 
         // Convert PT to SY.
@@ -253,10 +241,7 @@ contract PendleV2Adapter is IPendleV2Adapter, AdapterBase {
         uint256 netSyOut;
         if (principalToken.isExpired()) {
             netSyOut = PENDLE_ROUTER.redeemPyToSy({
-                _receiver: address(this),
-                _YT: yieldTokenAddress,
-                _netPyIn: _actionArgs.ptAmount,
-                _minSyOut: 0
+                _receiver: address(this), _YT: yieldTokenAddress, _netPyIn: _actionArgs.ptAmount, _minSyOut: 0
             });
         } else {
             // Unused since we do not need to perform a limit order
@@ -415,9 +400,7 @@ contract PendleV2Adapter is IPendleV2Adapter, AdapterBase {
             nativeAssetDepositValue = _depositTokenAmount;
         } else {
             __approveAssetMaxAsNeeded({
-                _asset: pendleDepositTokenAddress,
-                _target: address(_syToken),
-                _neededAmount: _depositTokenAmount
+                _asset: pendleDepositTokenAddress, _target: address(_syToken), _neededAmount: _depositTokenAmount
             });
         }
 

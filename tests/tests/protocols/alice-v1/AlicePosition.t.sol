@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IAlicePosition as IAlicePositionProd} from
-    "contracts/release/extensions/external-position-manager/external-positions/alice/AlicePositionLib.sol";
-import {IUintListRegistry as IUintListRegistryProd} from "contracts/persistent/uint-list-registry/IUintListRegistry.sol";
+import {
+    IAlicePosition as IAlicePositionProd
+} from "contracts/release/extensions/external-position-manager/external-positions/alice/AlicePositionLib.sol";
+import {
+    IUintListRegistry as IUintListRegistryProd
+} from "contracts/persistent/uint-list-registry/IUintListRegistry.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -115,9 +118,7 @@ abstract contract AliceTestBase is IntegrationTest {
         });
         increaseTokenBalance({_token: parsedBaseToken, _to: vaultProxyAddress, _amount: assetUnit(parsedBaseToken) * 7});
         increaseTokenBalance({
-            _token: parsedQuoteToken,
-            _to: vaultProxyAddress,
-            _amount: assetUnit(parsedQuoteToken) * 11
+            _token: parsedQuoteToken, _to: vaultProxyAddress, _amount: assetUnit(parsedQuoteToken) * 11
         });
     }
 
@@ -128,12 +129,10 @@ abstract contract AliceTestBase is IntegrationTest {
         returns (uint256 typeId_)
     {
         IAlicePositionLib alicePositionLib = deployAlicePositionLib({
-            _aliceOrderManagerAddress: _aliceOrderManagerAddress,
-            _wrappedNativeAssetAddress: _wrappedNativeAssetAddress
+            _aliceOrderManagerAddress: _aliceOrderManagerAddress, _wrappedNativeAssetAddress: _wrappedNativeAssetAddress
         });
         IAlicePositionParser alicePositionParser = deployAlicePositionParser({
-            _aliceOrderManagerAddress: _aliceOrderManagerAddress,
-            _wrappedNativeAssetAddress: _wrappedNativeAssetAddress
+            _aliceOrderManagerAddress: _aliceOrderManagerAddress, _wrappedNativeAssetAddress: _wrappedNativeAssetAddress
         });
 
         typeId_ = registerExternalPositionType({
@@ -247,9 +246,7 @@ abstract contract AliceTestBase is IntegrationTest {
     function __buildAndPlaceOrder(bool _isBuyOrder) private returns (BuildAndPlaceOrderOutput memory output_) {
         (
             IAlicePositionProd.PlaceOrderActionArgs memory placeOrderActionArgs,
-            uint256 orderId,
-            ,
-            ,
+            uint256 orderId,,,
             IERC20 outgoingAsset,
             IERC20 incomingAsset,
             uint256 orderQuantity,
@@ -260,16 +257,14 @@ abstract contract AliceTestBase is IntegrationTest {
 
         __placeOrder(placeOrderActionArgs);
 
-        return (
-            BuildAndPlaceOrderOutput({
+        return (BuildAndPlaceOrderOutput({
                 orderId: orderId,
                 outgoingAsset: outgoingAsset,
                 incomingAsset: incomingAsset,
                 orderQuantity: orderQuantity,
                 timestamp: timestamp,
                 limitAmountToGet: limitAmountToGet
-            })
-        );
+            }));
     }
 
     function __cancelOrder(uint256 _orderId, uint16 _instrumentId, uint256 _limitAmountToGet, uint256 _timestamp)
@@ -323,9 +318,7 @@ abstract contract AliceTestBase is IntegrationTest {
         IERC20 incomingAsset = __parseAliceAsset({_rawAsset: IERC20(orderDetails.incomingAssetAddress)});
 
         increaseTokenBalance({
-            _token: incomingAsset,
-            _to: liquidityPoolContract,
-            _amount: assetUnit(incomingAsset) * 12345
+            _token: incomingAsset, _to: liquidityPoolContract, _amount: assetUnit(incomingAsset) * 12345
         });
 
         vm.prank(aliceOwner);
@@ -350,8 +343,7 @@ abstract contract AliceTestBase is IntegrationTest {
             uint256 orderId,
             IERC20 rawOutgoingAsset,
             IERC20 rawIncomingAsset,
-            IERC20 outgoingAsset,
-            ,
+            IERC20 outgoingAsset,,
             uint256 orderQuantity,
         ) = __buildOrder({_isBuyOrder: _isBuyOrder});
 
@@ -372,9 +364,7 @@ abstract contract AliceTestBase is IntegrationTest {
         uint256 postOrderVaultOutgoingAssetBalance = outgoingAsset.balanceOf(vaultProxyAddress);
 
         assertExternalPositionAssetsToReceive({
-            _logs: vm.getRecordedLogs(),
-            _externalPositionManager: externalPositionManager,
-            _assets: new address[](0)
+            _logs: vm.getRecordedLogs(), _externalPositionManager: externalPositionManager, _assets: new address[](0)
         });
 
         // The orderId should have been added to storage
@@ -567,14 +557,10 @@ abstract contract AliceTestBase is IntegrationTest {
             _skipIfRegistered: true
         });
         increaseTokenBalance({
-            _token: thirdOutgoingAsset,
-            _to: vaultProxyAddress,
-            _amount: assetUnit(thirdOutgoingAsset) * 7
+            _token: thirdOutgoingAsset, _to: vaultProxyAddress, _amount: assetUnit(thirdOutgoingAsset) * 7
         });
         increaseTokenBalance({
-            _token: thirdIncomingAsset,
-            _to: vaultProxyAddress,
-            _amount: assetUnit(thirdOutgoingAsset) * 11
+            _token: thirdIncomingAsset, _to: vaultProxyAddress, _amount: assetUnit(thirdOutgoingAsset) * 11
         });
 
         uint256 thirdOrderQuantity = thirdOutgoingAsset.balanceOf(vaultProxyAddress) / 3;
@@ -633,8 +619,8 @@ abstract contract AliceTestBase is IntegrationTest {
                 _timestamp: thirdOrderTimestamp
             });
 
-            firstOrderNetIncomingAmount = firstOrderSettlementAmount
-                - firstOrderSettlementAmount * aliceOrderManager.feeRate() / BPS_ONE_HUNDRED_PERCENT;
+            firstOrderNetIncomingAmount = firstOrderSettlementAmount - firstOrderSettlementAmount
+                * aliceOrderManager.feeRate() / BPS_ONE_HUNDRED_PERCENT;
         }
 
         // Orders should be properly valued

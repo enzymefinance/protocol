@@ -933,12 +933,8 @@ contract GatedRedemptionQueueSharesWrapperLib is
     /// @dev Helper to set redemptionWindowConfig
     function __setRedemptionWindowConfig(RedemptionWindowConfig memory _nextWindowConfig) private {
         // Config can either be all empty, or all valid
-        if (
-            !(
-                _nextWindowConfig.firstWindowStart == 0 && _nextWindowConfig.duration == 0
-                    && _nextWindowConfig.frequency == 0 && _nextWindowConfig.relativeSharesCap == 0
-            )
-        ) {
+        if (!(_nextWindowConfig.firstWindowStart == 0 && _nextWindowConfig.duration == 0
+                    && _nextWindowConfig.frequency == 0 && _nextWindowConfig.relativeSharesCap == 0)) {
             require(
                 _nextWindowConfig.firstWindowStart > block.timestamp,
                 "__setRedemptionWindowConfig: Invalid firstWindowStart"

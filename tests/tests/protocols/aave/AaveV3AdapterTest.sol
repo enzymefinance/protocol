@@ -51,8 +51,7 @@ abstract contract AaveV3AdapterTest is AaveAdapterTestBase, AaveV3Utils {
     ) internal returns (IAaveV3Adapter aaveV3Adapter_, IAaveV3ATokenListOwner aaveV3ATokenListOwner_) {
         uint256 aTokenListId;
         (aaveV3ATokenListOwner_, aTokenListId) = deployAaveV3ATokenListOwner({
-            _addressListRegistry: _addressListRegistry,
-            _lendingPoolAddressProvider: _lendingPoolAddressProvider
+            _addressListRegistry: _addressListRegistry, _lendingPoolAddressProvider: _lendingPoolAddressProvider
         });
 
         aaveV3Adapter_ = __deployAdapter({

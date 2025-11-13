@@ -165,7 +165,8 @@ contract ValueInterpreter is
         uint256 _primitiveBaseAssetAmount,
         address _derivativeQuoteAsset
     ) private returns (uint256 value_) {
-        uint256 derivativeUnit = 10 ** uint256(ERC20(_derivativeQuoteAsset).decimals());
+        uint256 derivativeUnit =
+            10 ** uint256(ERC20(_derivativeQuoteAsset).decimals());
 
         address derivativePriceFeed = getPriceFeedForDerivative(_derivativeQuoteAsset);
         uint256 primitiveAmountForDerivativeUnit =

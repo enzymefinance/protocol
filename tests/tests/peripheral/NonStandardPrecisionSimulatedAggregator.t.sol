@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
-    "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
+import {
+    IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd
+} from "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IChainlinkAggregator} from "tests/interfaces/external/IChainlinkAggregator.sol";
-import {INonStandardPrecisionSimulatedAggregator} from
-    "tests/interfaces/internal/INonStandardPrecisionSimulatedAggregator.sol";
+import {
+    INonStandardPrecisionSimulatedAggregator
+} from "tests/interfaces/internal/INonStandardPrecisionSimulatedAggregator.sol";
 import {TestChainlinkAggregator} from "tests/utils/core/AssetUniverseUtils.sol";
 
 contract NonStandardPrecisionSimulatedAggregatorTest is IntegrationTest {
@@ -162,13 +164,13 @@ contract NonStandardPrecisionSimulatedAggregatorTest is IntegrationTest {
         // and populate all additional values of latestRoundData
         address originalAggregatorAddress = address(createTestAggregator({_decimals: _originalAggregatorDecimals}));
         __mockAggregatorLatestRoundData({
-            _aggregatorAddress: originalAggregatorAddress,
-            _answer: int256(originalAggregatorAnswer)
+            _aggregatorAddress: originalAggregatorAddress, _answer: int256(originalAggregatorAnswer)
         });
 
         // Deploy the simulated aggregator
-        IChainlinkAggregator simulatedAggregator =
-            __deploySimulatedAggregator({_originalAggregatorAddress: originalAggregatorAddress, _rateAsset: _rateAsset});
+        IChainlinkAggregator simulatedAggregator = __deploySimulatedAggregator({
+            _originalAggregatorAddress: originalAggregatorAddress, _rateAsset: _rateAsset
+        });
 
         (
             uint80 actualRoundId,

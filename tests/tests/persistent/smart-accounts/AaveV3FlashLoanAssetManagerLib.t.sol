@@ -2,8 +2,9 @@
 pragma solidity 0.8.19;
 
 import {IERC20 as IERC20Prod} from "contracts/external-interfaces/IERC20.sol";
-import {IAaveV3FlashLoanAssetManager as IAaveV3FlashLoanAssetManagerProd} from
-    "contracts/persistent/smart-accounts/aave-v3-flash-loan-asset-manager/IAaveV3FlashLoanAssetManager.sol";
+import {
+    IAaveV3FlashLoanAssetManager as IAaveV3FlashLoanAssetManagerProd
+} from "contracts/persistent/smart-accounts/aave-v3-flash-loan-asset-manager/IAaveV3FlashLoanAssetManager.sol";
 import {WrappedSafeERC20 as SafeERC20Prod} from "contracts/utils/0.8.19/open-zeppelin/WrappedSafeERC20.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
@@ -98,9 +99,7 @@ abstract contract TestBase is IntegrationTest {
 
         vm.prank(accountOwner);
         aaveV3FlashLoanAssetManager.flashLoan({
-            _assets: assetAddresses,
-            _amounts: loanAmounts,
-            _encodedCalls: abi.encode(calls)
+            _assets: assetAddresses, _amounts: loanAmounts, _encodedCalls: abi.encode(calls)
         });
     }
 
@@ -113,8 +112,7 @@ abstract contract TestBase is IntegrationTest {
         // Already initialized during setup, so a 2nd call should fail
         vm.expectRevert(IAaveV3FlashLoanAssetManager.AaveV3FlashLoanAssetManager__Init__AlreadyInitialized.selector);
         aaveV3FlashLoanAssetManager.init({
-            _owner: testInitOwner,
-            _borrowedAssetsRecipient: testInitBorrowedAssetsRecipient
+            _owner: testInitOwner, _borrowedAssetsRecipient: testInitBorrowedAssetsRecipient
         });
     }
 
@@ -181,9 +179,7 @@ abstract contract TestBase is IntegrationTest {
         vm.expectRevert(IAaveV3FlashLoanAssetManager.AaveV3FlashLoanAssetManager__FlashLoan__Unauthorized.selector);
         vm.prank(randomCaller);
         aaveV3FlashLoanAssetManager.flashLoan({
-            _assets: new address[](0),
-            _amounts: new uint256[](0),
-            _encodedCalls: new bytes(0)
+            _assets: new address[](0), _amounts: new uint256[](0), _encodedCalls: new bytes(0)
         });
     }
 
@@ -195,9 +191,8 @@ abstract contract TestBase is IntegrationTest {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAaveV3FlashLoanAssetManager
-                    .AaveV3FlashLoanAssetManager__ExecuteOperation__BalanceExceedsRepayment
-                    .selector,
+                IAaveV3FlashLoanAssetManager.AaveV3FlashLoanAssetManager__ExecuteOperation__BalanceExceedsRepayment
+                .selector,
                 expectedFirstAssetBalance
             )
         );

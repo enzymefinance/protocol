@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {ILidoWithdrawalsPosition as ILidoWithdrawalsPositionProd} from
-    "contracts/release/extensions/external-position-manager/external-positions/lido-withdrawals/ILidoWithdrawalsPosition.sol";
+import {
+    ILidoWithdrawalsPosition as ILidoWithdrawalsPositionProd
+} from "contracts/release/extensions/external-position-manager/external-positions/lido-withdrawals/ILidoWithdrawalsPosition.sol";
 
 import {VmSafe} from "forge-std/Vm.sol";
 
@@ -159,8 +160,7 @@ abstract contract TestBase is IntegrationTest {
         uint256 lastRequestId = withdrawalQueue.getLastRequestId();
         vm.prank(admin);
         withdrawalQueue.finalize{value: ethRequired}({
-            _lastRequestIdToBeFinalized: lastRequestId,
-            _maxShareRate: type(uint256).max
+            _lastRequestIdToBeFinalized: lastRequestId, _maxShareRate: type(uint256).max
         });
     }
 
@@ -170,9 +170,7 @@ abstract contract TestBase is IntegrationTest {
 
         // Uses widest range of checkpoint indices
         return withdrawalQueue.findCheckpointHints({
-            _requestIds: sortedRequestIds,
-            _firstIndex: 1,
-            _lastIndex: withdrawalQueue.getLastCheckpointIndex()
+            _requestIds: sortedRequestIds, _firstIndex: 1, _lastIndex: withdrawalQueue.getLastCheckpointIndex()
         });
     }
 }
@@ -210,9 +208,7 @@ abstract contract RequestWithdrawalsTest is TestBase {
 
         // Assert assetsToReceive was correctly formatted (no assets in this case)
         assertExternalPositionAssetsToReceive({
-            _logs: logs,
-            _externalPositionManager: core.release.externalPositionManager,
-            _assets: new address[](0)
+            _logs: logs, _externalPositionManager: core.release.externalPositionManager, _assets: new address[](0)
         });
 
         // Assert EP storage

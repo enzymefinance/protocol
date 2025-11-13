@@ -57,11 +57,7 @@ contract ManagementFee is IManagementFee, FeeBase, UpdatableFeeRecipientBase, Ma
     /// @notice Add the initial fee settings for a fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _settingsData Encoded settings to apply to the fee for a fund
-    function addFundSettings(address _comptrollerProxy, bytes calldata _settingsData)
-        external
-        override
-        onlyFeeManager
-    {
+    function addFundSettings(address _comptrollerProxy, bytes calldata _settingsData) external override onlyFeeManager {
         (uint128 scaledPerSecondRate, address recipient) = abi.decode(_settingsData, (uint128, address));
         require(scaledPerSecondRate > 0, "addFundSettings: scaledPerSecondRate must be greater than 0");
 
@@ -105,8 +101,9 @@ contract ManagementFee is IManagementFee, FeeBase, UpdatableFeeRecipientBase, Ma
             uint256 netSharesSupply = sharesSupply.sub(sharesToken.balanceOf(_vaultProxy));
             if (netSharesSupply > 0) {
                 sharesDue_ = netSharesSupply.mul(
-                    __rpow(feeInfo.scaledPerSecondRate, secondsSinceSettlement, RATE_SCALE_BASE).sub(RATE_SCALE_BASE)
-                ).div(RATE_SCALE_BASE);
+                        __rpow(feeInfo.scaledPerSecondRate, secondsSinceSettlement, RATE_SCALE_BASE)
+                            .sub(RATE_SCALE_BASE)
+                    ).div(RATE_SCALE_BASE);
             }
         }
 

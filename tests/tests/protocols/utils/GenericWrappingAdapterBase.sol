@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IIntegrationManager as IIntegrationManagerProd} from
-    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {
+    IIntegrationManager as IIntegrationManagerProd
+} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";

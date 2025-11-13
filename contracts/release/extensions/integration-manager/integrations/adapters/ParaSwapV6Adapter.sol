@@ -152,7 +152,9 @@ contract ParaSwapV6Adapter is AdapterBase {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        if (_selector != ACTION_SELECTOR) revert ParaSwapV6Adapter__InvalidAction();
+        if (_selector != ACTION_SELECTOR) {
+            revert ParaSwapV6Adapter__InvalidAction();
+        }
 
         (IParaSwapV6Adapter.Action actionId, bytes memory encodedActionArgs) =
             abi.decode(_actionData, (IParaSwapV6Adapter.Action, bytes));

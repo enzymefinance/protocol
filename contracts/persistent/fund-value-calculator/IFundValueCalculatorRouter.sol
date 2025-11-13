@@ -62,6 +62,5 @@ interface IFundValueCalculatorRouter {
         view
         returns (IFundValueCalculator fundValueCalculatorContract_);
 
-    function setFundValueCalculators(address[] memory _fundDeployers, address[] memory _fundValueCalculators)
-        external;
+    function setFundValueCalculators(address[] memory _fundDeployers, address[] memory _fundValueCalculators) external;
 }

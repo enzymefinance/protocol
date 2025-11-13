@@ -49,20 +49,15 @@ abstract contract GMXV2LeverageTradingPositionMixin {
     }
 
     function __getAccountOrders() internal view returns (IGMXV2Reader.OrderInfo[] memory orders_) {
-        return READER.getAccountOrders({
-            _account: address(this),
-            _dataStore: DATA_STORE,
-            _start: 0,
-            _end: type(uint256).max
-        });
+        return
+            READER.getAccountOrders({
+                _account: address(this), _dataStore: DATA_STORE, _start: 0, _end: type(uint256).max
+            });
     }
 
     function __getAccountPositions() internal view returns (IGMXV2Position.Props[] memory positions_) {
         return READER.getAccountPositions({
-            _account: address(this),
-            _dataStore: DATA_STORE,
-            _start: 0,
-            _end: type(uint256).max
+            _account: address(this), _dataStore: DATA_STORE, _start: 0, _end: type(uint256).max
         });
     }
 

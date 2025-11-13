@@ -153,23 +153,23 @@ contract UniswapV3LiquidityPositionLib is
 
     /// @dev Collects all uncollected amounts from the nft position and sends it to the vaultProxy
     function __collect(uint256 _nftId) private {
-        INonfungiblePositionManager(getNonFungibleTokenManager()).collect(
-            INonfungiblePositionManager.CollectParams({
-                tokenId: _nftId,
-                recipient: address(msg.sender),
-                amount0Max: type(uint128).max,
-                amount1Max: type(uint128).max
-            })
-        );
+        INonfungiblePositionManager(getNonFungibleTokenManager())
+            .collect(
+                INonfungiblePositionManager.CollectParams({
+                    tokenId: _nftId,
+                    recipient: address(msg.sender),
+                    amount0Max: type(uint128).max,
+                    amount1Max: type(uint128).max
+                })
+            );
     }
 
     /// @dev Helper to get the total liquidity of an nft position.
     /// Uses a low-level staticcall() and truncated decoding of `.positions()`
     /// in order to avoid compilation error.
     function __getLiquidityForNFT(uint256 _nftId) private view returns (uint128 liquidity_) {
-        (bool success, bytes memory returnData) = getNonFungibleTokenManager().staticcall(
-            abi.encodeWithSelector(INonfungiblePositionManager.positions.selector, _nftId)
-        );
+        (bool success, bytes memory returnData) = getNonFungibleTokenManager()
+            .staticcall(abi.encodeWithSelector(INonfungiblePositionManager.positions.selector, _nftId));
         require(success, string(returnData));
 
         (,,,,,,, liquidity_) =
@@ -221,15 +221,16 @@ contract UniswapV3LiquidityPositionLib is
         }
 
         if (_liquidity > 0) {
-            INonfungiblePositionManager(getNonFungibleTokenManager()).decreaseLiquidity(
-                INonfungiblePositionManager.DecreaseLiquidityParams({
-                    tokenId: _nftId,
-                    liquidity: _liquidity,
-                    amount0Min: _amount0Min,
-                    amount1Min: _amount1Min,
-                    deadline: block.timestamp
-                })
-            );
+            INonfungiblePositionManager(getNonFungibleTokenManager())
+                .decreaseLiquidity(
+                    INonfungiblePositionManager.DecreaseLiquidityParams({
+                        tokenId: _nftId,
+                        liquidity: _liquidity,
+                        amount0Min: _amount0Min,
+                        amount1Min: _amount1Min,
+                        deadline: block.timestamp
+                    })
+                );
         }
 
         __collect(_nftId);
@@ -305,16 +306,14 @@ contract UniswapV3LiquidityPositionLib is
             }
 
             if (sqrtPriceX96 == 0) {
-                uint256 token0VirtualReserves = IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetValue(
-                    token1, TRUSTED_RATE_INITIAL_VIRTUAL_BALANCE, token0
-                );
+                uint256 token0VirtualReserves = IValueInterpreter(VALUE_INTERPRETER)
+                    .calcCanonicalAssetValue(token1, TRUSTED_RATE_INITIAL_VIRTUAL_BALANCE, token0);
 
                 // Adapted from UniswapV3 white paper formula 6.4 <https://uniswap.org/whitepaper-v3.pdf>
                 sqrtPriceX96 = uint160(
                     __uniswapSqrt(
-                        (UNISWAP_SQRT_INFLATE_FACTOR.mul(TRUSTED_RATE_INITIAL_VIRTUAL_BALANCE)).div(
-                            token0VirtualReserves
-                        )
+                        (UNISWAP_SQRT_INFLATE_FACTOR.mul(TRUSTED_RATE_INITIAL_VIRTUAL_BALANCE))
+                        .div(token0VirtualReserves)
                     )
                 );
                 sqrtPricesX96[i] = sqrtPriceX96;

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IAddressListRegistry as IAddressListRegistryProd} from
-    "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
+import {
+    IAddressListRegistry as IAddressListRegistryProd
+} from "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
 
 import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";
 
@@ -24,8 +25,7 @@ abstract contract PolicyUtils is CoreUtilsBase {
     {
         bytes[] memory newListsData = new bytes[](1);
         newListsData[0] = encodeAddressListRegistryPolicyNewListData({
-            _updateType: IAddressListRegistryProd.UpdateType.AddAndRemove,
-            _initialItems: _initialItems
+            _updateType: IAddressListRegistryProd.UpdateType.AddAndRemove, _initialItems: _initialItems
         });
 
         return

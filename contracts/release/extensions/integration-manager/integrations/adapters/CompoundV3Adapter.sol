@@ -13,8 +13,9 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
-import {AddOnlyAddressListOwnerConsumerMixin} from
-    "../../../../../persistent/address-list-registry/address-list-owners/utils/0.6.12/AddOnlyAddressListOwnerConsumerMixin.sol";
+import {
+    AddOnlyAddressListOwnerConsumerMixin
+} from "../../../../../persistent/address-list-registry/address-list-owners/utils/0.6.12/AddOnlyAddressListOwnerConsumerMixin.sol";
 import {ICompoundV3Configurator} from "../../../../../external-interfaces/ICompoundV3Configurator.sol";
 import {IIntegrationManager} from "../../IIntegrationManager.sol";
 import {CompoundV3ActionsMixin} from "../utils/0.6.12/actions/CompoundV3ActionsMixin.sol";

@@ -74,12 +74,12 @@ abstract contract UniswapV2PoolPriceFeedTestBase is IntegrationTest, UniswapV2Ut
         uint256 derivativeAmount = assetUnit({_asset: IERC20(address(uniswapV2Pool))}) * 3;
 
         (uint256 expectedToken0Amount, uint256 expectedToken1Amount) = getExpectedUnderlyingTokenAmounts({
-            _poolTokenAddress: address(uniswapV2Pool),
-            _redeemPoolTokenAmount: derivativeAmount
+            _poolTokenAddress: address(uniswapV2Pool), _redeemPoolTokenAmount: derivativeAmount
         });
 
-        (address[] memory underlyingAddresses, uint256[] memory underlyingValues) = uniswapV2PoolPriceFeed
-            .calcUnderlyingValues({_derivative: address(uniswapV2Pool), _derivativeAmount: derivativeAmount});
+        (address[] memory underlyingAddresses, uint256[] memory underlyingValues) = uniswapV2PoolPriceFeed.calcUnderlyingValues({
+            _derivative: address(uniswapV2Pool), _derivativeAmount: derivativeAmount
+        });
 
         assertEq(
             toArray(address(token0), address(token1)),

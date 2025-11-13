@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
-    "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
+import {
+    IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd
+} from "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
 
 import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";
 
@@ -93,9 +94,7 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
 
         vm.prank(_valueInterpreter.getOwner());
         _valueInterpreter.addPrimitives({
-            _primitives: toArray(_tokenAddress),
-            _aggregators: toArray(_aggregatorAddress),
-            _rateAssets: rateAssets
+            _primitives: toArray(_tokenAddress), _aggregators: toArray(_aggregatorAddress), _rateAssets: rateAssets
         });
     }
 
@@ -206,9 +205,7 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
 
         // Double-check that the registered price is what we expect
         uint256 newCanonicalPrice = _valueInterpreter.calcCanonicalAssetValue({
-            _baseAsset: address(_assetA),
-            _amount: assetUnit(_assetA),
-            _quoteAsset: address(_assetB)
+            _baseAsset: address(_assetA), _amount: assetUnit(_assetA), _quoteAsset: address(_assetB)
         });
         assertApproxEqAbs(newCanonicalPrice, _assetBAmountPerUnitA, 1, "registerPrimitivePairWithPrice: price mismatch");
     }
@@ -234,9 +231,7 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
         returns (uint256 valueOfOneUnit_)
     {
         return _valueInterpreter.calcCanonicalAssetValue({
-            _baseAsset: address(_baseAsset),
-            _amount: assetUnit(_baseAsset),
-            _quoteAsset: address(_quoteAsset)
+            _baseAsset: address(_baseAsset), _amount: assetUnit(_baseAsset), _quoteAsset: address(_quoteAsset)
         });
     }
 }

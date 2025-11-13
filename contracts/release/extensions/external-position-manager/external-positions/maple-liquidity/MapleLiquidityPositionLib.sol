@@ -83,9 +83,7 @@ contract MapleLiquidityPositionLib is
         (address pool, uint256 liquidityAssetAmount) = __decodeLendV2ActionArgs(_actionArgs);
 
         __approveAssetMaxAsNeeded({
-            _asset: IMapleV2Pool(pool).asset(),
-            _target: pool,
-            _neededAmount: liquidityAssetAmount
+            _asset: IMapleV2Pool(pool).asset(), _target: pool, _neededAmount: liquidityAssetAmount
         });
 
         IMapleV2Pool(pool).deposit({_assets: liquidityAssetAmount, _receiver: address(this)});

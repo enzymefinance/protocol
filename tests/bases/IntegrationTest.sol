@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
-    "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
+import {
+    IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd
+} from "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
 
 import {CoreUtils} from "tests/utils/CoreUtils.sol";
 import {TestChainlinkAggregator} from "tests/utils/core/AssetUniverseUtils.sol";
@@ -667,11 +668,8 @@ abstract contract IntegrationTest is CoreUtils {
     // VALUE HELPERS
 
     function assertValueInUSD(address _asset, uint256 _amount, uint256 _expected) internal {
-        uint256 actual = core.release.valueInterpreter.calcCanonicalAssetValue({
-            _baseAsset: _asset,
-            _amount: _amount,
-            _quoteAsset: address(getCoreToken("USD"))
-        });
+        uint256 actual = core.release.valueInterpreter
+            .calcCanonicalAssetValue({_baseAsset: _asset, _amount: _amount, _quoteAsset: address(getCoreToken("USD"))});
 
         assertEq(actual, _expected, "assertValueInUSD: Value not equal");
     }

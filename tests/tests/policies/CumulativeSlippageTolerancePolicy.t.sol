@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IAddressListRegistry as IAddressListRegistryProd} from
-    "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
-import {IIntegrationManager as IIntegrationManagerProd} from
-    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {
+    IAddressListRegistry as IAddressListRegistryProd
+} from "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
+import {
+    IIntegrationManager as IIntegrationManagerProd
+} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {MockedAdapter} from "tests/utils/core/AdapterUtils.sol";
@@ -66,11 +68,12 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
         address[] memory _bypassableAdaptersListItems
     ) internal {
         // TODO: Create address list utils.
-        uint256 bypassableAdaptersListId = core.persistent.addressListRegistry.createList({
-            _owner: vaultOwner,
-            _initialItems: _bypassableAdaptersListItems,
-            _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.AddAndRemove)
-        });
+        uint256 bypassableAdaptersListId = core.persistent.addressListRegistry
+            .createList({
+                _owner: vaultOwner,
+                _initialItems: _bypassableAdaptersListItems,
+                _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.AddAndRemove)
+            });
 
         cumulativeSlippageTolerancePolicy = deployCumulativeSlippageTolerancePolicy({
             _wethToken: wethToken,
@@ -92,9 +95,7 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
         });
 
         buyShares({
-            _comptrollerProxy: comptrollerProxy,
-            _sharesBuyer: sharesBuyer,
-            _amountToDeposit: vaultInitialBalance
+            _comptrollerProxy: comptrollerProxy, _sharesBuyer: sharesBuyer, _amountToDeposit: vaultInitialBalance
         });
     }
 
@@ -115,8 +116,7 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
         uint256 minIncomingAssetAmount = amountWithSlippage(_spendAssetAmount, _tolerance / _callsNumber) + 1;
 
         bytes memory callArgs = getEncodedAdapterCallArgs({
-            _spendAssetAmount: _spendAssetAmount,
-            _minIncomingAssetAmount: minIncomingAssetAmount
+            _spendAssetAmount: _spendAssetAmount, _minIncomingAssetAmount: minIncomingAssetAmount
         });
 
         for (uint256 i = 0; i < _callsNumber; ++i) {
@@ -148,8 +148,7 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
         uint256 minIncomingAssetAmount = amountWithSlippage(_spendAssetAmount, _tolerance / _callsNumber);
 
         bytes memory callArgs = getEncodedAdapterCallArgs({
-            _spendAssetAmount: _spendAssetAmount,
-            _minIncomingAssetAmount: minIncomingAssetAmount
+            _spendAssetAmount: _spendAssetAmount, _minIncomingAssetAmount: minIncomingAssetAmount
         });
 
         for (uint256 i = 0; i < _callsNumber - 1; ++i) {
@@ -162,8 +161,7 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
         }
 
         bytes memory lastCallArgs = getEncodedAdapterCallArgs({
-            _spendAssetAmount: _spendAssetAmount,
-            _minIncomingAssetAmount: minIncomingAssetAmount - 1
+            _spendAssetAmount: _spendAssetAmount, _minIncomingAssetAmount: minIncomingAssetAmount - 1
         });
 
         vm.expectRevert(ERROR_MESSAGE_FOR_POLICY);
@@ -216,8 +214,7 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
                 _comptrollerProxy: comptrollerProxy,
                 _caller: vaultOwner,
                 _callArgs: getEncodedAdapterCallArgs({
-                    _spendAssetAmount: _spendAssetAmount,
-                    _minIncomingAssetAmount: minIncomingAssetAmount
+                    _spendAssetAmount: _spendAssetAmount, _minIncomingAssetAmount: minIncomingAssetAmount
                 })
             });
         }
@@ -263,8 +260,7 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
                 _comptrollerProxy: comptrollerProxy,
                 _caller: vaultOwner,
                 _callArgs: getEncodedAdapterCallArgs({
-                    _spendAssetAmount: _spendAssetAmount,
-                    _minIncomingAssetAmount: minIncomingAssetAmount
+                    _spendAssetAmount: _spendAssetAmount, _minIncomingAssetAmount: minIncomingAssetAmount
                 })
             });
         }
@@ -280,8 +276,7 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
         }
 
         bytes memory lastCallArgs = getEncodedAdapterCallArgs({
-            _spendAssetAmount: _spendAssetAmount,
-            _minIncomingAssetAmount: lastCallMinIncomingAssetAmount
+            _spendAssetAmount: _spendAssetAmount, _minIncomingAssetAmount: lastCallMinIncomingAssetAmount
         });
 
         vm.expectRevert(ERROR_MESSAGE_FOR_POLICY);
@@ -312,7 +307,9 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
             _caller: vaultOwner,
             _callArgs: getEncodedAdapterCallArgs({
                 _spendAssetAmount: vaultInitialBalance,
-                _minIncomingAssetAmount: amountWithSlippage(vaultInitialBalance, (4 * ONE_HUNDRED_PERCENT_FOR_POLICY) / 100) // 4%
+                _minIncomingAssetAmount: amountWithSlippage(
+                    vaultInitialBalance, (4 * ONE_HUNDRED_PERCENT_FOR_POLICY) / 100
+                ) // 4%
             })
         });
     }
@@ -343,7 +340,9 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
             _caller: vaultOwner,
             _callArgs: getEncodedAdapterCallArgs({
                 _spendAssetAmount: vaultInitialBalance,
-                _minIncomingAssetAmount: amountWithSlippage(vaultInitialBalance, (4 * ONE_HUNDRED_PERCENT_FOR_POLICY) / 100) // 4%
+                _minIncomingAssetAmount: amountWithSlippage(
+                    vaultInitialBalance, (4 * ONE_HUNDRED_PERCENT_FOR_POLICY) / 100
+                ) // 4%
             })
         });
     }

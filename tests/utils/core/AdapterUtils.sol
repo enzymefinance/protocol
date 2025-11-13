@@ -119,11 +119,10 @@ abstract contract AdapterUtils is CoreUtilsBase {
             uint256[] memory actualMaxSpendAssetAmounts,
             address[] memory actualIncomingAssets,
             uint256[] memory actualMinIncomingAssetAmounts
-        ) = IIntegrationAdapter(_adapterAddress).parseAssetsForAction({
-            _vaultProxy: _vaultProxyAddress,
-            _selector: _actionSelector,
-            _encodedCallArgs: _integrationData
-        });
+        ) = IIntegrationAdapter(_adapterAddress)
+            .parseAssetsForAction({
+                _vaultProxy: _vaultProxyAddress, _selector: _actionSelector, _encodedCallArgs: _integrationData
+            });
 
         assertEq(
             _expectedSpendAssetsHandleTypeUint8,
@@ -200,8 +199,9 @@ contract MockedAdapter is CommonUtils {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (spendAssetsHandleTypeUint8_, spendAssets_, spendAssetAmounts_, incomingAssets_, minIncomingAssetAmounts_) =
-            abi.decode(_integrationData, (uint8, address[], uint256[], address[], uint256[]));
+        (
+            spendAssetsHandleTypeUint8_, spendAssets_, spendAssetAmounts_, incomingAssets_, minIncomingAssetAmounts_
+        ) = abi.decode(_integrationData, (uint8, address[], uint256[], address[], uint256[]));
     }
 
     /// @dev Helper to decode the _assetData param passed to adapter call

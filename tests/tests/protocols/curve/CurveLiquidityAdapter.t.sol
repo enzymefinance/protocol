@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IIntegrationManager as IIntegrationManagerProd} from
-    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
-import {ICurveLiquidityAdapterBase as ICurveLiquidityAdapterBaseProd} from
-    "contracts/release/extensions/integration-manager/integrations/utils/interfaces/ICurveLiquidityAdapterBase.sol";
+import {
+    IIntegrationManager as IIntegrationManagerProd
+} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {
+    ICurveLiquidityAdapterBase as ICurveLiquidityAdapterBaseProd
+} from "contracts/release/extensions/integration-manager/integrations/utils/interfaces/ICurveLiquidityAdapterBase.sol";
 
 import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
 
@@ -76,9 +78,7 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
         // Add all pool assets to asset universe to make them receivable
         address[] memory tokensToRegister = poolAssetAddresses.mergeArray(poolUnderlyingAddresses);
         addPrimitivesWithTestAggregator({
-            _valueInterpreter: core.release.valueInterpreter,
-            _tokenAddresses: tokensToRegister,
-            _skipIfRegistered: true
+            _valueInterpreter: core.release.valueInterpreter, _tokenAddresses: tokensToRegister, _skipIfRegistered: true
         });
         // lpToken and stakingToken must be registered on the CurvePriceFeed
         // _invariantProxyAssets and _reentrantVirtualPrices are arbitrary
@@ -95,7 +95,9 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
         addDerivatives({
             _valueInterpreter: core.release.valueInterpreter,
             _tokenAddresses: isConvex ? toArray(address(lpToken)) : toArray(address(lpToken), address(stakingToken)),
-            _priceFeedAddresses: isConvex ? toArray(address(priceFeed)) : toArray(address(priceFeed), address(priceFeed)),
+            _priceFeedAddresses: isConvex
+                ? toArray(address(priceFeed))
+                : toArray(address(priceFeed), address(priceFeed)),
             _skipIfRegistered: false
         });
     }
@@ -217,17 +219,14 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
     }
 
     // Copied from CurveLiquidityAdapterBase, modified to silently catch out-of-bounds index
-    function __getPoolAsset(address _pool, uint256 _index, bool _useUnderlying)
-        internal
-        view
-        returns (address asset_)
-    {
+    function __getPoolAsset(address _pool, uint256 _index, bool _useUnderlying) internal view returns (address asset_) {
         if (_useUnderlying) {
             try ICurveLiquidityPool(_pool).underlying_coins(_index) returns (address underlyingCoin) {
                 asset_ = underlyingCoin;
             } catch {
-                try ICurveLiquidityPool(_pool).underlying_coins(int128(int256(_index))) returns (address underlyingCoin)
-                {
+                try ICurveLiquidityPool(_pool).underlying_coins(int128(int256(_index))) returns (
+                    address underlyingCoin
+                ) {
                     asset_ = underlyingCoin;
                 } catch {}
             }
@@ -282,11 +281,12 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
                 _selector: ICurveMinter.toggle_approve_mint.selector
             });
             vm.prank(fundOwner);
-            IComptrollerLib(comptrollerProxyAddress).vaultCallOnContract({
-                _contract: ETHEREUM_MINTER_ADDRESS,
-                _selector: ICurveMinter.toggle_approve_mint.selector,
-                _encodedArgs: abi.encode(address(adapter))
-            });
+            IComptrollerLib(comptrollerProxyAddress)
+                .vaultCallOnContract({
+                    _contract: ETHEREUM_MINTER_ADDRESS,
+                    _selector: ICurveMinter.toggle_approve_mint.selector,
+                    _encodedArgs: abi.encode(address(adapter))
+                });
 
             // Make sure the gauge has some weight so it earns CRV rewards via the Minter
             // TODO: unclear on the mechanics of this, but it works with the limited pool set here.
@@ -296,10 +296,8 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
             if (prevGaugeWeight == 0) {
                 uint256 totalWeight = ICurveGaugeController(ETHEREUM_GAUGE_CONTROLLER_ADDRESS).get_total_weight();
                 vm.prank(ETHEREUM_GAUGE_CONTROLLER_ADMIN_ADDRESS);
-                ICurveGaugeController(ETHEREUM_GAUGE_CONTROLLER_ADDRESS).change_gauge_weight({
-                    _gauge: address(stakingToken),
-                    _weight: totalWeight / 100
-                });
+                ICurveGaugeController(ETHEREUM_GAUGE_CONTROLLER_ADDRESS)
+                    .change_gauge_weight({_gauge: address(stakingToken), _weight: totalWeight / 100});
             }
         }
 
@@ -355,9 +353,7 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
         // Seed the vault with exact needed spend asset amounts
         for (uint256 i; i < spendAssetAddresses.length; i++) {
             increaseTokenBalance({
-                _token: IERC20(spendAssetAddresses[i]),
-                _to: vaultProxyAddress,
-                _amount: spendAssetAmounts[i]
+                _token: IERC20(spendAssetAddresses[i]), _to: vaultProxyAddress, _amount: spendAssetAmounts[i]
             });
         }
 

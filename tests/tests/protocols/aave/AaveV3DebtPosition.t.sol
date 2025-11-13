@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IAaveV3DebtPosition as IAaveV3DebtPositionProd} from
-    "contracts/release/extensions/external-position-manager/external-positions/aave-v3-debt/IAaveV3DebtPosition.sol";
+import {
+    IAaveV3DebtPosition as IAaveV3DebtPositionProd
+} from "contracts/release/extensions/external-position-manager/external-positions/aave-v3-debt/IAaveV3DebtPosition.sol";
 
 import {IAaveV3PoolAddressProvider} from "tests/interfaces/external/IAaveV3PoolAddressProvider.sol";
 import {IAaveV3PriceOracle} from "tests/interfaces/external/IAaveV3PriceOracle.sol";
@@ -52,7 +53,9 @@ abstract contract AaveV3DebtPositionTestBasePolygon is AaveV3DebtPositionTestBas
             _poolAddressProvider: IAaveV3PoolAddressProvider(POLYGON_POOL_ADDRESS_PROVIDER),
             _protocolDataProvider: IAaveV3ProtocolDataProvider(POLYGON_PROTOCOL_DATA_PROVIDER),
             _rewardsController: IAaveV3RewardsController(POLYGON_REWARDS_CONTROLLER),
-            _collateralUnderlyingAddresses: toArray(POLYGON_WBTC, POLYGON_LINK, POLYGON_DAI, POLYGON_USDC, POLYGON_USDT),
+            _collateralUnderlyingAddresses: toArray(
+                POLYGON_WBTC, POLYGON_LINK, POLYGON_DAI, POLYGON_USDC, POLYGON_USDT
+            ),
             _borrowableUnderlyingAddresses: toArray(POLYGON_USDC, POLYGON_LINK),
             _rewardedCollateralUnderlyingAddress: POLYGON_MATIC_X
         });

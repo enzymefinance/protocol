@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IIntegrationManager as IIntegrationManagerProd} from
-    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {
+    IIntegrationManager as IIntegrationManagerProd
+} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -196,8 +197,7 @@ abstract contract TestBase is IntegrationTest {
         }
 
         TokenBalances memory initialTokenBalances = __getTokenBalances({
-            _srcTokens: takeOrdersUniqueTokenAmounts.srcTokens,
-            _dstTokens: takeOrdersUniqueTokenAmounts.dstTokens
+            _srcTokens: takeOrdersUniqueTokenAmounts.srcTokens, _dstTokens: takeOrdersUniqueTokenAmounts.dstTokens
         });
 
         bytes[] memory ordersData = new bytes[](_takeOrders.length);
@@ -385,9 +385,7 @@ abstract contract TestBase is IntegrationTest {
         vm.recordLogs();
 
         __takeOrder({
-            _executor: _takeOrder.executor,
-            _swapDescription: _takeOrder.swapDescription,
-            _data: _takeOrder.data
+            _executor: _takeOrder.executor, _swapDescription: _takeOrder.swapDescription, _data: _takeOrder.data
         });
 
         assertAdapterAssetsForAction({

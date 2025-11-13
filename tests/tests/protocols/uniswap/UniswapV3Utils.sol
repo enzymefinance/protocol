@@ -68,10 +68,7 @@ abstract contract UniswapV3Utils is AddOnUtilsBase {
         uint128 baseAmount = uint128(assetUnit(IERC20(baseToken)));
 
         return __uniswapV3GetQuoteAtTick({
-            tick: tickCurrent,
-            baseAmount: baseAmount,
-            baseToken: baseToken,
-            quoteToken: quoteToken
+            tick: tickCurrent, baseAmount: baseAmount, baseToken: baseToken, quoteToken: quoteToken
         });
     }
 
@@ -95,16 +92,10 @@ abstract contract UniswapV3Utils is AddOnUtilsBase {
         while (_nSwaps > 0) {
             // roughly round-trip by swapping in each direction (will be off by fees)
             uniswapV3SimpleTradeRandomCaller({
-                _outgoingAsset: token0,
-                _outgoingAssetAmount: token0TradeSize,
-                _incomingAsset: token1,
-                _poolFee: poolFee
+                _outgoingAsset: token0, _outgoingAssetAmount: token0TradeSize, _incomingAsset: token1, _poolFee: poolFee
             });
             uniswapV3SimpleTradeRandomCaller({
-                _outgoingAsset: token1,
-                _outgoingAssetAmount: token1TradeSize,
-                _incomingAsset: token0,
-                _poolFee: poolFee
+                _outgoingAsset: token1, _outgoingAssetAmount: token1TradeSize, _incomingAsset: token0, _poolFee: poolFee
             });
 
             _nSwaps--;

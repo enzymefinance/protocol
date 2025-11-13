@@ -11,8 +11,9 @@
 
 pragma solidity 0.8.19;
 
-import {AggregatorRateDeviationBase} from
-    "../release/infrastructure/price-feeds/primitives/utils/AggregatorRateDeviationBase.sol";
+import {
+    AggregatorRateDeviationBase
+} from "../release/infrastructure/price-feeds/primitives/utils/AggregatorRateDeviationBase.sol";
 
 /// @title AggregatorRateDeviationBaseHarness Contract
 /// @author Enzyme Foundation <security@enzyme.finance>

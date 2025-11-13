@@ -14,8 +14,9 @@ pragma solidity 0.8.19;
 import {IBebopBlend} from "contracts/external-interfaces/IBebopBlend.sol";
 import {IAddressListRegistry} from "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
 import {IIntegrationManager} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
-import {IBebopBlendAdapter} from
-    "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/IBebopBlendAdapter.sol";
+import {
+    IBebopBlendAdapter
+} from "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/IBebopBlendAdapter.sol";
 import {AdapterBase} from "contracts/release/extensions/integration-manager/integrations/utils/0.8.19/AdapterBase.sol";
 
 /// @title BebopBlendAdapter Contract
@@ -100,14 +101,15 @@ contract BebopBlendAdapter is IBebopBlendAdapter, AdapterBase {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        if (_selector != ACTION_SELECTOR) revert BebopBlendAdapter__InvalidAction();
+        if (_selector != ACTION_SELECTOR) {
+            revert BebopBlendAdapter__InvalidAction();
+        }
 
         (Action actionId, bytes memory encodedActionArgs) = abi.decode(_actionData, (Action, bytes));
 
         if (actionId == Action.SwapSingle) {
             return __parseAssetsForSwapSingle({
-                _vaultProxy: _vaultProxy,
-                _actionArgs: abi.decode(encodedActionArgs, (SwapSingleActionArgs))
+                _vaultProxy: _vaultProxy, _actionArgs: abi.decode(encodedActionArgs, (SwapSingleActionArgs))
             });
         } else {
             revert BebopBlendAdapter__InvalidAction();

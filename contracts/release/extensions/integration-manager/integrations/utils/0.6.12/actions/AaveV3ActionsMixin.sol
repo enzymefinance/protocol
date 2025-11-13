@@ -28,13 +28,12 @@ abstract contract AaveV3ActionsMixin is AssetHelpers {
 
     /// @dev Helper to execute lending on Aave v3
     function __aaveV3Lend(address _recipient, address _underlying, uint256 _amount) internal {
-        __approveAssetMaxAsNeeded({_asset: _underlying, _target: address(AAVE_V3_POOL_CONTRACT), _neededAmount: _amount});
+        __approveAssetMaxAsNeeded({
+            _asset: _underlying, _target: address(AAVE_V3_POOL_CONTRACT), _neededAmount: _amount
+        });
 
         AAVE_V3_POOL_CONTRACT.supply({
-            _underlying: _underlying,
-            _amount: _amount,
-            _to: _recipient,
-            _referralCode: AAVE_V3_REFERRAL_CODE
+            _underlying: _underlying, _amount: _amount, _to: _recipient, _referralCode: AAVE_V3_REFERRAL_CODE
         });
     }
 

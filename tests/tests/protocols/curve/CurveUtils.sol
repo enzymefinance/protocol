@@ -55,8 +55,9 @@ abstract contract CurveUtils is AddOnUtilsBase {
         address _poolOwnerAddress,
         uint256 _virtualPriceDeviationThreshold
     ) internal returns (ICurvePriceFeed priceFeed_) {
-        bytes memory args =
-            abi.encode(_fundDeployer, _addressProviderAddress, _poolOwnerAddress, _virtualPriceDeviationThreshold);
+        bytes memory args = abi.encode(
+            _fundDeployer, _addressProviderAddress, _poolOwnerAddress, _virtualPriceDeviationThreshold
+        );
 
         return ICurvePriceFeed(deployCode("CurvePriceFeed.sol", args));
     }

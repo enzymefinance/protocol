@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IUniswapV3LiquidityPosition as IUniswapV3LiquidityPositionProd} from
-    "contracts/release/extensions/external-position-manager/external-positions/uniswap-v3-liquidity/IUniswapV3LiquidityPosition.sol";
+import {
+    IUniswapV3LiquidityPosition as IUniswapV3LiquidityPositionProd
+} from "contracts/release/extensions/external-position-manager/external-positions/uniswap-v3-liquidity/IUniswapV3LiquidityPosition.sol";
 
 import {Math} from "openzeppelin-solc-0.8/utils/math/Math.sol";
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
@@ -104,15 +105,13 @@ abstract contract TestBase is UniswapV3Utils, IntegrationTest {
         // Deploy Uniswap V3 Liquidity type contracts
         address uniswapV3LiquidityPositionLibAddress = address(
             __deployLib({
-                _nonFungibleTokenManagerAddress: _nonFungibleTokenManagerAddress,
-                _valueInterpreter: _valueInterpreter
+                _nonFungibleTokenManagerAddress: _nonFungibleTokenManagerAddress, _valueInterpreter: _valueInterpreter
             })
         );
 
         address uniswapV3LiquidityPositionPositionParserAddress = address(
             __deployParser({
-                _nonFungibleTokenManagerAddress: _nonFungibleTokenManagerAddress,
-                _valueInterpreter: _valueInterpreter
+                _nonFungibleTokenManagerAddress: _nonFungibleTokenManagerAddress, _valueInterpreter: _valueInterpreter
             })
         );
 

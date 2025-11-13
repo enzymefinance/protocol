@@ -12,7 +12,9 @@ pragma solidity 0.8.19;
 import {Math} from "openzeppelin-solc-0.8/utils/math/Math.sol";
 
 import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
-import {IGMXV2ChainlinkPriceFeedProvider} from "../../../../../external-interfaces/IGMXV2ChainlinkPriceFeedProvider.sol";
+import {
+    IGMXV2ChainlinkPriceFeedProvider
+} from "../../../../../external-interfaces/IGMXV2ChainlinkPriceFeedProvider.sol";
 import {IGMXV2DataStore} from "../../../../../external-interfaces/IGMXV2DataStore.sol";
 import {IGMXV2Market} from "../../../../../external-interfaces/IGMXV2Market.sol";
 import {IGMXV2Order} from "../../../../../external-interfaces/IGMXV2Order.sol";
@@ -114,14 +116,12 @@ contract GMXV2LeverageTradingPositionLibManagedAssets is
         view
         returns (uint256 claimableFactor_)
     {
-        uint256 claimableFactorForTime =
-            DATA_STORE.getUint(__claimableCollateralFactorKey({_market: _market, _token: _token, _timeKey: _timeKey}));
+        uint256 claimableFactorForTime = DATA_STORE.getUint(
+            __claimableCollateralFactorKey({_market: _market, _token: _token, _timeKey: _timeKey})
+        );
         uint256 claimableFactorForAccount = DATA_STORE.getUint(
             __claimableCollateralFactorForAccountKey({
-                _market: _market,
-                _token: _token,
-                _timeKey: _timeKey,
-                _account: address(this)
+                _market: _market, _token: _token, _timeKey: _timeKey, _account: address(this)
             })
         );
         uint256 claimableFactor =
@@ -129,10 +129,7 @@ contract GMXV2LeverageTradingPositionLibManagedAssets is
 
         uint256 claimableReductionFactor = DATA_STORE.getUint(
             __claimableCollateralReductionFactorKey({
-                _market: _market,
-                _token: _token,
-                _timeKey: _timeKey,
-                _account: address(this)
+                _market: _market, _token: _token, _timeKey: _timeKey, _account: address(this)
             })
         );
 
@@ -223,9 +220,8 @@ contract GMXV2LeverageTradingPositionLibManagedAssets is
                 // use collateralTokenPrice min to price in favour of the GMX protocol, so the value of the position is closer to the real value after position decrease would happen.
                 // GMX protocol always prices in favour of itself, in order to prevent any potential price manipulation attacks.
                 totalImpactCollateralAmount = -int256(
-                    uint256(-positionInfo.executionPriceResult.totalImpactUsd).ceilDiv(
-                        positionInfo.fees.collateralTokenPrice.min
-                    )
+                    uint256(-positionInfo.executionPriceResult.totalImpactUsd)
+                        .ceilDiv(positionInfo.fees.collateralTokenPrice.min)
                 );
             }
 
@@ -310,9 +306,9 @@ contract GMXV2LeverageTradingPositionLibManagedAssets is
             assets_ = assets_.addItem(claimableCollateralInfo.token);
             amounts_ = amounts_.addItem(
                 __applyFactor({
-                    _value: DATA_STORE.getUint(key), // claimable amount
-                    _factor: claimableFactor
-                })
+                        _value: DATA_STORE.getUint(key), // claimable amount
+                        _factor: claimableFactor
+                    })
                     - DATA_STORE.getUint(
                         __claimedCollateralAmountKey({
                             _market: claimableCollateralInfo.market,

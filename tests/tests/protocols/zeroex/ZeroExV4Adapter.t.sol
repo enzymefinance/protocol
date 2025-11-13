@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IAddressListRegistry as IAddressListRegistryProd} from
-    "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
-import {IIntegrationManager as IIntegrationManagerProd} from
-    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
-import {IZeroExV4Adapter as IZeroExV4AdapterProd} from
-    "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/IZeroExV4Adapter.sol";
+import {
+    IAddressListRegistry as IAddressListRegistryProd
+} from "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
+import {
+    IIntegrationManager as IIntegrationManagerProd
+} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {
+    IZeroExV4Adapter as IZeroExV4AdapterProd
+} from "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/IZeroExV4Adapter.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -66,11 +69,12 @@ abstract contract ZeroExV4AdapterTestBase is IntegrationTest {
 
     function __deployAdapter(address[] memory _allowedMakers) private returns (IZeroExV4Adapter adapter_) {
         // Create a new AddressListRegistry list containing the allowedMakers
-        uint256 allowedMakersListId = core.persistent.addressListRegistry.createList({
-            _owner: makeAddr("ListOwner"),
-            _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.None),
-            _initialItems: _allowedMakers
-        });
+        uint256 allowedMakersListId = core.persistent.addressListRegistry
+            .createList({
+                _owner: makeAddr("ListOwner"),
+                _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.None),
+                _initialItems: _allowedMakers
+            });
 
         bytes memory args = abi.encode(
             address(core.release.integrationManager),
@@ -275,9 +279,7 @@ abstract contract ZeroExV4AdapterTestBase is IntegrationTest {
         uint256 makerAmount = assetUnit(makerAsset) * 7;
         uint256 takerFee = assetUnit(takerAsset) * 7;
         (IZeroExV4.LimitOrder memory order, IZeroExV4.Signature memory signature) = __createLimitOrder({
-            _makerAmount: uint128(makerAmount),
-            _takerAmount: uint128(takerAmount),
-            _takerFee: uint128(takerFee)
+            _makerAmount: uint128(makerAmount), _takerAmount: uint128(takerAmount), _takerFee: uint128(takerFee)
         });
 
         vm.recordLogs();

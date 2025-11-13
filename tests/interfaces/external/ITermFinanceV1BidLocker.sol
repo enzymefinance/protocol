@@ -12,9 +12,7 @@ interface ITermFinanceV1BidLocker {
         address[] collateralTokens;
     }
 
-    function lockBids(TermAuctionBidSubmission[] calldata _bidSubmissions)
-        external
-        returns (bytes32[] memory bidIds_);
+    function lockBids(TermAuctionBidSubmission[] calldata _bidSubmissions) external returns (bytes32[] memory bidIds_);
 
     function revealBids(bytes32[] calldata _ids, uint256[] calldata _prices, uint256[] calldata _nonces) external;
 

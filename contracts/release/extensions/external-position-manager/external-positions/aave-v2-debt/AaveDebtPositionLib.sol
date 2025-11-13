@@ -11,8 +11,9 @@ pragma solidity 0.6.12;
 
 import {IAaveV2IncentivesController} from "../../../../../external-interfaces/IAaveV2IncentivesController.sol";
 import {IAaveV2LendingPool} from "../../../../../external-interfaces/IAaveV2LendingPool.sol";
-import {IAaveV2LendingPoolAddressProvider} from
-    "../../../../../external-interfaces/IAaveV2LendingPoolAddressProvider.sol";
+import {
+    IAaveV2LendingPoolAddressProvider
+} from "../../../../../external-interfaces/IAaveV2LendingPoolAddressProvider.sol";
 import {IAaveV2ProtocolDataProvider} from "../../../../../external-interfaces/IAaveV2ProtocolDataProvider.sol";
 import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
@@ -25,12 +26,7 @@ import {IAaveDebtPosition} from "./IAaveDebtPosition.sol";
 /// @title AaveDebtPositionLib Contract
 /// @author Enzyme Foundation <security@enzyme.finance>
 /// @notice An External Position library contract for Aave debt positions
-contract AaveDebtPositionLib is
-    AaveDebtPositionLibBase1,
-    IAaveDebtPosition,
-    AaveDebtPositionDataDecoder,
-    AssetHelpers
-{
+contract AaveDebtPositionLib is AaveDebtPositionLibBase1, IAaveDebtPosition, AaveDebtPositionDataDecoder, AssetHelpers {
     using AddressArrayLib for address[];
     using SafeERC20 for IERC20;
 
@@ -94,9 +90,8 @@ contract AaveDebtPositionLib is
             IAaveV2LendingPoolAddressProvider(AAVE_LENDING_POOL_ADDRESS_PROVIDER).getLendingPool();
 
         for (uint256 i; i < tokens.length; i++) {
-            IAaveV2LendingPool(lendingPoolAddress).borrow(
-                tokens[i], amounts[i], VARIABLE_INTEREST_RATE, AAVE_REFERRAL_CODE, address(this)
-            );
+            IAaveV2LendingPool(lendingPoolAddress)
+                .borrow(tokens[i], amounts[i], VARIABLE_INTEREST_RATE, AAVE_REFERRAL_CODE, address(this));
 
             IERC20(tokens[i]).safeTransfer(msg.sender, amounts[i]);
 

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IAddressListRegistry as IAddressListRegistryProd} from
-    "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
+import {
+    IAddressListRegistry as IAddressListRegistryProd
+} from "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
 
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
 import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";

@@ -22,9 +22,7 @@ abstract contract FeeUtils is CoreUtilsBase {
 
     function invokeContinuousFeeHook(IFeeManager _feeManager, IComptrollerLib _comptrollerProxy) internal {
         _comptrollerProxy.callOnExtension({
-            _extension: address(_feeManager),
-            _actionId: uint256(Actions.InvokeContinuousFeeHook),
-            _callArgs: ""
+            _extension: address(_feeManager), _actionId: uint256(Actions.InvokeContinuousFeeHook), _callArgs: ""
         });
     }
 }

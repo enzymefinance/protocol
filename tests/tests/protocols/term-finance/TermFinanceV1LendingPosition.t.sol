@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {ITermFinanceV1LendingPosition as ITermFinanceV1LendingPositionProd} from
-    "contracts/release/extensions/external-position-manager/external-positions/term-finance-v1-lending/ITermFinanceV1LendingPosition.sol";
+import {
+    ITermFinanceV1LendingPosition as ITermFinanceV1LendingPositionProd
+} from "contracts/release/extensions/external-position-manager/external-positions/term-finance-v1-lending/ITermFinanceV1LendingPosition.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -308,8 +309,9 @@ abstract contract AddReplaceAndRemoveOffersTest is TestBase {
         for (uint256 i; i < offerIdSeeds.length; i++) {
             assertEq(retrievedOfferIds[i], generatedOfferIds[i], "Incorrect offerId retrieved");
             // Also assert that these offerIds have also been added to Term
-            ITermFinanceV1OfferLocker.TermAuctionOffer memory offer =
-                ITermFinanceV1OfferLocker(termFinanceAuction.termAuctionOfferLocker()).lockedOffer(retrievedOfferIds[i]);
+            ITermFinanceV1OfferLocker.TermAuctionOffer memory offer = ITermFinanceV1OfferLocker(
+                    termFinanceAuction.termAuctionOfferLocker()
+                ).lockedOffer(retrievedOfferIds[i]);
 
             assertEq(offer.amount, uint256(offerAmounts[i]), "Incorrect offer amount retrieved from Term");
             assertEq(offer.offerPriceHash, __getPriceHashes(offerPrices)[i], "Incorrect offer price hash from Term");
@@ -469,9 +471,9 @@ abstract contract AddReplaceAndRemoveOffersTest is TestBase {
         bytes32[] memory offerIdsToRemove = toArray(generatedOfferIds[1], generatedOfferIds[2]);
         uint256 amountToRemove;
         for (uint256 i; i < offerIdsToRemove.length; i++) {
-            amountToRemove += ITermFinanceV1OfferLocker(termFinanceAuction.termAuctionOfferLocker()).lockedOffer({
-                _offerId: offerIdsToRemove[i]
-            }).amount;
+            amountToRemove += ITermFinanceV1OfferLocker(termFinanceAuction.termAuctionOfferLocker())
+            .lockedOffer({_offerId: offerIdsToRemove[i]})
+            .amount;
         }
 
         uint256 vaultPurchaseTokenBalancePre = purchaseToken.balanceOf(vaultProxyAddress);
@@ -591,11 +593,8 @@ abstract contract RedeemTest is TestBase {
         vm.warp(bidLocker.revealTime());
 
         // Reveal the offer
-        ITermFinanceV1OfferLocker(termFinanceAuction.termAuctionOfferLocker()).revealOffers({
-            _ids: toArray(generatedOfferId),
-            _prices: toArray(price),
-            _nonces: toArray(PRICE_NONCE)
-        });
+        ITermFinanceV1OfferLocker(termFinanceAuction.termAuctionOfferLocker())
+            .revealOffers({_ids: toArray(generatedOfferId), _prices: toArray(price), _nonces: toArray(PRICE_NONCE)});
 
         // Reveal the bid
         bidLocker.revealBids({_ids: toArray(generatedBidId), _prices: toArray(price), _nonces: toArray(PRICE_NONCE)});
@@ -739,8 +738,10 @@ abstract contract RedeemTest is TestBase {
         );
 
         // Assert that the EP's getManagedAssets have decreased
-        (address[] memory postPartialRedemptionManagedAssets, uint256[] memory postPartialRedemptionManagedAssetAmounts)
-        = termFinanceLendingPosition.getManagedAssets();
+        (
+            address[] memory postPartialRedemptionManagedAssets,
+            uint256[] memory postPartialRedemptionManagedAssetAmounts
+        ) = termFinanceLendingPosition.getManagedAssets();
 
         assertEq(
             postPartialRedemptionManagedAssets,
@@ -819,9 +820,7 @@ abstract contract SweepTest is TestBase {
         IERC20 purchaseTokenToSweep = IERC20(purchaseTokens[1]);
         uint256 purchaseTokenAmountToSweep = assetUnit(purchaseTokenToSweep) * 55;
         increaseTokenBalance({
-            _token: purchaseTokenToSweep,
-            _to: address(termFinanceLendingPosition),
-            _amount: purchaseTokenAmountToSweep
+            _token: purchaseTokenToSweep, _to: address(termFinanceLendingPosition), _amount: purchaseTokenAmountToSweep
         });
 
         uint256 vaultPurchaseTokenBalancePreSweep = purchaseTokenToSweep.balanceOf(vaultProxyAddress);

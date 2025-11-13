@@ -3,8 +3,9 @@ pragma solidity 0.8.19;
 
 import {Vm} from "forge-std/Vm.sol";
 
-import {IConvexVotingPosition as IConvexVotingPositionProd} from
-    "contracts/release/extensions/external-position-manager/external-positions/convex-voting/IConvexVotingPosition.sol";
+import {
+    IConvexVotingPosition as IConvexVotingPositionProd
+} from "contracts/release/extensions/external-position-manager/external-positions/convex-voting/IConvexVotingPosition.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -191,8 +192,9 @@ abstract contract TestBase is IntegrationTest {
         IVotiumMultiMerkleStash.ClaimParam[] memory _votiumClaims,
         bool _unstakeCvxCrv
     ) internal {
-        bytes memory actionArgs =
-            abi.encode(_allTokensToTransfer, _claimLockerRewards, _extraRewardTokens, _votiumClaims, _unstakeCvxCrv);
+        bytes memory actionArgs = abi.encode(
+            _allTokensToTransfer, _claimLockerRewards, _extraRewardTokens, _votiumClaims, _unstakeCvxCrv
+        );
 
         vm.prank(fundOwner);
         callOnExternalPosition({
@@ -365,10 +367,8 @@ abstract contract TestBase is IntegrationTest {
         });
 
         assertEq(
-            ISnapshotDelegateRegistry(ETHEREUM_SNAPSHOT_DELEGATE_REGISTRY).delegation({
-                _account: address(convexVotingPosition),
-                _snapshotId: CONVEX_SNAPSHOT_ID
-            }),
+            ISnapshotDelegateRegistry(ETHEREUM_SNAPSHOT_DELEGATE_REGISTRY)
+                .delegation({_account: address(convexVotingPosition), _snapshotId: CONVEX_SNAPSHOT_ID}),
             delegatee,
             "Incorrect delegatee"
         );
@@ -388,9 +388,8 @@ abstract contract TestBase is IntegrationTest {
         uint256 extraRewardAmount = 100 * assetUnit(wethToken);
         increaseTokenBalance({_token: wethToken, _to: address(this), _amount: extraRewardAmount});
         wethToken.approve(ETHEREUM_VLCVX_EXTRA_REWARDS_CONTRACT, extraRewardAmount);
-        IConvexVlCvxExtraRewardDistribution(ETHEREUM_VLCVX_EXTRA_REWARDS_CONTRACT).addReward(
-            address(wethToken), extraRewardAmount
-        );
+        IConvexVlCvxExtraRewardDistribution(ETHEREUM_VLCVX_EXTRA_REWARDS_CONTRACT)
+            .addReward(address(wethToken), extraRewardAmount);
 
         // wait for rewards to accrue
         skip(rewardsDuration);
@@ -481,10 +480,8 @@ abstract contract TestBase is IntegrationTest {
         uint256 stakedCvxCrvAmount = 500 * assetUnit(IERC20(ETHEREUM_CVX_CRV));
         increaseTokenBalance({_token: IERC20(ETHEREUM_CVX_CRV), _to: address(this), _amount: stakedCvxCrvAmount});
         IERC20(ETHEREUM_CVX_CRV).approve(ETHEREUM_CVX_CRV_STAKING_CONTRACT, stakedCvxCrvAmount);
-        IConvexBaseRewardPool(ETHEREUM_CVX_CRV_STAKING_CONTRACT).stakeFor({
-            _for: address(convexVotingPosition),
-            _amount: stakedCvxCrvAmount
-        });
+        IConvexBaseRewardPool(ETHEREUM_CVX_CRV_STAKING_CONTRACT)
+            .stakeFor({_for: address(convexVotingPosition), _amount: stakedCvxCrvAmount});
 
         uint256 preCvxTokenBalance = IERC20(ETHEREUM_CVX_CRV).balanceOf(vaultProxyAddress);
 
@@ -524,14 +521,10 @@ abstract contract TestBase is IntegrationTest {
         bytes32 merkleRoot = __generateMerkleTreeRoot(nodes);
         address votiumMerkleStashOwner = IVotiumMultiMerkleStash(ETHEREUM_VOTIUM_MULTI_MERKLE_STASH_CONTRACT).owner();
         vm.prank(votiumMerkleStashOwner);
-        IVotiumMultiMerkleStash(ETHEREUM_VOTIUM_MULTI_MERKLE_STASH_CONTRACT).updateMerkleRoot({
-            _token: address(wethToken),
-            _merkleRoot: merkleRoot
-        });
+        IVotiumMultiMerkleStash(ETHEREUM_VOTIUM_MULTI_MERKLE_STASH_CONTRACT)
+            .updateMerkleRoot({_token: address(wethToken), _merkleRoot: merkleRoot});
         increaseTokenBalance({
-            _token: wethToken,
-            _to: ETHEREUM_VOTIUM_MULTI_MERKLE_STASH_CONTRACT,
-            _amount: rewardsAmount
+            _token: wethToken, _to: ETHEREUM_VOTIUM_MULTI_MERKLE_STASH_CONTRACT, _amount: rewardsAmount
         });
 
         // get merkle proof for node 0
@@ -541,10 +534,7 @@ abstract contract TestBase is IntegrationTest {
 
         IVotiumMultiMerkleStash.ClaimParam[] memory claims = new IVotiumMultiMerkleStash.ClaimParam[](1);
         claims[0] = IVotiumMultiMerkleStash.ClaimParam({
-            token: address(wethToken),
-            index: rewardsIndex,
-            amount: rewardsAmount,
-            merkleProof: merkleProof
+            token: address(wethToken), index: rewardsIndex, amount: rewardsAmount, merkleProof: merkleProof
         });
 
         uint256 preRewardTokenBalance = wethToken.balanceOf(vaultProxyAddress);

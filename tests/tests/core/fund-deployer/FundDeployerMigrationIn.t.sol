@@ -21,8 +21,7 @@ contract FundDeployerMigrationInTest is IntegrationTest {
         // Create VaultProxy attached to another release
         vaultProxyCore = IVaultCore(
             createVaultFromMockFundDeployer({
-                _dispatcher: core.persistent.dispatcher,
-                _vaultLibAddress: core.release.fundDeployer.getVaultLib()
+                _dispatcher: core.persistent.dispatcher, _vaultLibAddress: core.release.fundDeployer.getVaultLib()
             })
         );
         vaultOwner = vaultProxyCore.getOwner();
@@ -58,14 +57,15 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
         vm.expectRevert("Only a permissioned migrator can call this function");
         vm.prank(randomSigner);
 
-        core.release.fundDeployer.createMigrationRequest({
-            _vaultProxy: address(vaultProxyCore),
-            _denominationAsset: address(standardPrimitive),
-            _sharesActionTimelock: 123,
-            _feeManagerConfigData: "",
-            _policyManagerConfigData: "",
-            _bypassPrevReleaseFailure: bypassPrevReleaseFailure
-        });
+        core.release.fundDeployer
+            .createMigrationRequest({
+                _vaultProxy: address(vaultProxyCore),
+                _denominationAsset: address(standardPrimitive),
+                _sharesActionTimelock: 123,
+                _feeManagerConfigData: "",
+                _policyManagerConfigData: "",
+                _bypassPrevReleaseFailure: bypassPrevReleaseFailure
+            });
     }
 
     function test_success() public {
@@ -83,14 +83,15 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
         // Create migration request
         vm.prank(migrationRequestCaller);
         IComptrollerLib comptrollerProxy = IComptrollerLib(
-            core.release.fundDeployer.createMigrationRequest({
-                _vaultProxy: address(vaultProxyCore),
-                _denominationAsset: denominationAsset,
-                _sharesActionTimelock: sharesActionTimelock,
-                _feeManagerConfigData: "",
-                _policyManagerConfigData: "",
-                _bypassPrevReleaseFailure: bypassPrevReleaseFailure
-            })
+            core.release.fundDeployer
+                .createMigrationRequest({
+                    _vaultProxy: address(vaultProxyCore),
+                    _denominationAsset: denominationAsset,
+                    _sharesActionTimelock: sharesActionTimelock,
+                    _feeManagerConfigData: "",
+                    _policyManagerConfigData: "",
+                    _bypassPrevReleaseFailure: bypassPrevReleaseFailure
+                })
         );
 
         // Assert the Dispatcher stored the MigrationRequest.
@@ -118,14 +119,15 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
 
         // Create migration request
         vm.prank(migrator);
-        core.release.fundDeployer.createMigrationRequest({
-            _vaultProxy: address(vaultProxyCore),
-            _denominationAsset: address(standardPrimitive),
-            _sharesActionTimelock: 123,
-            _feeManagerConfigData: "",
-            _policyManagerConfigData: "",
-            _bypassPrevReleaseFailure: bypassPrevReleaseFailure
-        });
+        core.release.fundDeployer
+            .createMigrationRequest({
+                _vaultProxy: address(vaultProxyCore),
+                _denominationAsset: address(standardPrimitive),
+                _sharesActionTimelock: 123,
+                _feeManagerConfigData: "",
+                _policyManagerConfigData: "",
+                _bypassPrevReleaseFailure: bypassPrevReleaseFailure
+            });
     }
 }
 
@@ -137,14 +139,15 @@ contract FundDeployerCancelMigrationTest is FundDeployerMigrationInTest {
 
         // Create migration request
         vm.prank(vaultOwner);
-        nextComptrollerProxyAddress = core.release.fundDeployer.createMigrationRequest({
-            _vaultProxy: address(vaultProxyCore),
-            _denominationAsset: address(standardPrimitive),
-            _sharesActionTimelock: 123,
-            _feeManagerConfigData: "",
-            _policyManagerConfigData: "",
-            _bypassPrevReleaseFailure: bypassPrevReleaseFailure
-        });
+        nextComptrollerProxyAddress = core.release.fundDeployer
+            .createMigrationRequest({
+                _vaultProxy: address(vaultProxyCore),
+                _denominationAsset: address(standardPrimitive),
+                _sharesActionTimelock: 123,
+                _feeManagerConfigData: "",
+                _policyManagerConfigData: "",
+                _bypassPrevReleaseFailure: bypassPrevReleaseFailure
+            });
     }
 
     function test_failWithNonMigrator() public {
@@ -153,10 +156,10 @@ contract FundDeployerCancelMigrationTest is FundDeployerMigrationInTest {
         vm.expectRevert("Only a permissioned migrator can call this function");
         vm.prank(randomSigner);
 
-        core.release.fundDeployer.cancelMigration({
-            _vaultProxy: address(vaultProxyCore),
-            _bypassPrevReleaseFailure: bypassPrevReleaseFailure
-        });
+        core.release.fundDeployer
+            .cancelMigration({
+                _vaultProxy: address(vaultProxyCore), _bypassPrevReleaseFailure: bypassPrevReleaseFailure
+            });
     }
 
     // Also tests `invokeMigrationInCancelHook()`
@@ -172,10 +175,10 @@ contract FundDeployerCancelMigrationTest is FundDeployerMigrationInTest {
         vm.expectCall(nextComptrollerProxyAddress, abi.encodeWithSelector(IComptrollerLib.destructUnactivated.selector));
         vm.prank(vaultOwner);
 
-        core.release.fundDeployer.cancelMigration({
-            _vaultProxy: address(vaultProxyCore),
-            _bypassPrevReleaseFailure: bypassPrevReleaseFailure
-        });
+        core.release.fundDeployer
+            .cancelMigration({
+                _vaultProxy: address(vaultProxyCore), _bypassPrevReleaseFailure: bypassPrevReleaseFailure
+            });
     }
 
     function test_successWithFailureBypass() public {
@@ -190,19 +193,19 @@ contract FundDeployerCancelMigrationTest is FundDeployerMigrationInTest {
         );
         vm.prank(vaultOwner);
 
-        core.release.fundDeployer.cancelMigration({
-            _vaultProxy: address(vaultProxyCore),
-            _bypassPrevReleaseFailure: bypassPrevReleaseFailure
-        });
+        core.release.fundDeployer
+            .cancelMigration({
+                _vaultProxy: address(vaultProxyCore), _bypassPrevReleaseFailure: bypassPrevReleaseFailure
+            });
     }
 
     function test_successWithMigratorCaller() public {
         vm.prank(migrator);
 
-        core.release.fundDeployer.cancelMigration({
-            _vaultProxy: address(vaultProxyCore),
-            _bypassPrevReleaseFailure: bypassPrevReleaseFailure
-        });
+        core.release.fundDeployer
+            .cancelMigration({
+                _vaultProxy: address(vaultProxyCore), _bypassPrevReleaseFailure: bypassPrevReleaseFailure
+            });
     }
 }
 
@@ -214,14 +217,15 @@ contract FundDeployerExecuteMigrationTest is FundDeployerMigrationInTest {
 
         // Create migration request
         vm.prank(vaultOwner);
-        nextComptrollerProxyAddress = core.release.fundDeployer.createMigrationRequest({
-            _vaultProxy: address(vaultProxyCore),
-            _denominationAsset: address(standardPrimitive),
-            _sharesActionTimelock: 123,
-            _feeManagerConfigData: "",
-            _policyManagerConfigData: "",
-            _bypassPrevReleaseFailure: bypassPrevReleaseFailure
-        });
+        nextComptrollerProxyAddress = core.release.fundDeployer
+            .createMigrationRequest({
+                _vaultProxy: address(vaultProxyCore),
+                _denominationAsset: address(standardPrimitive),
+                _sharesActionTimelock: 123,
+                _feeManagerConfigData: "",
+                _policyManagerConfigData: "",
+                _bypassPrevReleaseFailure: bypassPrevReleaseFailure
+            });
 
         // Warp beyond the migration timelock
         (,,, uint256 executionTimestamp) =
@@ -235,10 +239,10 @@ contract FundDeployerExecuteMigrationTest is FundDeployerMigrationInTest {
         vm.expectRevert("Only a permissioned migrator can call this function");
         vm.prank(randomSigner);
 
-        core.release.fundDeployer.executeMigration({
-            _vaultProxy: address(vaultProxyCore),
-            _bypassPrevReleaseFailure: bypassPrevReleaseFailure
-        });
+        core.release.fundDeployer
+            .executeMigration({
+                _vaultProxy: address(vaultProxyCore), _bypassPrevReleaseFailure: bypassPrevReleaseFailure
+            });
     }
 
     function test_success() public {
@@ -259,10 +263,10 @@ contract FundDeployerExecuteMigrationTest is FundDeployerMigrationInTest {
 
         vm.prank(vaultOwner);
 
-        core.release.fundDeployer.executeMigration({
-            _vaultProxy: address(vaultProxyCore),
-            _bypassPrevReleaseFailure: bypassPrevReleaseFailure
-        });
+        core.release.fundDeployer
+            .executeMigration({
+                _vaultProxy: address(vaultProxyCore), _bypassPrevReleaseFailure: bypassPrevReleaseFailure
+            });
     }
 
     function test_successWithFailureBypass() public {
@@ -277,18 +281,18 @@ contract FundDeployerExecuteMigrationTest is FundDeployerMigrationInTest {
         );
         vm.prank(vaultOwner);
 
-        core.release.fundDeployer.executeMigration({
-            _vaultProxy: address(vaultProxyCore),
-            _bypassPrevReleaseFailure: bypassPrevReleaseFailure
-        });
+        core.release.fundDeployer
+            .executeMigration({
+                _vaultProxy: address(vaultProxyCore), _bypassPrevReleaseFailure: bypassPrevReleaseFailure
+            });
     }
 
     function test_successWithMigratorCaller() public {
         vm.prank(migrator);
 
-        core.release.fundDeployer.executeMigration({
-            _vaultProxy: address(vaultProxyCore),
-            _bypassPrevReleaseFailure: bypassPrevReleaseFailure
-        });
+        core.release.fundDeployer
+            .executeMigration({
+                _vaultProxy: address(vaultProxyCore), _bypassPrevReleaseFailure: bypassPrevReleaseFailure
+            });
     }
 }

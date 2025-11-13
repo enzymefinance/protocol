@@ -2,9 +2,9 @@
 
 /*
     This file is part of the Enzyme Protocol.
-    
+
     (c) Enzyme Foundation <security@enzyme.finance>
-    
+
     For the full license information, please view the LICENSE
     file that was distributed with this source code.
 */
@@ -127,20 +127,20 @@ contract ExternalPositionManager is IExternalPositionManager, ExtensionBase, Per
         address parser = getExternalPositionParserForType(typeId);
         require(parser != address(0), "__createExternalPosition: Invalid typeId");
 
-        IPolicyManager(getPolicyManager()).validatePolicies(
-            _comptrollerProxy,
-            IPolicyManager.PolicyHook.CreateExternalPosition,
-            abi.encode(_caller, typeId, initializationData)
-        );
+        IPolicyManager(getPolicyManager())
+            .validatePolicies(
+                _comptrollerProxy,
+                IPolicyManager.PolicyHook.CreateExternalPosition,
+                abi.encode(_caller, typeId, initializationData)
+            );
 
         // Pass in _vaultProxy in case the external position requires it during init() or further operations
         bytes memory initArgs = IExternalPositionParser(parser).parseInitArgs(_vaultProxy, initializationData);
 
         bytes memory constructData = abi.encodeWithSelector(IExternalPosition.init.selector, initArgs);
 
-        address externalPosition = IExternalPositionFactory(EXTERNAL_POSITION_FACTORY).deploy(
-            _vaultProxy, typeId, getExternalPositionLibForType(typeId), constructData
-        );
+        address externalPosition = IExternalPositionFactory(EXTERNAL_POSITION_FACTORY)
+            .deploy(_vaultProxy, typeId, getExternalPositionLibForType(typeId), constructData);
 
         emit ExternalPositionDeployedForFund(_comptrollerProxy, _vaultProxy, externalPosition, typeId, initArgs);
 
@@ -172,8 +172,9 @@ contract ExternalPositionManager is IExternalPositionManager, ExtensionBase, Per
         uint256 _actionId,
         bytes memory _actionArgs
     ) private {
-        address parser =
-            getExternalPositionParserForType(IExternalPositionProxy(_externalPosition).getExternalPositionType());
+        address parser = getExternalPositionParserForType(
+            IExternalPositionProxy(_externalPosition).getExternalPositionType()
+        );
 
         (address[] memory assetsToTransfer, uint256[] memory amountsToTransfer, address[] memory assetsToReceive) =
             IExternalPositionParser(parser).parseAssetsForAction(_externalPosition, _actionId, _actionArgs);
@@ -185,13 +186,14 @@ contract ExternalPositionManager is IExternalPositionManager, ExtensionBase, Per
             abi.encode(_externalPosition, encodedActionData, assetsToTransfer, amountsToTransfer, assetsToReceive)
         );
 
-        IPolicyManager(getPolicyManager()).validatePolicies(
-            _comptrollerProxy,
-            IPolicyManager.PolicyHook.PostCallOnExternalPosition,
-            abi.encode(
-                _caller, _externalPosition, assetsToTransfer, amountsToTransfer, assetsToReceive, encodedActionData
-            )
-        );
+        IPolicyManager(getPolicyManager())
+            .validatePolicies(
+                _comptrollerProxy,
+                IPolicyManager.PolicyHook.PostCallOnExternalPosition,
+                abi.encode(
+                    _caller, _externalPosition, assetsToTransfer, amountsToTransfer, assetsToReceive, encodedActionData
+                )
+            );
 
         emit CallOnExternalPositionExecutedForFund(
             _caller,
@@ -211,9 +213,12 @@ contract ExternalPositionManager is IExternalPositionManager, ExtensionBase, Per
     {
         address externalPosition = abi.decode(_callArgs, (address));
 
-        IPolicyManager(getPolicyManager()).validatePolicies(
-            _comptrollerProxy, IPolicyManager.PolicyHook.RemoveExternalPosition, abi.encode(_caller, externalPosition)
-        );
+        IPolicyManager(getPolicyManager())
+            .validatePolicies(
+                _comptrollerProxy,
+                IPolicyManager.PolicyHook.RemoveExternalPosition,
+                abi.encode(_caller, externalPosition)
+            );
 
         __removeExternalPosition(_comptrollerProxy, externalPosition);
     }
@@ -237,11 +242,12 @@ contract ExternalPositionManager is IExternalPositionManager, ExtensionBase, Per
             "__reactivateExternalPosition: External position belongs to a different vault"
         );
 
-        IPolicyManager(getPolicyManager()).validatePolicies(
-            _comptrollerProxy,
-            IPolicyManager.PolicyHook.ReactivateExternalPosition,
-            abi.encode(_caller, externalPosition)
-        );
+        IPolicyManager(getPolicyManager())
+            .validatePolicies(
+                _comptrollerProxy,
+                IPolicyManager.PolicyHook.ReactivateExternalPosition,
+                abi.encode(_caller, externalPosition)
+            );
 
         __addExternalPosition(_comptrollerProxy, externalPosition);
     }

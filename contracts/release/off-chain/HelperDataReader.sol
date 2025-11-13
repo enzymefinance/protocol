@@ -12,8 +12,9 @@ pragma solidity 0.8.19;
 import {IERC20} from "../../external-interfaces/IERC20.sol";
 import {IExternalPositionFactory} from "../../persistent/external-positions/IExternalPositionFactory.sol";
 import {IExternalPositionProxy} from "../../persistent/external-positions/IExternalPositionProxy.sol";
-import {IHelperDataReader as IHelperDataReaderPersistent} from
-    "../../persistent/off-chain/helper-data-reader/IHelperDataReader.sol";
+import {
+    IHelperDataReader as IHelperDataReaderPersistent
+} from "../../persistent/off-chain/helper-data-reader/IHelperDataReader.sol";
 
 import {IComptroller} from "../core/fund/comptroller/IComptroller.sol";
 import {IVault} from "../core/fund/vault/IVault.sol";

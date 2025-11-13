@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IMapleLiquidityPosition as IMapleLiquidityPositionProd} from
-    "contracts/release/extensions/external-position-manager/external-positions/maple-liquidity/IMapleLiquidityPosition.sol";
+import {
+    IMapleLiquidityPosition as IMapleLiquidityPositionProd
+} from "contracts/release/extensions/external-position-manager/external-positions/maple-liquidity/IMapleLiquidityPosition.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -17,9 +18,7 @@ import {IMapleV2WithdrawalManager} from "tests/interfaces/external/IMapleV2Withd
 import {IDispatcher} from "tests/interfaces/internal/IDispatcher.sol";
 import {IMapleLiquidityPositionLib} from "tests/interfaces/internal/IMapleLiquidityPositionLib.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
-import {
-    ETHEREUM_MAPLE_V2_GLOBALS_ADDRESS, ETHEREUM_M11_CREDIT_USDC2_POOL_ADDRESS
-} from "./MapleLiquidityConstants.sol";
+import {ETHEREUM_MAPLE_V2_GLOBALS_ADDRESS, ETHEREUM_M11_CREDIT_USDC2_POOL_ADDRESS} from "./MapleLiquidityConstants.sol";
 
 abstract contract TestBase is IntegrationTest {
     event UsedLendingPoolV2Added(address indexed lendingPoolV2);

@@ -41,8 +41,7 @@ abstract contract PeggedDerivativesPriceFeedTestBase is IntegrationTest {
 
         __prankFundDeployerOwner();
         priceFeed.addDerivatives({
-            _derivatives: toArray(fakeTokenDerivative),
-            _underlyings: toArray(fakeTokenUnderlying)
+            _derivatives: toArray(fakeTokenDerivative), _underlyings: toArray(fakeTokenUnderlying)
         });
 
         uint256 derivativeAmount = assetUnit(IERC20(fakeTokenDerivative)) * 3;
@@ -76,8 +75,7 @@ abstract contract PeggedDerivativesPriceFeedTestBase is IntegrationTest {
         emit DerivativeAdded(fakeTokenDerivative, fakeTokenUnderlying);
 
         priceFeed.addDerivatives({
-            _derivatives: toArray(fakeTokenDerivative),
-            _underlyings: toArray(fakeTokenUnderlying)
+            _derivatives: toArray(fakeTokenDerivative), _underlyings: toArray(fakeTokenUnderlying)
         });
 
         assertTrue(priceFeed.isSupportedAsset({_asset: fakeTokenDerivative}), "Unsupported token");
@@ -113,15 +111,13 @@ abstract contract PeggedDerivativesPriceFeedTestBase is IntegrationTest {
 
         __prankFundDeployerOwner();
         priceFeed.addDerivatives({
-            _derivatives: toArray(fakeTokenDerivative),
-            _underlyings: toArray(fakeTokenUnderlying)
+            _derivatives: toArray(fakeTokenDerivative), _underlyings: toArray(fakeTokenUnderlying)
         });
 
         __prankFundDeployerOwner();
         vm.expectRevert("addDerivatives: Value already set");
         priceFeed.addDerivatives({
-            _derivatives: toArray(fakeTokenDerivative),
-            _underlyings: toArray(makeAddr("fake token"))
+            _derivatives: toArray(fakeTokenDerivative), _underlyings: toArray(makeAddr("fake token"))
         });
     }
 
@@ -134,8 +130,7 @@ abstract contract PeggedDerivativesPriceFeedTestBase is IntegrationTest {
         __prankFundDeployerOwner();
         vm.expectRevert("__validateDerivative: Unequal decimals");
         priceFeed.addDerivatives({
-            _derivatives: toArray(fakeTokenDerivative),
-            _underlyings: toArray(fakeTokenUnderlying)
+            _derivatives: toArray(fakeTokenDerivative), _underlyings: toArray(fakeTokenUnderlying)
         });
     }
 
@@ -145,8 +140,7 @@ abstract contract PeggedDerivativesPriceFeedTestBase is IntegrationTest {
 
         __prankFundDeployerOwner();
         priceFeed.addDerivatives({
-            _derivatives: toArray(fakeTokenDerivative),
-            _underlyings: toArray(fakeTokenUnderlying)
+            _derivatives: toArray(fakeTokenDerivative), _underlyings: toArray(fakeTokenUnderlying)
         });
 
         assertTrue(priceFeed.isSupportedAsset({_asset: fakeTokenDerivative}), "Unsupported token");

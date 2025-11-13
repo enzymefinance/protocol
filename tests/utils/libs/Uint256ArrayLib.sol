@@ -75,11 +75,7 @@ library Uint256ArrayLib {
         return (false, type(uint256).max);
     }
 
-    function removeAtIndex(uint256[] memory _self, uint256 _index)
-        internal
-        pure
-        returns (uint256[] memory nextArray_)
-    {
+    function removeAtIndex(uint256[] memory _self, uint256 _index) internal pure returns (uint256[] memory nextArray_) {
         uint256 oldLength = _self.length;
         require(_index < oldLength, "removeAtIndex: Index out of bounds");
 

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IStaderWithdrawalsPosition as IStaderWithdrawalsPositionProd} from
-    "contracts/release/extensions/external-position-manager/external-positions/stader-withdrawals/IStaderWithdrawalsPosition.sol";
+import {
+    IStaderWithdrawalsPosition as IStaderWithdrawalsPositionProd
+} from "contracts/release/extensions/external-position-manager/external-positions/stader-withdrawals/IStaderWithdrawalsPosition.sol";
 
 import {VmSafe} from "forge-std/Vm.sol";
 
@@ -114,7 +115,9 @@ abstract contract StaderWithdrawalsPositionTestBase is IntegrationTest {
             _comptrollerProxy: IComptrollerLib(comptrollerProxyAddress),
             _externalPositionAddress: address(staderWithdrawalsPosition),
             _actionId: uint256(IStaderWithdrawalsPositionProd.Actions.RequestWithdrawal),
-            _actionArgs: abi.encode(IStaderWithdrawalsPositionProd.RequestWithdrawalActionArgs({ethXAmount: _ethXAmount}))
+            _actionArgs: abi.encode(
+                IStaderWithdrawalsPositionProd.RequestWithdrawalActionArgs({ethXAmount: _ethXAmount})
+            )
         });
     }
 

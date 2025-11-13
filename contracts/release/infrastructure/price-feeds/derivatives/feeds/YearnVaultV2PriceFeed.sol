@@ -48,9 +48,8 @@ contract YearnVaultV2PriceFeed is IDerivativePriceFeed, SingleUnderlyingDerivati
         require(underlyings_[0] != address(0), "calcUnderlyingValues: Unsupported derivative");
 
         underlyingAmounts_ = new uint256[](1);
-        underlyingAmounts_[0] = _derivativeAmount.mul(IYearnVaultV2(_derivative).pricePerShare()).div(
-            10 ** uint256(IERC20(_derivative).decimals())
-        );
+        underlyingAmounts_[0] = _derivativeAmount.mul(IYearnVaultV2(_derivative).pricePerShare())
+            .div(10 ** uint256(IERC20(_derivative).decimals()));
     }
 
     /// @notice Checks if an asset is supported by the price feed

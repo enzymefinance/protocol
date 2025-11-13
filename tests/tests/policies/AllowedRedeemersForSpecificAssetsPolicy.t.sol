@@ -79,9 +79,7 @@ contract AllowedRedeemersForSpecificAssetsPolicy is IntegrationTest {
 
         // Buy some shares for the redeemer
         buyShares({
-            _sharesBuyer: _redeemer,
-            _comptrollerProxy: comptrollerProxy,
-            _amountToDeposit: assetUnit(denominationAsset)
+            _sharesBuyer: _redeemer, _comptrollerProxy: comptrollerProxy, _amountToDeposit: assetUnit(denominationAsset)
         });
 
         uint256 sharesToRedeem = vaultProxy.balanceOf(_redeemer);

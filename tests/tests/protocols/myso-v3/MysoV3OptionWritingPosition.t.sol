@@ -5,8 +5,9 @@ import {VmSafe} from "forge-std/Vm.sol";
 import {ECDSA} from "lib/openzeppelin-solc-0.8/contracts/utils/cryptography/ECDSA.sol";
 
 import {IMysoV3DataTypes as IMysoV3DataTypesProd} from "contracts/external-interfaces/IMysoV3DataTypes.sol";
-import {IMysoV3OptionWritingPosition as IMysoV3OptionWritingPositionProd} from
-    "contracts/release/extensions/external-position-manager/external-positions/myso-v3/IMysoV3OptionWritingPosition.sol";
+import {
+    IMysoV3OptionWritingPosition as IMysoV3OptionWritingPositionProd
+} from "contracts/release/extensions/external-position-manager/external-positions/myso-v3/IMysoV3OptionWritingPosition.sol";
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
@@ -90,9 +91,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
 
         // Fund trading firm with sufficient settlement token to pay option premium
         increaseTokenBalance({
-            _token: IERC20(settlementToken),
-            _to: tradingFirm,
-            _amount: 1_000_000 * assetUnit(IERC20(settlementToken))
+            _token: IERC20(settlementToken), _to: tradingFirm, _amount: 1_000_000 * assetUnit(IERC20(settlementToken))
         });
 
         // Trading firm approves MYSO router
@@ -100,7 +99,9 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         IERC20(settlementToken).approve(address(mysoRouter), type(uint256).max);
 
         // Fund vault with underlyingToken such that it has sufficient balance to write call
-        increaseTokenBalance({_token: underlyingToken, _to: vaultProxyAddress, _amount: 10 * assetUnit(underlyingToken)});
+        increaseTokenBalance({
+            _token: underlyingToken, _to: vaultProxyAddress, _amount: 10 * assetUnit(underlyingToken)
+        });
     }
 
     // DEPLOYMENT HELPERS
@@ -392,8 +393,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         );
         __closeAndSweepEscrows(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: emptyArray,
-                skipWithdrawFromEscrow: false
+                escrowIdxs: emptyArray, skipWithdrawFromEscrow: false
             })
         );
 
@@ -403,8 +403,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         );
         __closeAndSweepEscrows(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: linkedEscrowIndices,
-                skipWithdrawFromEscrow: false
+                escrowIdxs: linkedEscrowIndices, skipWithdrawFromEscrow: false
             })
         );
 
@@ -414,8 +413,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         // Check revert on unauthorized sweep
         __closeAndSweepEscrowsUnauthorized(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: linkedEscrowIndices,
-                skipWithdrawFromEscrow: false
+                escrowIdxs: linkedEscrowIndices, skipWithdrawFromEscrow: false
             })
         );
 
@@ -425,8 +423,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         emit EscrowClosedAndSwept(linkedEscrowIndices[0]);
         __closeAndSweepEscrows(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: linkedEscrowIndices,
-                skipWithdrawFromEscrow: false
+                escrowIdxs: linkedEscrowIndices, skipWithdrawFromEscrow: false
             })
         );
         VmSafe.Log[] memory logs = vm.getRecordedLogs();
@@ -444,8 +441,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         );
         __closeAndSweepEscrows(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: linkedEscrowIndices,
-                skipWithdrawFromEscrow: false
+                escrowIdxs: linkedEscrowIndices, skipWithdrawFromEscrow: false
             })
         );
 
@@ -533,7 +529,9 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         address[] memory emptyTokens = new address[](0);
         vm.expectRevert(IMysoV3OptionWritingPositionLib.MysoV3OptionWritingPosition__InputArraysLengthMismatch.selector);
         __withdrawFromEscrows(
-            IMysoV3OptionWritingPositionProd.WithdrawTokensFromEscrowsActionArgs({escrows: escrows, tokens: emptyTokens})
+            IMysoV3OptionWritingPositionProd.WithdrawTokensFromEscrowsActionArgs({
+                escrows: escrows, tokens: emptyTokens
+            })
         );
 
         uint256 preSweepVaultBal = underlyingToken.balanceOf(vaultProxyAddress);
@@ -558,8 +556,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         emit EscrowClosedAndSwept(linkedEscrowIndices[0]);
         __closeAndSweepEscrows(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: linkedEscrowIndices,
-                skipWithdrawFromEscrow: false
+                escrowIdxs: linkedEscrowIndices, skipWithdrawFromEscrow: false
             })
         );
         assertEq(mysoV3OptionWritingPosition.getNumOpenEscrows(), 0, "Number of open escrows is non-zero");
@@ -628,8 +625,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         );
         __closeAndSweepEscrows(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: linkedEscrowIndices,
-                skipWithdrawFromEscrow: false
+                escrowIdxs: linkedEscrowIndices, skipWithdrawFromEscrow: false
             })
         );
 
@@ -640,8 +636,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         emit EscrowClosedAndSwept(linkedEscrowIndices[0]);
         __closeAndSweepEscrows(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: linkedEscrowIndices,
-                skipWithdrawFromEscrow: false
+                escrowIdxs: linkedEscrowIndices, skipWithdrawFromEscrow: false
             })
         );
         assertEq(mysoV3OptionWritingPosition.getNumOpenEscrows(), 0, "Number of open escrows is non-zero");
@@ -704,8 +699,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         emit EscrowClosedAndSwept(linkedEscrowIndices[0]);
         __closeAndSweepEscrows(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: linkedEscrowIndices,
-                skipWithdrawFromEscrow: false
+                escrowIdxs: linkedEscrowIndices, skipWithdrawFromEscrow: false
             })
         );
 
@@ -775,16 +769,14 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         vm.expectRevert(abi.encodeWithSelector(expectedRevert));
         __closeAndSweepEscrows(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: linkedEscrowIndices,
-                skipWithdrawFromEscrow: false
+                escrowIdxs: linkedEscrowIndices, skipWithdrawFromEscrow: false
             })
         );
 
         // Set skipWithdrawFromEscrow parameter to true to circumvent revert
         __closeAndSweepEscrows(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: linkedEscrowIndices,
-                skipWithdrawFromEscrow: true
+                escrowIdxs: linkedEscrowIndices, skipWithdrawFromEscrow: true
             })
         );
 
@@ -851,8 +843,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         );
         __closeAndSweepEscrows(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: linkedEscrowIndices,
-                skipWithdrawFromEscrow: false
+                escrowIdxs: linkedEscrowIndices, skipWithdrawFromEscrow: false
             })
         );
 
@@ -864,8 +855,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         emit EscrowClosedAndSwept(linkedEscrowIndices[0]);
         __closeAndSweepEscrows(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: linkedEscrowIndices,
-                skipWithdrawFromEscrow: false
+                escrowIdxs: linkedEscrowIndices, skipWithdrawFromEscrow: false
             })
         );
         assertEq(settlementToken.balanceOf(linkedEscrowAddrs[0]), 0, "Escrow settlement token balance non-zero"); // check settlement token amount was swept from escrow
@@ -1002,8 +992,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         );
         __closeAndSweepEscrows(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: linkedEscrowIndices,
-                skipWithdrawFromEscrow: false
+                escrowIdxs: linkedEscrowIndices, skipWithdrawFromEscrow: false
             })
         );
 
@@ -1015,8 +1004,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         emit EscrowClosedAndSwept(linkedEscrowIndices[0]);
         __closeAndSweepEscrows(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: linkedEscrowIndices,
-                skipWithdrawFromEscrow: false
+                escrowIdxs: linkedEscrowIndices, skipWithdrawFromEscrow: false
             })
         );
         assertEq(settlementToken.balanceOf(linkedEscrowAddrs[0]), 0, "Escrow settlement token balance non-zero"); // check collateral amount was swept from escrow
@@ -1038,8 +1026,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         emit EscrowCreated(mysoRouter.numEscrows());
         __createEscrowByStartingAuction(
             IMysoV3OptionWritingPositionProd.CreateEscrowByStartingAuctionActionArgs({
-                auctionInitialization: auctionInitialization,
-                distPartner: address(0)
+                auctionInitialization: auctionInitialization, distPartner: address(0)
             })
         );
 
@@ -1065,11 +1052,8 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         uint256 relBid = type(uint256).max; // @dev: for slippage control
         uint256 refSpot = type(uint256).max; // @dev: for slippage control
         bytes[] memory emptyOracleData = new bytes[](0);
-        (IMysoV3DataTypes.BidPreview memory bidPreview,) = IMysoV3Escrow(linkedEscrowAddrs[0]).previewBid({
-            _relBid: relBid,
-            _refSpot: refSpot,
-            _oracleData: emptyOracleData
-        });
+        (IMysoV3DataTypes.BidPreview memory bidPreview,) = IMysoV3Escrow(linkedEscrowAddrs[0])
+            .previewBid({_relBid: relBid, _refSpot: refSpot, _oracleData: emptyOracleData});
 
         // Trading firm bids on auction
         vm.prank(tradingFirm);
@@ -1106,8 +1090,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         );
         __closeAndSweepEscrows(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: linkedEscrowIndices,
-                skipWithdrawFromEscrow: false
+                escrowIdxs: linkedEscrowIndices, skipWithdrawFromEscrow: false
             })
         );
 
@@ -1137,8 +1120,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         emit EscrowClosedAndSwept(linkedEscrowIndices[0]);
         __closeAndSweepEscrows(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: linkedEscrowIndices,
-                skipWithdrawFromEscrow: false
+                escrowIdxs: linkedEscrowIndices, skipWithdrawFromEscrow: false
             })
         );
 
@@ -1160,8 +1142,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         emit EscrowCreated(mysoRouter.numEscrows());
         __createEscrowByStartingAuction(
             IMysoV3OptionWritingPositionProd.CreateEscrowByStartingAuctionActionArgs({
-                auctionInitialization: auctionInitialization,
-                distPartner: address(0)
+                auctionInitialization: auctionInitialization, distPartner: address(0)
             })
         );
 
@@ -1190,8 +1171,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         emit EscrowClosedAndSwept(linkedEscrowIndices[0]);
         __closeAndSweepEscrows(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: linkedEscrowIndices,
-                skipWithdrawFromEscrow: false
+                escrowIdxs: linkedEscrowIndices, skipWithdrawFromEscrow: false
             })
         );
 
@@ -1231,8 +1211,12 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
             _to: tradingFirm,
             _amount: rfqQuote1.premium + rfqQuote2.premium
         });
-        increaseTokenBalance({_token: IERC20(optionInfo1.settlementToken), _to: tradingFirm, _amount: type(uint128).max});
-        increaseTokenBalance({_token: IERC20(optionInfo2.settlementToken), _to: tradingFirm, _amount: type(uint128).max});
+        increaseTokenBalance({
+            _token: IERC20(optionInfo1.settlementToken), _to: tradingFirm, _amount: type(uint128).max
+        });
+        increaseTokenBalance({
+            _token: IERC20(optionInfo2.settlementToken), _to: tradingFirm, _amount: type(uint128).max
+        });
         vm.prank(tradingFirm);
         IERC20(optionInfo1.underlyingToken).approve(address(mysoRouter), type(uint256).max);
         vm.prank(tradingFirm);
@@ -1245,7 +1229,9 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         emit EscrowCreated(mysoRouter.numEscrows());
         __createEscrowByTakingQuote(
             IMysoV3OptionWritingPositionProd.CreateEscrowByTakingQuoteActionArgs({
-                rfqInitialization: IMysoV3DataTypesProd.RFQInitialization({optionInfo: optionInfo1, rfqQuote: rfqQuote1}),
+                rfqInitialization: IMysoV3DataTypesProd.RFQInitialization({
+                    optionInfo: optionInfo1, rfqQuote: rfqQuote1
+                }),
                 distPartner: address(0)
             })
         );
@@ -1255,7 +1241,9 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         emit EscrowCreated(mysoRouter.numEscrows());
         __createEscrowByTakingQuote(
             IMysoV3OptionWritingPositionProd.CreateEscrowByTakingQuoteActionArgs({
-                rfqInitialization: IMysoV3DataTypesProd.RFQInitialization({optionInfo: optionInfo2, rfqQuote: rfqQuote2}),
+                rfqInitialization: IMysoV3DataTypesProd.RFQInitialization({
+                    optionInfo: optionInfo2, rfqQuote: rfqQuote2
+                }),
                 distPartner: address(0)
             })
         );
@@ -1292,8 +1280,7 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         emit EscrowClosedAndSwept(linkedEscrowIndices[1]);
         __closeAndSweepEscrows(
             IMysoV3OptionWritingPositionProd.CloseAndSweepEscrowActionArgs({
-                escrowIdxs: linkedEscrowIndices,
-                skipWithdrawFromEscrow: false
+                escrowIdxs: linkedEscrowIndices, skipWithdrawFromEscrow: false
             })
         );
         VmSafe.Log[] memory logs = vm.getRecordedLogs();

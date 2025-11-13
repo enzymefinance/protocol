@@ -36,8 +36,7 @@ contract FundDeployerTest is IntegrationTest {
     function test_getOwner_success() public {
         // Deploy a new FundDeployer
         IFundDeployer newFundDeployer = deployFundDeployer({
-            _dispatcher: core.persistent.dispatcher,
-            _gasRelayPaymasterFactory: core.release.gasRelayPaymasterFactory
+            _dispatcher: core.persistent.dispatcher, _gasRelayPaymasterFactory: core.release.gasRelayPaymasterFactory
         });
 
         // Owner starts as the FundDeployer contract deployer
@@ -92,15 +91,16 @@ contract FundDeployerTest is IntegrationTest {
         emit NewFundCreated(fundCreator, expectedVaultProxyAddress, expectedComptrollerProxy);
 
         vm.prank(fundCreator);
-        (address comptrollerProxy, address vaultProxy) = core.release.fundDeployer.createNewFund({
-            _fundOwner: fundOwner,
-            _fundName: fundName,
-            _fundSymbol: "",
-            _denominationAsset: denominationAsset,
-            _sharesActionTimelock: sharesActionTimelock,
-            _feeManagerConfigData: "",
-            _policyManagerConfigData: ""
-        });
+        (address comptrollerProxy, address vaultProxy) = core.release.fundDeployer
+            .createNewFund({
+                _fundOwner: fundOwner,
+                _fundName: fundName,
+                _fundSymbol: "",
+                _denominationAsset: denominationAsset,
+                _sharesActionTimelock: sharesActionTimelock,
+                _feeManagerConfigData: "",
+                _policyManagerConfigData: ""
+            });
 
         // Assert the correct ComptrollerProxy state values
         assertEq(IComptrollerLib(comptrollerProxy).getDenominationAsset(), denominationAsset);

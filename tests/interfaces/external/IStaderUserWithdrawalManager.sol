@@ -11,8 +11,9 @@
 
 pragma solidity >=0.6.0 <0.9.0;
 
-import {IStaderUserWithdrawalManager as IStaderUserWithdrawalManagerProd} from
-    "contracts/external-interfaces/IStaderUserWithdrawalManager.sol";
+import {
+    IStaderUserWithdrawalManager as IStaderUserWithdrawalManagerProd
+} from "contracts/external-interfaces/IStaderUserWithdrawalManager.sol";
 
 /// @title IStaderUserWithdrawalManager Interface
 /// @author Enzyme Foundation <security@enzyme.finance>

@@ -45,8 +45,7 @@ contract HelperDataReaderTest is Test {
         HelperDataReaderRouterTypeLibrary.HelperDataReaderInfo[] memory helperDataReadersInfo =
             new HelperDataReaderRouterTypeLibrary.HelperDataReaderInfo[](1);
         helperDataReadersInfo[0] = HelperDataReaderRouterTypeLibrary.HelperDataReaderInfo({
-            helperDataReader: address(helperDataReader),
-            version: 4
+            helperDataReader: address(helperDataReader), version: 4
         });
 
         helperDataReaderRouter = __deployHelperDataReaderRouter({

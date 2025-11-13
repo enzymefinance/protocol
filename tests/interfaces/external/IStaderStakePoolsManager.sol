@@ -11,8 +11,9 @@
 
 pragma solidity >=0.6.0 <0.9.0;
 
-import {IStaderStakePoolsManager as IStaderStakePoolsManagerProd} from
-    "contracts/external-interfaces/IStaderStakePoolsManager.sol";
+import {
+    IStaderStakePoolsManager as IStaderStakePoolsManagerProd
+} from "contracts/external-interfaces/IStaderStakePoolsManager.sol";
 
 /// @title IStaderStakePoolsManager Interface
 /// @author Enzyme Foundation <security@enzyme.finance>

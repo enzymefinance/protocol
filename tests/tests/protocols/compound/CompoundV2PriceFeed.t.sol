@@ -60,8 +60,7 @@ abstract contract CompoundV2PriceFeedTestBase is IntegrationTest {
 
     function test_calcUnderlyingValues_successCETH() public {
         __test_calcUnderlyingValues_success({
-            _derivative: ETHEREUM_COMPOUND_V2_CETH,
-            _derivativeAmount: 12 * assetUnit(IERC20(ETHEREUM_COMPOUND_V2_CETH))
+            _derivative: ETHEREUM_COMPOUND_V2_CETH, _derivativeAmount: 12 * assetUnit(IERC20(ETHEREUM_COMPOUND_V2_CETH))
         });
     }
 

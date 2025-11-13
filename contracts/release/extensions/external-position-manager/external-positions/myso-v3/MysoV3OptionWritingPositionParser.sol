@@ -57,7 +57,9 @@ contract MysoV3OptionWritingPositionParser is IExternalPositionParser {
             });
         } else if (_actionId == uint256(IMysoV3OptionWritingPosition.Actions.CloseAndSweepEscrows)) {
             assetsToReceive_ = __decodeCloseAndSweepEscrows({
-                _actionArgs: abi.decode(_encodedActionArgs, (IMysoV3OptionWritingPosition.CloseAndSweepEscrowActionArgs))
+                _actionArgs: abi.decode(
+                    _encodedActionArgs, (IMysoV3OptionWritingPosition.CloseAndSweepEscrowActionArgs)
+                )
             });
         } else if (_actionId == uint256(IMysoV3OptionWritingPosition.Actions.WithdrawTokensFromEscrows)) {
             assetsToReceive_ = __decodeWithdrawTokensFromEscrows({

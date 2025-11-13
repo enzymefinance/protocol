@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IIntegrationManager as IIntegrationManagerProd} from
-    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
-import {IParaSwapV6Adapter as IParaSwapV6AdapterProd} from
-    "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/IParaSwapV6Adapter.sol";
+import {
+    IIntegrationManager as IIntegrationManagerProd
+} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {
+    IParaSwapV6Adapter as IParaSwapV6AdapterProd
+} from "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/IParaSwapV6Adapter.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -124,8 +126,7 @@ abstract contract ParaSwapV6AdapterTestBase is IntegrationTest {
         IERC20 incomingAsset = IERC20(_swapData.incomingAssetAddress);
 
         __registerAssetsAndSeedOutgoing({
-            _outgoingAssetAddress: address(outgoingAsset),
-            _incomingAssetAddress: address(incomingAsset)
+            _outgoingAssetAddress: address(outgoingAsset), _incomingAssetAddress: address(incomingAsset)
         });
 
         uint256 preOrderOutgoingAssetBalance = outgoingAsset.balanceOf(vaultProxyAddress);
@@ -136,8 +137,7 @@ abstract contract ParaSwapV6AdapterTestBase is IntegrationTest {
         vm.recordLogs();
 
         __action({
-            _actionId: IParaSwapV6AdapterProd.Action.SwapExactAmountIn,
-            _encodedActionArgs: _swapData.encodedSwapData
+            _actionId: IParaSwapV6AdapterProd.Action.SwapExactAmountIn, _encodedActionArgs: _swapData.encodedSwapData
         });
 
         assertAdapterAssetsForAction({
@@ -167,16 +167,14 @@ abstract contract ParaSwapV6AdapterTestBase is IntegrationTest {
         IERC20 incomingAsset = IERC20(_swapData.incomingAssetAddress);
 
         __registerAssetsAndSeedOutgoing({
-            _outgoingAssetAddress: address(outgoingAsset),
-            _incomingAssetAddress: address(incomingAsset)
+            _outgoingAssetAddress: address(outgoingAsset), _incomingAssetAddress: address(incomingAsset)
         });
 
         uint256 preOrderPartnerFeeBalance =
             feeVault.getBalance({_tokenAddress: address(outgoingAsset), _partnerAddress: feeRecipientAddress});
 
         __action({
-            _actionId: IParaSwapV6AdapterProd.Action.SwapExactAmountIn,
-            _encodedActionArgs: _swapData.encodedSwapData
+            _actionId: IParaSwapV6AdapterProd.Action.SwapExactAmountIn, _encodedActionArgs: _swapData.encodedSwapData
         });
 
         uint256 postOrderPartnerFeeBalance =
@@ -191,8 +189,7 @@ abstract contract ParaSwapV6AdapterTestBase is IntegrationTest {
         IERC20 incomingAsset = IERC20(_swapData.incomingAssetAddress);
 
         __registerAssetsAndSeedOutgoing({
-            _outgoingAssetAddress: address(outgoingAsset),
-            _incomingAssetAddress: address(incomingAsset)
+            _outgoingAssetAddress: address(outgoingAsset), _incomingAssetAddress: address(incomingAsset)
         });
 
         uint256 preOrderOutgoingAssetBalance = outgoingAsset.balanceOf(vaultProxyAddress);
@@ -201,8 +198,7 @@ abstract contract ParaSwapV6AdapterTestBase is IntegrationTest {
         vm.recordLogs();
 
         __action({
-            _actionId: IParaSwapV6AdapterProd.Action.SwapExactAmountOut,
-            _encodedActionArgs: _swapData.encodedSwapData
+            _actionId: IParaSwapV6AdapterProd.Action.SwapExactAmountOut, _encodedActionArgs: _swapData.encodedSwapData
         });
 
         assertAdapterAssetsForAction({

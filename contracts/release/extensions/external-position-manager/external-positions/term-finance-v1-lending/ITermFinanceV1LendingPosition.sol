@@ -21,10 +21,7 @@ interface ITermFinanceV1LendingPosition is IExternalPosition {
         Sweep
     }
 
-    function getOfferIdsFromTermAuction(address _termAuctionAddress)
-        external
-        view
-        returns (bytes32[] memory offerIds_);
+    function getOfferIdsFromTermAuction(address _termAuctionAddress) external view returns (bytes32[] memory offerIds_);
 
     function getTermAuctions() external view returns (address[] memory termAuctions_);
 }

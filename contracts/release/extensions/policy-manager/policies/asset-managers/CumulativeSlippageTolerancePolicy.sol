@@ -56,10 +56,7 @@ contract CumulativeSlippageTolerancePolicy is
         public
         PolicyBase(_policyManager)
         PricelessAssetBypassMixin(
-            _valueInterpreter,
-            _wethToken,
-            _pricelessAssetBypassTimelock,
-            _pricelessAssetBypassTimeLimit
+            _valueInterpreter, _wethToken, _pricelessAssetBypassTimelock, _pricelessAssetBypassTimeLimit
         )
     {
         ADDRESS_LIST_REGISTRY = _addressListRegistry;
@@ -114,8 +111,7 @@ contract CumulativeSlippageTolerancePolicy is
     {
         (
             ,
-            address adapter,
-            ,
+            address adapter,,
             address[] memory incomingAssets,
             uint256[] memory incomingAssetAmounts,
             address[] memory spendAssets,

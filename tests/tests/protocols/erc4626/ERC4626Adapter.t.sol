@@ -3,8 +3,9 @@ pragma solidity 0.8.19;
 
 import {IERC4626} from "openzeppelin-solc-0.8/token/ERC20/extensions/ERC4626.sol";
 
-import {IIntegrationManager as IIntegrationManagerProd} from
-    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {
+    IIntegrationManager as IIntegrationManagerProd
+} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -38,9 +39,7 @@ abstract contract ERC4626AdapterTestBase is IntegrationTest {
         tokenAddresses[0] = address(underlying);
         tokenAddresses[1] = address(_erc4626VaultAddress);
         addPrimitivesWithTestAggregator({
-            _valueInterpreter: core.release.valueInterpreter,
-            _tokenAddresses: tokenAddresses,
-            _skipIfRegistered: true
+            _valueInterpreter: core.release.valueInterpreter, _tokenAddresses: tokenAddresses, _skipIfRegistered: true
         });
 
         (comptrollerProxy, vaultProxy, fundOwner) =

@@ -23,11 +23,7 @@ import {IBalancerV2StablePoolPriceFeed} from "./interfaces/IBalancerV2StablePool
 /// @title BalancerV2StablePoolPriceFeed Contract
 /// @author Enzyme Foundation <security@enzyme.finance>
 /// @notice Price source oracle for Balancer Pool Tokens (BPT) of stable pools
-contract BalancerV2StablePoolPriceFeed is
-    IBalancerV2StablePoolPriceFeed,
-    IDerivativePriceFeed,
-    FundDeployerOwnerMixin
-{
+contract BalancerV2StablePoolPriceFeed is IBalancerV2StablePoolPriceFeed, IDerivativePriceFeed, FundDeployerOwnerMixin {
     using AddressArrayLib for address[];
     using SafeMath for uint256;
 
@@ -76,9 +72,8 @@ contract BalancerV2StablePoolPriceFeed is
         underlyingAmounts_ = new uint256[](1);
 
         underlyings_[0] = poolInfo.invariantProxyAsset;
-        underlyingAmounts_[0] = _derivativeAmount.mul(IBalancerV2StablePool(_derivative).getRate()).mul(
-            10 ** uint256(poolInfo.invariantProxyAssetDecimals)
-        ).div(RATE_FORMULA_DIVISOR);
+        underlyingAmounts_[0] = _derivativeAmount.mul(IBalancerV2StablePool(_derivative).getRate())
+            .mul(10 ** uint256(poolInfo.invariantProxyAssetDecimals)).div(RATE_FORMULA_DIVISOR);
 
         return (underlyings_, underlyingAmounts_);
     }

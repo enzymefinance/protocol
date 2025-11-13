@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IIntegrationManager as IIntegrationManagerProd} from
-    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
-import {ITransferAssetsAdapter as ITransferAssetsAdapterProd} from
-    "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/ITransferAssetsAdapter.sol";
+import {
+    IIntegrationManager as IIntegrationManagerProd
+} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {
+    ITransferAssetsAdapter as ITransferAssetsAdapterProd
+} from "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/ITransferAssetsAdapter.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -60,9 +62,7 @@ contract TransferAssetsAdapterTest is IntegrationTest {
     function __transfer(uint256[] memory _amounts) private {
         bytes memory actionArgs = abi.encode(
             ITransferAssetsAdapterProd.TransferERC20CallArgs({
-                recipient: recipient,
-                assetAddresses: assetAddresses,
-                amounts: _amounts
+                recipient: recipient, assetAddresses: assetAddresses, amounts: _amounts
             })
         );
 
@@ -96,9 +96,7 @@ contract TransferAssetsAdapterTest is IntegrationTest {
             _actionSelector: transferAssetsAdapter.transfer.selector,
             _integrationData: abi.encode(
                 ITransferAssetsAdapterProd.TransferERC20CallArgs({
-                    recipient: recipient,
-                    assetAddresses: assetAddresses,
-                    amounts: _amountInputs
+                    recipient: recipient, assetAddresses: assetAddresses, amounts: _amountInputs
                 })
             ),
             _expectedSpendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Approve),

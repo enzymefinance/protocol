@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IAddressListRegistry as IAddressListRegistryProd} from
-    "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
-import {IKilnStakingPosition as IKilnStakingPositionProd} from
-    "contracts/release/extensions/external-position-manager/external-positions/kiln-staking/IKilnStakingPosition.sol";
+import {
+    IAddressListRegistry as IAddressListRegistryProd
+} from "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
+import {
+    IKilnStakingPosition as IKilnStakingPositionProd
+} from "contracts/release/extensions/external-position-manager/external-positions/kiln-staking/IKilnStakingPosition.sol";
 
 import {VmSafe} from "forge-std/Vm.sol";
 
@@ -104,11 +106,12 @@ abstract contract TestBase is IntegrationTest {
 
     function __deployKilnStakingPositionType() internal returns (uint256 typeId_, uint256 stakingPositionsListId_) {
         // Create a new AddressListRegistry list for Kiln StakingContract instances
-        stakingPositionsListId_ = core.persistent.addressListRegistry.createList({
-            _owner: makeAddr("__deployKilnStakingPositionType: StakingContractsListOwner"),
-            _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.AddAndRemove),
-            _initialItems: toArray(address(stakingContract))
-        });
+        stakingPositionsListId_ = core.persistent.addressListRegistry
+            .createList({
+                _owner: makeAddr("__deployKilnStakingPositionType: StakingContractsListOwner"),
+                _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.AddAndRemove),
+                _initialItems: toArray(address(stakingContract))
+            });
 
         // Deploy KilnStakingPosition type contracts
         address kilnStakingPositionLibAddress = __deployKilnStakingPositionLib();
@@ -215,10 +218,8 @@ abstract contract TestBase is IntegrationTest {
         address listOwner = core.persistent.addressListRegistry.getListOwner(stakingPositionsListId);
 
         vm.prank(listOwner);
-        core.persistent.addressListRegistry.removeFromList({
-            _id: stakingPositionsListId,
-            _items: toArray(address(stakingContract))
-        });
+        core.persistent.addressListRegistry
+            .removeFromList({_id: stakingPositionsListId, _items: toArray(address(stakingContract))});
     }
 
     // Copied verbatim from Kiln StakingContract
@@ -231,8 +232,9 @@ abstract contract TestBase is IntegrationTest {
         view
         returns (bytes[] memory validatorKeys_)
     {
-        VmSafe.Log[] memory depositEvents =
-            filterLogsMatchingSelector({_logs: _logs, _selector: Deposit.selector, _emitter: address(stakingContract)});
+        VmSafe.Log[] memory depositEvents = filterLogsMatchingSelector({
+            _logs: _logs, _selector: Deposit.selector, _emitter: address(stakingContract)
+        });
 
         validatorKeys_ = new bytes[](depositEvents.length);
         for (uint256 i; i < depositEvents.length; i++) {
@@ -302,9 +304,7 @@ contract StakeTest is TestBase {
 
         // Assert assetsToReceive was correctly formatted (no assets in this case)
         assertExternalPositionAssetsToReceive({
-            _logs: logs,
-            _externalPositionManager: core.release.externalPositionManager,
-            _assets: new address[](0)
+            _logs: logs, _externalPositionManager: core.release.externalPositionManager, _assets: new address[](0)
         });
 
         // Assert validators correctly provisioned on Kiln via event emissions.

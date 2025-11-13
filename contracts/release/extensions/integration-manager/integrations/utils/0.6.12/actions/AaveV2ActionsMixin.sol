@@ -29,16 +29,11 @@ abstract contract AaveV2ActionsMixin is AssetHelpers {
     /// @dev Helper to execute lending on Aave v2
     function __aaveV2Lend(address _recipient, address _underlying, uint256 _amount) internal {
         __approveAssetMaxAsNeeded({
-            _asset: _underlying,
-            _target: address(AAVE_V2_LENDING_POOL_CONTRACT),
-            _neededAmount: _amount
+            _asset: _underlying, _target: address(AAVE_V2_LENDING_POOL_CONTRACT), _neededAmount: _amount
         });
 
         AAVE_V2_LENDING_POOL_CONTRACT.deposit({
-            _underlying: _underlying,
-            _amount: _amount,
-            _to: _recipient,
-            _referralCode: AAVE_V2_REFERRAL_CODE
+            _underlying: _underlying, _amount: _amount, _to: _recipient, _referralCode: AAVE_V2_REFERRAL_CODE
         });
     }
 

@@ -25,7 +25,9 @@ contract RateAggregatorBaseHarness is RateAggregatorBase {
         address _quoteConversionAggregatorAddress,
         bool _quoteConversionAggregatorInverted
     )
-        RateAggregatorBase(_thisAggregatorDecimals, _quoteConversionAggregatorAddress, _quoteConversionAggregatorInverted)
+        RateAggregatorBase(
+            _thisAggregatorDecimals, _quoteConversionAggregatorAddress, _quoteConversionAggregatorInverted
+        )
     {}
 
     function baseRate() public view override returns (uint256 rate_, uint256 ratePrecision_, uint256 timestamp_) {

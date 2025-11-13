@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {ITheGraphDelegationPosition as ITheGraphDelegationPositionProd} from
-    "contracts/release/extensions/external-position-manager/external-positions/the-graph-delegation/ITheGraphDelegationPosition.sol";
+import {
+    ITheGraphDelegationPosition as ITheGraphDelegationPositionProd
+} from "contracts/release/extensions/external-position-manager/external-positions/the-graph-delegation/ITheGraphDelegationPosition.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -70,10 +71,9 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
 
         externalPositionManager = IExternalPositionManager(core.release.externalPositionManager);
         (theGraphDelegationPositionLib, theGraphDelegationPositionParser, theGraphDelegationTypeId) =
-        deployTheGraphDelegation({
-            _theGraphStakingAddress: address(theGraphStaking),
-            _grtTokenAddress: address(grtToken)
-        });
+            deployTheGraphDelegation({
+                _theGraphStakingAddress: address(theGraphStaking), _grtTokenAddress: address(grtToken)
+            });
 
         (IComptrollerLib comptrollerProxy, IVaultLib vaultProxy, address owner) =
             createFundMinimal({_fundDeployer: core.release.fundDeployer});
@@ -94,9 +94,7 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
 
         // Add the grtToken to the asset universe
         addPrimitiveWithTestAggregator({
-            _valueInterpreter: core.release.valueInterpreter,
-            _tokenAddress: address(grtToken),
-            _skipIfRegistered: true
+            _valueInterpreter: core.release.valueInterpreter, _tokenAddress: address(grtToken), _skipIfRegistered: true
         });
 
         // Increase the loanToken and collateralToken balances
@@ -118,8 +116,7 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
         )
     {
         theGraphDelegationPositionLib_ = deployTheGraphDelegationPositionLib({
-            _theGraphStakingAddress: _theGraphStakingAddress,
-            _grtTokenAddress: _grtTokenAddress
+            _theGraphStakingAddress: _theGraphStakingAddress, _grtTokenAddress: _grtTokenAddress
         });
         theGraphDelegationPositionParser_ = deployTheGraphDelegationPositionParser({_grtTokenAddress: _grtTokenAddress});
 

@@ -13,9 +13,7 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @author Enzyme Foundation <security@enzyme.finance>
 /// @notice Limited interface for GlobalConfigLib's required Enzyme v4 ComptrollerLib calls
 interface IGlobalConfigLibComptrollerV4 {
-    function buyShares(uint256 _investmentAmount, uint256 _minSharesQuantity)
-        external
-        returns (uint256 sharesReceived_);
+    function buyShares(uint256 _investmentAmount, uint256 _minSharesQuantity) external returns (uint256 sharesReceived_);
 
     function getDenominationAsset() external view returns (address denominationAsset_);
 

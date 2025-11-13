@@ -3,8 +3,9 @@ pragma solidity 0.8.19;
 
 import {IERC4626} from "openzeppelin-solc-0.8/token/ERC20/extensions/ERC4626.sol";
 
-import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
-    "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
+import {
+    IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd
+} from "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -48,11 +49,12 @@ abstract contract ERC4626PriceFeedTestBase is IntegrationTest {
 
         address underlyingAddress = IERC4626(_erc4626VaultAddress).asset();
 
-        uint256 erc4626VaultValue = IValueInterpreter(address(core.release.valueInterpreter)).calcCanonicalAssetValue({
-            _baseAsset: _erc4626VaultAddress,
-            _amount: assetUnit(IERC20(_erc4626VaultAddress)),
-            _quoteAsset: underlyingAddress
-        });
+        uint256 erc4626VaultValue = IValueInterpreter(address(core.release.valueInterpreter))
+            .calcCanonicalAssetValue({
+                _baseAsset: _erc4626VaultAddress,
+                _amount: assetUnit(IERC20(_erc4626VaultAddress)),
+                _quoteAsset: underlyingAddress
+            });
 
         uint256 underlyingSingleUnit = assetUnit(IERC20(underlyingAddress));
         uint256 timePassed = block.timestamp - _poolCreationTimestamp;
@@ -60,9 +62,8 @@ abstract contract ERC4626PriceFeedTestBase is IntegrationTest {
         assertGe(erc4626VaultValue, underlyingSingleUnit, "Value too low");
         assertLe(
             erc4626VaultValue,
-            underlyingSingleUnit
-                + (underlyingSingleUnit * _allowedDeviationPer365DaysInBps * timePassed)
-                    / (365 days * BPS_ONE_HUNDRED_PERCENT),
+            underlyingSingleUnit + (underlyingSingleUnit * _allowedDeviationPer365DaysInBps * timePassed)
+                / (365 days * BPS_ONE_HUNDRED_PERCENT),
             "Deviation too high"
         );
     }

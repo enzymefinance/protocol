@@ -161,15 +161,11 @@ contract DepositWrapper is AssetHelpers {
     ) private returns (uint256 sharesReceived_) {
         // Give the ComptrollerProxy max allowance for its denomination asset as necessary
         __approveAssetMaxAsNeeded({
-            _asset: _denominationAssetAddress,
-            _target: address(_comptrollerProxy),
-            _neededAmount: _investmentAmount
+            _asset: _denominationAssetAddress, _target: address(_comptrollerProxy), _neededAmount: _investmentAmount
         });
 
         return _comptrollerProxy.buySharesOnBehalf({
-            _buyer: _buyer,
-            _investmentAmount: _investmentAmount,
-            _minSharesQuantity: _minSharesQuantity
+            _buyer: _buyer, _investmentAmount: _investmentAmount, _minSharesQuantity: _minSharesQuantity
         });
     }
 
@@ -191,9 +187,7 @@ contract DepositWrapper is AssetHelpers {
 
         // Exchange the _inputAsset to the fund's denomination asset
         __approveAssetMaxAsNeeded({
-            _asset: address(_inputAsset),
-            _target: _exchangeApproveTarget,
-            _neededAmount: _maxInputAssetAmount
+            _asset: address(_inputAsset), _target: _exchangeApproveTarget, _neededAmount: _maxInputAssetAmount
         });
         Address.functionCall({target: _exchange, data: _exchangeData});
 

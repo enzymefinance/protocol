@@ -77,8 +77,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
     {
         (
             address stakingToken,
-            bytes32 poolId,
-            ,
+            bytes32 poolId,,
             address[] memory spendAssets,
             uint256[] memory spendAssetAmounts,
             IBalancerV2Vault.PoolBalanceChange memory request
@@ -146,9 +145,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
 
                 // Grant allowances
                 __approveAssetMaxAsNeeded({
-                    _asset: assets[i],
-                    _target: address(BALANCER_VAULT_CONTRACT),
-                    _neededAmount: spendAssetAmount
+                    _asset: assets[i], _target: address(BALANCER_VAULT_CONTRACT), _neededAmount: spendAssetAmount
                 });
             } else if (limits[i] < 0 && stakingTokens[i] != address(0)) {
                 hasIncomingStakedBpt = true;
@@ -218,8 +215,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
             address stakingToken,
             bytes32 poolId,
             uint256 bptAmount,
-            address[] memory expectedIncomingTokens,
-            ,
+            address[] memory expectedIncomingTokens,,
             IBalancerV2Vault.PoolBalanceChange memory request
         ) = __decodeCombinedActionCallArgs(_actionData);
 

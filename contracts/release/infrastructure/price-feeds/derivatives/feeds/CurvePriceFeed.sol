@@ -106,9 +106,9 @@ contract CurvePriceFeed is ICurvePriceFeed, IDerivativePriceFeed, FundDeployerOw
         if (poolInfo.invariantProxyAssetDecimals == 18) {
             underlyingAmounts_[0] = _derivativeAmount.mul(virtualPrice).div(VIRTUAL_PRICE_UNIT);
         } else {
-            underlyingAmounts_[0] = _derivativeAmount.mul(virtualPrice).mul(
-                10 ** uint256(poolInfo.invariantProxyAssetDecimals)
-            ).div(VIRTUAL_PRICE_UNIT).div(VIRTUAL_PRICE_UNIT);
+            underlyingAmounts_[0] = _derivativeAmount.mul(virtualPrice)
+                .mul(10 ** uint256(poolInfo.invariantProxyAssetDecimals)).div(VIRTUAL_PRICE_UNIT)
+                .div(VIRTUAL_PRICE_UNIT);
         }
 
         return (underlyings_, underlyingAmounts_);
@@ -137,10 +137,7 @@ contract CurvePriceFeed is ICurvePriceFeed, IDerivativePriceFeed, FundDeployerOw
     /// @param _pools The ordered pools corresponding to _gaugeTokens
     /// @dev All params are corresponding, equal length arrays.
     /// _pools must already have been added via an addPools~() function
-    function addGaugeTokens(address[] calldata _gaugeTokens, address[] calldata _pools)
-        external
-        onlyFundDeployerOwner
-    {
+    function addGaugeTokens(address[] calldata _gaugeTokens, address[] calldata _pools) external onlyFundDeployerOwner {
         ICurveRegistryMain registryContract = __getRegistryMainContract();
         ICurveRegistryMetapoolFactory factoryContract = __getRegistryMetapoolFactoryContract();
 

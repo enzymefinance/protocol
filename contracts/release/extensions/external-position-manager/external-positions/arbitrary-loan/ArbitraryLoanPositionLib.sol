@@ -188,9 +188,8 @@ contract ArbitraryLoanPositionLib is
                 // Some modules might not allow over-repayment,
                 // in which case any excess loanAsset amount would be sent to the vault
                 // without recording it as a repayment.
-                repayAmount = IArbitraryLoanAccountingModule(accountingModuleMem).preReconcile(
-                    getTotalBorrowed(), totalRepaidMem, nonBorrowableLoanAssetBal, _extraAssetsToSweep
-                );
+                repayAmount = IArbitraryLoanAccountingModule(accountingModuleMem)
+                    .preReconcile(getTotalBorrowed(), totalRepaidMem, nonBorrowableLoanAssetBal, _extraAssetsToSweep);
             } else {
                 repayAmount = nonBorrowableLoanAssetBal;
             }
@@ -272,9 +271,8 @@ contract ArbitraryLoanPositionLib is
         uint256 repayAmount;
         if (accountingModuleMem != address(0)) {
             // preRepay() logic should also handle calculating max repayAmount
-            repayAmount = IArbitraryLoanAccountingModule(accountingModuleMem).preRepay(
-                getTotalBorrowed(), totalRepaidMem, _amount
-            );
+            repayAmount = IArbitraryLoanAccountingModule(accountingModuleMem)
+                .preRepay(getTotalBorrowed(), totalRepaidMem, _amount);
         } else if (_amount == type(uint256).max) {
             repayAmount = __subOrZero(getTotalBorrowed(), totalRepaidMem);
         } else {
@@ -284,9 +282,8 @@ contract ArbitraryLoanPositionLib is
 
         __updateTotalRepaid(totalRepaidMem.add(repayAmount));
 
-        IERC20(getLoanAsset()).safeTransferFrom(
-            msg.sender, IExternalPositionProxy(address(this)).getVaultProxy(), repayAmount
-        );
+        IERC20(getLoanAsset())
+            .safeTransferFrom(msg.sender, IExternalPositionProxy(address(this)).getVaultProxy(), repayAmount);
     }
 
     ////////////////////

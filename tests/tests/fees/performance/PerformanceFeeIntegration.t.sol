@@ -54,9 +54,7 @@ contract PerformanceFeeTest is IntegrationTest, PerformanceFeeUtils {
 
         // redeem some shares; no performance paid out
         redeemSharesInKind({
-            _redeemer: sharesBuyer,
-            _comptrollerProxy: comptrollerProxy,
-            _sharesQuantity: depositorInitialSharesBal / 3
+            _redeemer: sharesBuyer, _comptrollerProxy: comptrollerProxy, _sharesQuantity: depositorInitialSharesBal / 3
         });
 
         // bump performance by sending denom asset to vault
@@ -69,9 +67,7 @@ contract PerformanceFeeTest is IntegrationTest, PerformanceFeeUtils {
 
         // redeem some more shares
         redeemSharesInKind({
-            _redeemer: sharesBuyer,
-            _comptrollerProxy: comptrollerProxy,
-            _sharesQuantity: depositorInitialSharesBal / 3
+            _redeemer: sharesBuyer, _comptrollerProxy: comptrollerProxy, _sharesQuantity: depositorInitialSharesBal / 3
         });
 
         // validate fee payout

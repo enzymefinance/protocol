@@ -3,12 +3,15 @@ pragma solidity 0.8.19;
 
 import {IPendleV2Market as IPendleV2MarketProd} from "contracts/external-interfaces/IPendleV2Market.sol";
 import {IPendleV2Router as IPendleV2RouterProd} from "contracts/external-interfaces/IPendleV2Router.sol";
-import {IPendleV2Adapter as IPendleV2AdapterProd} from
-    "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/IPendleV2Adapter.sol";
-import {IPendleV2Adapter as IPendleV2AdapterProd} from
-    "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/IPendleV2Adapter.sol";
-import {IIntegrationManager as IIntegrationManagerProd} from
-    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {
+    IPendleV2Adapter as IPendleV2AdapterProd
+} from "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/IPendleV2Adapter.sol";
+import {
+    IPendleV2Adapter as IPendleV2AdapterProd
+} from "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/IPendleV2Adapter.sol";
+import {
+    IIntegrationManager as IIntegrationManagerProd
+} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -78,11 +81,7 @@ abstract contract TestBase is IntegrationTest {
         // Default generic IPendleV2Router.ApproxParams. In a production setting, these settings can be calculated offchain to reduce gas usage.
         // src: https://docs.pendle.finance/Developers/Contracts/PendleRouter#approxparams
         guessPt = IPendleV2RouterProd.ApproxParams({
-            guessMin: 0,
-            guessMax: type(uint256).max,
-            guessOffchain: 0,
-            maxIteration: 256,
-            eps: 1e15
+            guessMin: 0, guessMax: type(uint256).max, guessOffchain: 0, maxIteration: 256, eps: 1e15
         });
 
         // Register all incoming assets to pass the asset universe validation:
@@ -112,9 +111,7 @@ abstract contract TestBase is IntegrationTest {
         // Increase the vault's balances of tokens to use in Pendle actions
         increaseTokenBalance({_token: wrappedNativeToken, _to: vaultProxyAddress, _amount: 100 ether});
         increaseTokenBalance({
-            _token: underlyingAsset,
-            _to: vaultProxyAddress,
-            _amount: 100 * assetUnit(underlyingAsset)
+            _token: underlyingAsset, _to: vaultProxyAddress, _amount: 100 * assetUnit(underlyingAsset)
         });
     }
 
@@ -315,9 +312,7 @@ abstract contract TestBase is IntegrationTest {
         // Give the vault a balance of the principal token
         uint256 preWithdrawalPtBalance = assetUnit(IERC20(address(principalToken))) * 7;
         increaseTokenBalance({
-            _token: IERC20(address(principalToken)),
-            _to: vaultProxyAddress,
-            _amount: preWithdrawalPtBalance
+            _token: IERC20(address(principalToken)), _to: vaultProxyAddress, _amount: preWithdrawalPtBalance
         });
 
         uint256 ptAmountToSell = preWithdrawalPtBalance / 3;
@@ -373,15 +368,13 @@ abstract contract TestBase is IntegrationTest {
 
     function test_sellPrincipalToken_successExpiredPrincipalToken() public {
         __test_sellPrincipalToken_success({
-            _withdrawalTokenAddressInput: address(underlyingAsset),
-            _expiredPrincipalToken: true
+            _withdrawalTokenAddressInput: address(underlyingAsset), _expiredPrincipalToken: true
         });
     }
 
     function test_sellPrincipalToken_successNonExpiredPrincipalToken() public {
         __test_sellPrincipalToken_success({
-            _withdrawalTokenAddressInput: address(underlyingAsset),
-            _expiredPrincipalToken: false
+            _withdrawalTokenAddressInput: address(underlyingAsset), _expiredPrincipalToken: false
         });
     }
 
@@ -389,8 +382,7 @@ abstract contract TestBase is IntegrationTest {
         // If the native asset is a valid withdrawal token, run the test
         if (syToken.isValidTokenOut(PENDLE_NATIVE_ASSET_ADDRESS)) {
             __test_sellPrincipalToken_success({
-                _withdrawalTokenAddressInput: NATIVE_ASSET_ADDRESS,
-                _expiredPrincipalToken: false
+                _withdrawalTokenAddressInput: NATIVE_ASSET_ADDRESS, _expiredPrincipalToken: false
             });
         }
     }
@@ -465,8 +457,8 @@ abstract contract TestBase is IntegrationTest {
 
         uint256 expectedWithdrawalTokenDelta = syToken.previewRedeem({
             _tokenOut: pendleWithdrawalAssetAddress,
-            _amountSharesToRedeem: lpAmountToRedeem * pendleOracle.getLpToSyRate({_market: address(market), _duration: 1})
-                / PENDLE_ORACLE_RATE_PRECISION
+            _amountSharesToRedeem: lpAmountToRedeem
+                * pendleOracle.getLpToSyRate({_market: address(market), _duration: 1}) / PENDLE_ORACLE_RATE_PRECISION
         });
 
         uint256 preWithdrawalTokenBalance = withdrawalToken.balanceOf(vaultProxyAddress);

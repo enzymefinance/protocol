@@ -26,11 +26,12 @@ abstract contract AddOnlyAddressListOwnerBase is IAddOnlyAddressListOwner {
         ADDRESS_LIST_REGISTRY_CONTRACT = IAddressListRegistry(_addressListRegistry);
 
         // Create new list
-        uint256 listId = IAddressListRegistry(_addressListRegistry).createList({
-            _owner: address(this),
-            _updateType: IAddressListRegistry.UpdateType.AddOnly,
-            _initialItems: new address[](0)
-        });
+        uint256 listId = IAddressListRegistry(_addressListRegistry)
+            .createList({
+                _owner: address(this),
+                _updateType: IAddressListRegistry.UpdateType.AddOnly,
+                _initialItems: new address[](0)
+            });
         LIST_ID = listId;
 
         // Attest to new list

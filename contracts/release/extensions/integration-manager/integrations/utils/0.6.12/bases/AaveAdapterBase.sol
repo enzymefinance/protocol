@@ -12,8 +12,9 @@
 pragma solidity 0.6.12;
 
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {AddOnlyAddressListOwnerConsumerMixin} from
-    "../../../../../../../persistent/address-list-registry/address-list-owners/utils/0.6.12/AddOnlyAddressListOwnerConsumerMixin.sol";
+import {
+    AddOnlyAddressListOwnerConsumerMixin
+} from "../../../../../../../persistent/address-list-registry/address-list-owners/utils/0.6.12/AddOnlyAddressListOwnerConsumerMixin.sol";
 import {IAaveAToken} from "../../../../../../../external-interfaces/IAaveAToken.sol";
 import {IIntegrationManager} from "../../../../IIntegrationManager.sol";
 import {AdapterBase} from "../AdapterBase.sol";

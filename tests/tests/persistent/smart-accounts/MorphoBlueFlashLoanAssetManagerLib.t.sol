@@ -56,7 +56,9 @@ abstract contract TestBase is IntegrationTest {
         IMorphoBlueFlashLoanAssetManager.Call[] memory calls = new IMorphoBlueFlashLoanAssetManager.Call[](1);
         calls[0] = IMorphoBlueFlashLoanAssetManager.Call({
             target: address(vault),
-            data: abi.encodeWithSelector(vault.transferAsset.selector, borrowAsset, morphoFlashLoanAssetManager, _amount)
+            data: abi.encodeWithSelector(
+                vault.transferAsset.selector, borrowAsset, morphoFlashLoanAssetManager, _amount
+            )
         });
 
         vm.prank(accountOwner);
@@ -74,8 +76,7 @@ abstract contract TestBase is IntegrationTest {
             IMorphoBlueFlashLoanAssetManager.MorphoBlueFlashLoanAssetManager__Init__AlreadyInitialized.selector
         );
         morphoFlashLoanAssetManager.init({
-            _owner: testInitOwner,
-            _borrowedAssetsRecipient: testInitBorrowedAssetsRecipient
+            _owner: testInitOwner, _borrowedAssetsRecipient: testInitBorrowedAssetsRecipient
         });
     }
 
@@ -112,9 +113,7 @@ abstract contract TestBase is IntegrationTest {
         );
         vm.prank(randomCaller);
         morphoFlashLoanAssetManager.flashLoan({
-            _assetAddress: address(0),
-            _amount: 0,
-            _calls: new IMorphoBlueFlashLoanAssetManager.Call[](0)
+            _assetAddress: address(0), _amount: 0, _calls: new IMorphoBlueFlashLoanAssetManager.Call[](0)
         });
     }
 
@@ -154,8 +153,7 @@ abstract contract TestBase is IntegrationTest {
         address randomCaller = makeAddr("RandomCaller");
 
         vm.expectRevert(
-            IMorphoBlueFlashLoanAssetManager
-                .MorphoBlueFlashLoanAssetManager__OnMorphoFlashLoan__UnauthorizedCaller
+            IMorphoBlueFlashLoanAssetManager.MorphoBlueFlashLoanAssetManager__OnMorphoFlashLoan__UnauthorizedCaller
                 .selector
         );
         vm.prank(randomCaller);
@@ -167,9 +165,7 @@ contract TestEthereum is TestBase {
     function setUp() public override {
         // Use USDT because it has annoying behavior
         __initialize({
-            _morphoBlueAddress: ETHEREUM_MORPHO_BLUE,
-            _borrowAssetAddress: ETHEREUM_USDT,
-            _chainId: ETHEREUM_CHAIN_ID
+            _morphoBlueAddress: ETHEREUM_MORPHO_BLUE, _borrowAssetAddress: ETHEREUM_USDT, _chainId: ETHEREUM_CHAIN_ID
         });
     }
 }

@@ -30,7 +30,9 @@ contract ERC4626RateAggregator is RateAggregatorBase {
         bool _quoteConversionAggregatorInverted,
         address _erc4626Address
     )
-        RateAggregatorBase(_thisAggregatorDecimals, _quoteConversionAggregatorAddress, _quoteConversionAggregatorInverted)
+        RateAggregatorBase(
+            _thisAggregatorDecimals, _quoteConversionAggregatorAddress, _quoteConversionAggregatorInverted
+        )
     {
         ERC_4626_VAULT = IERC4626(_erc4626Address);
 

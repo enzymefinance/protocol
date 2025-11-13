@@ -25,6 +25,8 @@ contract SwellStakingAdapter is GenericWrappingAdapterBase {
 
     /// @dev Logic to wrap ETH into swETH
     function __wrap(uint256) internal override {
-        ISwellSweth(address(DERIVATIVE)).depositWithReferral{value: address(this).balance}({_referral: REFERRAL_ADDRESS});
+        ISwellSweth(address(DERIVATIVE)).depositWithReferral{value: address(this).balance}({
+            _referral: REFERRAL_ADDRESS
+        });
     }
 }

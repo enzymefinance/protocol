@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IIntegrationManager as IIntegrationManagerProd} from
-    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {
+    IIntegrationManager as IIntegrationManagerProd
+} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -46,9 +47,7 @@ abstract contract CompoundV2TestBase is IntegrationTest {
         vaultProxyAddress = address(vaultProxy);
 
         priceFeed = __deployCompoundPriceFeed({
-            _fundDeployerAddress: address(core.release.fundDeployer),
-            _wethToken: wethToken,
-            _cETH: cETHAddress
+            _fundDeployerAddress: address(core.release.fundDeployer), _wethToken: wethToken, _cETH: cETHAddress
         });
 
         adapter = __deployAdapter({
@@ -268,9 +267,7 @@ abstract contract CompoundV2AdapterClaimRewardsTest is CompoundV2TestBase {
             address cToken = _cTokens[i];
 
             increaseTokenBalance({
-                _token: IERC20(cToken),
-                _to: vaultProxyAddress,
-                _amount: 10 * assetUnit(IERC20(_cTokens[i]))
+                _token: IERC20(cToken), _to: vaultProxyAddress, _amount: 10 * assetUnit(IERC20(_cTokens[i]))
             });
         }
 
@@ -326,8 +323,7 @@ contract CompoundV2AdapterTestEthereum is
         });
 
         __test_redeem_success({
-            _cToken: address(non18DecimalCToken),
-            _cTokenAmount: 60 * assetUnit(IERC20(address(non18DecimalCToken)))
+            _cToken: address(non18DecimalCToken), _cTokenAmount: 60 * assetUnit(IERC20(address(non18DecimalCToken)))
         });
     }
 

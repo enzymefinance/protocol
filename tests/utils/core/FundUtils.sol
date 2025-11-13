@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
-    "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
+import {
+    IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd
+} from "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
 
 import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";
 
@@ -176,9 +177,7 @@ abstract contract FundUtils is CoreUtilsBase {
         vm.startPrank(_sharesRecipient);
         denominationAsset.approve(address(_comptrollerProxy), _amountToDeposit);
         sharesReceived_ = _comptrollerProxy.buySharesOnBehalf({
-            _buyer: _sharesRecipient,
-            _investmentAmount: _amountToDeposit,
-            _minSharesQuantity: 1
+            _buyer: _sharesRecipient, _investmentAmount: _amountToDeposit, _minSharesQuantity: 1
         });
         vm.stopPrank();
     }

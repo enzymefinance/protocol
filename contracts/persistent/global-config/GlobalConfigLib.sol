@@ -130,12 +130,8 @@ contract GlobalConfigLib is IGlobalConfig2, GlobalConfigLibBase1 {
             }
 
             // Validate selector
-            if (
-                !(
-                    _redeemSelector == IGlobalConfigLibComptrollerV4.redeemSharesForSpecificAssets.selector
-                        || _redeemSelector == IGlobalConfigLibComptrollerV4.redeemSharesInKind.selector
-                )
-            ) {
+            if (!(_redeemSelector == IGlobalConfigLibComptrollerV4.redeemSharesForSpecificAssets.selector
+                        || _redeemSelector == IGlobalConfigLibComptrollerV4.redeemSharesInKind.selector)) {
                 return false;
             }
 

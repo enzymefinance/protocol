@@ -75,11 +75,7 @@ library AddressArrayLib {
         return (false, type(uint256).max);
     }
 
-    function removeAtIndex(address[] memory _self, uint256 _index)
-        internal
-        pure
-        returns (address[] memory nextArray_)
-    {
+    function removeAtIndex(address[] memory _self, uint256 _index) internal pure returns (address[] memory nextArray_) {
         uint256 oldLength = _self.length;
         require(_index < oldLength, "removeAtIndex: Index out of bounds");
 

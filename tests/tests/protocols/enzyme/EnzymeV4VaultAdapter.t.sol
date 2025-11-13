@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IEnzymeV4VaultAdapter as IEnzymeV4VaultAdapterProd} from
-    "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/IEnzymeV4VaultAdapter.sol";
-import {IIntegrationManager as IIntegrationManagerProd} from
-    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {
+    IEnzymeV4VaultAdapter as IEnzymeV4VaultAdapterProd
+} from "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/IEnzymeV4VaultAdapter.sol";
+import {
+    IIntegrationManager as IIntegrationManagerProd
+} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -99,15 +101,11 @@ abstract contract EnzymeV4VaultAdapterTesBase is IntegrationTest {
         uint256 investmentAmount = assetUnit(IERC20(childVaultDenominationAsset));
 
         IEnzymeV4VaultAdapterProd.BuySharesActionArgs memory args = IEnzymeV4VaultAdapterProd.BuySharesActionArgs({
-            vaultProxy: childVaultProxyAddress,
-            investmentAmount: investmentAmount,
-            minSharesQuantity: 1
+            vaultProxy: childVaultProxyAddress, investmentAmount: investmentAmount, minSharesQuantity: 1
         });
 
         increaseTokenBalance({
-            _token: IERC20(childVaultDenominationAsset),
-            _to: parentVaultProxyAddress,
-            _amount: investmentAmount
+            _token: IERC20(childVaultDenominationAsset), _to: parentVaultProxyAddress, _amount: investmentAmount
         });
 
         uint256 preInvestmentBalance = IERC20(childVaultDenominationAsset).balanceOf(parentVaultProxyAddress);
@@ -142,9 +140,7 @@ abstract contract EnzymeV4VaultAdapterTesBase is IntegrationTest {
 
         __buyShares(
             IEnzymeV4VaultAdapterProd.BuySharesActionArgs({
-                vaultProxy: makeAddr("invalidVaultProxy"),
-                investmentAmount: 1,
-                minSharesQuantity: 1
+                vaultProxy: makeAddr("invalidVaultProxy"), investmentAmount: 1, minSharesQuantity: 1
             })
         );
     }
@@ -159,14 +155,14 @@ abstract contract EnzymeV4VaultAdapterTesBase is IntegrationTest {
 
         uint256 preSharesBalance = IERC20(childVaultProxyAddress).balanceOf(parentVaultProxyAddress);
 
-        IEnzymeV4VaultAdapterProd.RedeemSharesForSpecificAssetsActionArgs memory args = IEnzymeV4VaultAdapterProd
-            .RedeemSharesForSpecificAssetsActionArgs({
-            vaultProxy: childVaultProxyAddress,
-            sharesQuantity: preSharesBalance,
-            payoutAssets: toArray(childVaultDenominationAsset),
-            payoutAssetPercentages: toArray(10_000), // 100% in bps
-            minPayoutAssetAmounts: toArray(1)
-        });
+        IEnzymeV4VaultAdapterProd.RedeemSharesForSpecificAssetsActionArgs memory args =
+            IEnzymeV4VaultAdapterProd.RedeemSharesForSpecificAssetsActionArgs({
+                vaultProxy: childVaultProxyAddress,
+                sharesQuantity: preSharesBalance,
+                payoutAssets: toArray(childVaultDenominationAsset),
+                payoutAssetPercentages: toArray(10_000), // 100% in bps
+                minPayoutAssetAmounts: toArray(1)
+            });
 
         uint256 preRedemptionChildVaultDenominationAssetBalance =
             IERC20(childVaultDenominationAsset).balanceOf(parentVaultProxyAddress);

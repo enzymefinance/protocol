@@ -140,17 +140,13 @@ contract AggregatorRateDeviationBaseTest is UnitTest {
 
     function test_baseRate_successExceedsToleranceAndOlderMarketRate() public {
         __test_baseRate_success({
-            _idealRateTimestamp: newerTimestamp,
-            _marketAggregatorTimestamp: olderTimestamp,
-            _exceedsTolerance: true
+            _idealRateTimestamp: newerTimestamp, _marketAggregatorTimestamp: olderTimestamp, _exceedsTolerance: true
         });
     }
 
     function test_baseRate_successWithinToleranceAndOlderIdealRate() public {
         __test_baseRate_success({
-            _idealRateTimestamp: olderTimestamp,
-            _marketAggregatorTimestamp: newerTimestamp,
-            _exceedsTolerance: false
+            _idealRateTimestamp: olderTimestamp, _marketAggregatorTimestamp: newerTimestamp, _exceedsTolerance: false
         });
     }
 }

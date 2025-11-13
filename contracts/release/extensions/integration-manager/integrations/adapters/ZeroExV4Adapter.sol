@@ -55,7 +55,9 @@ contract ZeroExV4Adapter is IZeroExV4Adapter, AdapterBase, MathHelpers, ZeroExV4
             (IZeroExV4.LimitOrder memory order, IZeroExV4.Signature memory signature) =
                 __decodeZeroExLimitOrderArgs(encodedZeroExOrderArgs);
 
-            __zeroExV4TakeLimitOrder({_order: order, _signature: signature, _takerAssetFillAmount: takerAssetFillAmount});
+            __zeroExV4TakeLimitOrder({
+                _order: order, _signature: signature, _takerAssetFillAmount: takerAssetFillAmount
+            });
         } else if (orderType == OrderType.Rfq) {
             (IZeroExV4.RfqOrder memory order, IZeroExV4.Signature memory signature) =
                 __decodeZeroExRfqOrderArgs(encodedZeroExOrderArgs);
@@ -139,9 +141,7 @@ contract ZeroExV4Adapter is IZeroExV4Adapter, AdapterBase, MathHelpers, ZeroExV4
             // Fee calculated relative to taker fill amount
             spendAssetAmounts_[0] = takerAssetFillAmount.add(
                 __calcRelativeQuantity({
-                    _quantity1: takerAmount,
-                    _quantity2: takerTokenFeeAmount,
-                    _relativeQuantity1: takerAssetFillAmount
+                    _quantity1: takerAmount, _quantity2: takerTokenFeeAmount, _relativeQuantity1: takerAssetFillAmount
                 })
             );
         } else {
@@ -149,9 +149,7 @@ contract ZeroExV4Adapter is IZeroExV4Adapter, AdapterBase, MathHelpers, ZeroExV4
         }
 
         minIncomingAssetAmounts_[0] = __calcRelativeQuantity({
-            _quantity1: takerAmount,
-            _quantity2: makerAmount,
-            _relativeQuantity1: takerAssetFillAmount
+            _quantity1: takerAmount, _quantity2: makerAmount, _relativeQuantity1: takerAssetFillAmount
         });
 
         return (

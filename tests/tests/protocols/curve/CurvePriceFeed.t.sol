@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
-    "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
+import {
+    IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd
+} from "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -74,11 +75,10 @@ abstract contract CurvePriceFeedTestBase is CurveUtils, IntegrationTest {
             _priceFeedAddress: address(priceFeed)
         });
 
-        uint256 lpTokenValue = core.release.valueInterpreter.calcCanonicalAssetValue({
-            _baseAsset: _lpToken,
-            _amount: assetUnit(IERC20(_lpToken)),
-            _quoteAsset: address(wethToken)
-        });
+        uint256 lpTokenValue = core.release.valueInterpreter
+            .calcCanonicalAssetValue({
+                _baseAsset: _lpToken, _amount: assetUnit(IERC20(_lpToken)), _quoteAsset: address(wethToken)
+            });
 
         if (_gaugeToken != address(0)) {
             addDerivative({
@@ -88,29 +88,28 @@ abstract contract CurvePriceFeedTestBase is CurveUtils, IntegrationTest {
                 _priceFeedAddress: address(priceFeed)
             });
 
-            uint256 gaugeTokenValue = core.release.valueInterpreter.calcCanonicalAssetValue({
-                _baseAsset: _gaugeToken,
-                _amount: assetUnit(IERC20(_gaugeToken)),
-                _quoteAsset: address(wethToken)
-            });
+            uint256 gaugeTokenValue = core.release.valueInterpreter
+                .calcCanonicalAssetValue({
+                    _baseAsset: _gaugeToken, _amount: assetUnit(IERC20(_gaugeToken)), _quoteAsset: address(wethToken)
+                });
 
             assertEq(lpTokenValue, gaugeTokenValue, "LP token and gauge token values don't match");
         }
 
-        uint256 invariantProxyAssetValue = core.release.valueInterpreter.calcCanonicalAssetValue({
-            _baseAsset: _invariantProxyAsset,
-            _amount: assetUnit(IERC20(_invariantProxyAsset)),
-            _quoteAsset: address(wethToken)
-        });
+        uint256 invariantProxyAssetValue = core.release.valueInterpreter
+            .calcCanonicalAssetValue({
+                _baseAsset: _invariantProxyAsset,
+                _amount: assetUnit(IERC20(_invariantProxyAsset)),
+                _quoteAsset: address(wethToken)
+            });
 
         uint256 timePassed = block.timestamp - _poolCreationTimestamp;
 
         assertGe(lpTokenValue, invariantProxyAssetValue, "LP token value is less than invariant proxy asset value");
         assertLe(
             lpTokenValue,
-            invariantProxyAssetValue
-                + (invariantProxyAssetValue * _allowedDeviationPer365DaysInBps * timePassed)
-                    / (365 days * BPS_ONE_HUNDRED_PERCENT),
+            invariantProxyAssetValue + (invariantProxyAssetValue * _allowedDeviationPer365DaysInBps * timePassed)
+                / (365 days * BPS_ONE_HUNDRED_PERCENT),
             "LP token value is more than invariant proxy asset value"
         );
     }
@@ -317,8 +316,7 @@ abstract contract CurvePriceFeedTestBase is CurveUtils, IntegrationTest {
         __prankFundDeployerOwner();
         vm.expectRevert("__addGaugeTokens: Pool not registered");
         priceFeed.addGaugeTokensWithoutValidation({
-            _pools: toArray(makeAddr("pool")),
-            _gaugeTokens: toArray(makeAddr("gauge"))
+            _pools: toArray(makeAddr("pool")), _gaugeTokens: toArray(makeAddr("gauge"))
         });
     }
 

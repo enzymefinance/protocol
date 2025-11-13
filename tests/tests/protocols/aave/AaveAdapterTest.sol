@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IIntegrationManager as IIntegrationManagerProd} from
-    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {
+    IIntegrationManager as IIntegrationManagerProd
+} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -54,9 +55,7 @@ abstract contract AaveAdapterTestBase is IntegrationTest {
         tokenAddresses[3] = __getATokenAddress(address(_non18DecimalUnderlying));
 
         addPrimitivesWithTestAggregator({
-            _valueInterpreter: core.release.valueInterpreter,
-            _tokenAddresses: tokenAddresses,
-            _skipIfRegistered: true
+            _valueInterpreter: core.release.valueInterpreter, _tokenAddresses: tokenAddresses, _skipIfRegistered: true
         });
     }
 
@@ -149,9 +148,7 @@ abstract contract AaveAdapterTestBase is IntegrationTest {
 
         // Register incoming asset to pass the asset universe validation
         addPrimitiveWithTestAggregator({
-            _valueInterpreter: core.release.valueInterpreter,
-            _tokenAddress: fakeAToken,
-            _skipIfRegistered: true
+            _valueInterpreter: core.release.valueInterpreter, _tokenAddress: fakeAToken, _skipIfRegistered: true
         });
 
         // lend minimal amount
@@ -227,9 +224,7 @@ abstract contract AaveAdapterTestBase is IntegrationTest {
         });
 
         addPrimitiveWithTestAggregator({
-            _valueInterpreter: core.release.valueInterpreter,
-            _tokenAddress: fakeUnderlying,
-            _skipIfRegistered: true
+            _valueInterpreter: core.release.valueInterpreter, _tokenAddress: fakeUnderlying, _skipIfRegistered: true
         });
 
         // redeem minimal amount

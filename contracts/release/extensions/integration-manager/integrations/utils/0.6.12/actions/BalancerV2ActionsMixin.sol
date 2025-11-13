@@ -32,19 +32,11 @@ abstract contract BalancerV2ActionsMixin {
         int256[] memory _limits
     ) internal returns (int256[] memory assetDeltas_) {
         IBalancerV2Vault.FundManagement memory funds = IBalancerV2Vault.FundManagement({
-            sender: _sender,
-            fromInternalBalance: false,
-            recipient: payable(_recipient),
-            toInternalBalance: false
+            sender: _sender, fromInternalBalance: false, recipient: payable(_recipient), toInternalBalance: false
         });
 
         return BALANCER_VAULT_CONTRACT.batchSwap({
-            _kind: _kind,
-            _swaps: _swaps,
-            _assets: _assets,
-            _funds: funds,
-            _limits: _limits,
-            _deadline: block.timestamp
+            _kind: _kind, _swaps: _swaps, _assets: _assets, _funds: funds, _limits: _limits, _deadline: block.timestamp
         });
     }
 

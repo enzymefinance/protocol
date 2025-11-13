@@ -12,8 +12,9 @@
 pragma solidity >=0.6.0 <0.9.0;
 
 import {IExternalPositionVault} from "../../../../persistent/vault/interfaces/IExternalPositionVault.sol";
-import {IFreelyTransferableSharesVault} from
-    "../../../../persistent/vault/interfaces/IFreelyTransferableSharesVault.sol";
+import {
+    IFreelyTransferableSharesVault
+} from "../../../../persistent/vault/interfaces/IFreelyTransferableSharesVault.sol";
 import {IMigratableVault} from "../../../../persistent/vault/interfaces/IMigratableVault.sol";
 import {IVaultCore} from "../../../../persistent/vault/interfaces/IVaultCore.sol";
 
@@ -73,10 +74,7 @@ interface IVault is IVaultCore, IMigratableVault, IFreelyTransferableSharesVault
 
     function getTrackedAssets() external view returns (address[] memory trackedAssets_);
 
-    function isActiveExternalPosition(address _externalPosition)
-        external
-        view
-        returns (bool isActiveExternalPosition_);
+    function isActiveExternalPosition(address _externalPosition) external view returns (bool isActiveExternalPosition_);
 
     function isAssetManager(address _who) external view returns (bool isAssetManager_);
 

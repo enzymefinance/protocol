@@ -5,16 +5,14 @@ import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
-import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
-    "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
+import {
+    IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd
+} from "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
 
 contract ValueInterpreterTest is IntegrationTest {
     function test_wethPrice(address _quoteAsset, uint256 _result) internal {
-        uint256 value = core.release.valueInterpreter.calcCanonicalAssetValue({
-            _baseAsset: address(wethToken),
-            _amount: 1 ether,
-            _quoteAsset: _quoteAsset
-        });
+        uint256 value = core.release.valueInterpreter
+            .calcCanonicalAssetValue({_baseAsset: address(wethToken), _amount: 1 ether, _quoteAsset: _quoteAsset});
 
         assert(value == _result);
     }
@@ -23,17 +21,11 @@ contract ValueInterpreterTest is IntegrationTest {
         internal
         returns (uint256)
     {
-        uint256 value = core.release.valueInterpreter.calcCanonicalAssetValue({
-            _baseAsset: _baseAsset,
-            _amount: _baseAssetAmount,
-            _quoteAsset: _quoteAsset
-        });
+        uint256 value = core.release.valueInterpreter
+            .calcCanonicalAssetValue({_baseAsset: _baseAsset, _amount: _baseAssetAmount, _quoteAsset: _quoteAsset});
 
-        uint256 inverseValue = core.release.valueInterpreter.calcCanonicalAssetValue({
-            _baseAsset: _quoteAsset,
-            _amount: value,
-            _quoteAsset: _baseAsset
-        });
+        uint256 inverseValue = core.release.valueInterpreter
+            .calcCanonicalAssetValue({_baseAsset: _quoteAsset, _amount: value, _quoteAsset: _baseAsset});
 
         return inverseValue;
     }

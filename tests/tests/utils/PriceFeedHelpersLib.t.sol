@@ -23,9 +23,7 @@ contract PriceFeedHelpersLibTest is UnitTest {
         uint256 _toPrecision
     ) internal {
         uint256 convertedRate = priceFeedHelpers.exposed_convertRatePrecision({
-            _rate: _rateWithoutPrecision * _fromPrecision,
-            _fromPrecision: _fromPrecision,
-            _toPrecision: _toPrecision
+            _rate: _rateWithoutPrecision * _fromPrecision, _fromPrecision: _fromPrecision, _toPrecision: _toPrecision
         });
 
         assertEq(convertedRate, _rateWithoutPrecision * _toPrecision, "Incorrect converted rate");
@@ -33,17 +31,13 @@ contract PriceFeedHelpersLibTest is UnitTest {
 
     function test_exposed_convertRatePrecision_successToGreaterPrecision() public {
         __test_exposed_convertRatePrecision_success({
-            _rateWithoutPrecision: 123,
-            _fromPrecision: 1e20,
-            _toPrecision: 1e22
+            _rateWithoutPrecision: 123, _fromPrecision: 1e20, _toPrecision: 1e22
         });
     }
 
     function test_exposed_convertRatePrecision_successToLowerPrecision() public {
         __test_exposed_convertRatePrecision_success({
-            _rateWithoutPrecision: 456,
-            _fromPrecision: 1e12,
-            _toPrecision: 1e11
+            _rateWithoutPrecision: 456, _fromPrecision: 1e12, _toPrecision: 1e11
         });
     }
 
@@ -56,9 +50,7 @@ contract PriceFeedHelpersLibTest is UnitTest {
         uint256 expectedAToCRate = 123 * 456 * 1e9;
 
         uint256 convertedRate = priceFeedHelpers.exposed_convertRateToNewQuoteAsset({
-            _baseRate: aToBRate,
-            _baseRatePrecision: aToBRatePrecision,
-            _quoteRate: bToCRate
+            _baseRate: aToBRate, _baseRatePrecision: aToBRatePrecision, _quoteRate: bToCRate
         });
 
         assertEq(convertedRate, expectedAToCRate, "Incorrect converted rate");
@@ -186,9 +178,7 @@ contract PriceFeedHelpersLibTest is UnitTest {
             uint256 marketRate = idealRate + intolerableDeviationAmount;
             assertEq(
                 priceFeedHelpers.exposed_selectRateByToleranceDeviation({
-                    _idealRate: idealRate,
-                    _marketRate: marketRate,
-                    _deviationToleranceBps: toleranceBps
+                    _idealRate: idealRate, _marketRate: marketRate, _deviationToleranceBps: toleranceBps
                 }),
                 marketRate,
                 "Incorrect selected rate: exceeds tolerance, upper bound"
@@ -200,9 +190,7 @@ contract PriceFeedHelpersLibTest is UnitTest {
             uint256 marketRate = idealRate - intolerableDeviationAmount;
             assertEq(
                 priceFeedHelpers.exposed_selectRateByToleranceDeviation({
-                    _idealRate: idealRate,
-                    _marketRate: marketRate,
-                    _deviationToleranceBps: toleranceBps
+                    _idealRate: idealRate, _marketRate: marketRate, _deviationToleranceBps: toleranceBps
                 }),
                 marketRate,
                 "Incorrect selected rate: exceeds tolerance, lower bound"

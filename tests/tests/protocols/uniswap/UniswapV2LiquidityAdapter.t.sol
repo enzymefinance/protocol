@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IIntegrationManager as IIntegrationManagerProd} from
-    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {
+    IIntegrationManager as IIntegrationManagerProd
+} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -66,9 +67,7 @@ abstract contract UniswapV2LiquidityAdapterTestBase is IntegrationTest, UniswapV
         tokenAddresses[0] = address(token0);
         tokenAddresses[1] = address(token1);
         addPrimitivesWithTestAggregator({
-            _valueInterpreter: core.release.valueInterpreter,
-            _tokenAddresses: tokenAddresses,
-            _skipIfRegistered: true
+            _valueInterpreter: core.release.valueInterpreter, _tokenAddresses: tokenAddresses, _skipIfRegistered: true
         });
 
         // Add poolTokens to price feed
@@ -203,8 +202,7 @@ abstract contract UniswapV2LiquidityAdapterTestBase is IntegrationTest, UniswapV
         uint256 outgoingAssetAmount = preRedeemPoolTokenVaultBalance / 3;
 
         (uint256 expectedToken0Amount, uint256 expectedToken1Amount) = getExpectedUnderlyingTokenAmounts({
-            _poolTokenAddress: address(uniswapV2Pool),
-            _redeemPoolTokenAmount: outgoingAssetAmount
+            _poolTokenAddress: address(uniswapV2Pool), _redeemPoolTokenAmount: outgoingAssetAmount
         });
 
         vm.recordLogs();

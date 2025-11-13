@@ -24,7 +24,9 @@ abstract contract ZeroLendLRTBTCAaveV3DebtPositionTestBaseEthereum is AaveV3Debt
             _chainId: ETHEREUM_CHAIN_ID,
             _merklDistributor: IMerklDistributor(ETHEREUM_MERKL_DISTRIBUTOR),
             _poolAddressProvider: IAaveV3PoolAddressProvider(ETHEREUM_ZERO_LEND_LRT_BTC_AAVE_V3_POOL_ADDRESS_PROVIDER),
-            _protocolDataProvider: IAaveV3ProtocolDataProvider(ETHEREUM_ZERO_LEND_LRT_BTC_AAVE_V3_PROTOCOL_DATA_PROVIDER),
+            _protocolDataProvider: IAaveV3ProtocolDataProvider(
+                ETHEREUM_ZERO_LEND_LRT_BTC_AAVE_V3_PROTOCOL_DATA_PROVIDER
+            ),
             _rewardsController: IAaveV3RewardsController(ETHEREUM_ZERO_LEND_LRT_BTC_AAVE_V3_REWARDS_CONTROLLER),
             _collateralUnderlyingAddresses: toArray(ETHEREUM_WBTC, ETHEREUM_CBBTC, ETHEREUM_EBTC, ETHEREUM_LBTC),
             _borrowableUnderlyingAddresses: toArray(ETHEREUM_EBTC, ETHEREUM_WBTC),

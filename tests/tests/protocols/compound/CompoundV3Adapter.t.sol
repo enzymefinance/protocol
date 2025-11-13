@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IIntegrationManager as IIntegrationManagerProd} from
-    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {
+    IIntegrationManager as IIntegrationManagerProd
+} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -129,9 +130,7 @@ abstract contract CompoundV3TestBase is IntegrationTest {
     function __registerCTokensAndUnderlyings(address[] memory _cTokens) internal {
         for (uint256 i = 0; i < _cTokens.length; i++) {
             addPrimitiveWithTestAggregator({
-                _valueInterpreter: core.release.valueInterpreter,
-                _tokenAddress: _cTokens[i],
-                _skipIfRegistered: true
+                _valueInterpreter: core.release.valueInterpreter, _tokenAddress: _cTokens[i], _skipIfRegistered: true
             });
 
             addPrimitiveWithTestAggregator({
@@ -219,9 +218,7 @@ abstract contract CompoundV3ClaimRewardsTest is CompoundV3TestBase {
             address cToken = _cTokens[i];
 
             increaseTokenBalance({
-                _token: IERC20(cToken),
-                _to: vaultProxyAddress,
-                _amount: 10 * assetUnit(IERC20(_cTokens[i]))
+                _token: IERC20(cToken), _to: vaultProxyAddress, _amount: 10 * assetUnit(IERC20(_cTokens[i]))
             });
         }
         // accrue some rewards during the time
@@ -275,11 +272,12 @@ contract CompoundV3TestEthereum is CompoundV3Test {
     }
 
     function test_lend_success() public {
-        __test_lend_success({_cToken: address(non18DecimalCToken), _underlyingAmount: 6 * assetUnit(non18DecimalCToken)});
+        __test_lend_success({
+            _cToken: address(non18DecimalCToken), _underlyingAmount: 6 * assetUnit(non18DecimalCToken)
+        });
 
         __test_lend_success({
-            _cToken: address(regular18DecimalCToken),
-            _underlyingAmount: 10 * assetUnit(IERC20(regular18DecimalCToken))
+            _cToken: address(regular18DecimalCToken), _underlyingAmount: 10 * assetUnit(IERC20(regular18DecimalCToken))
         });
     }
 
@@ -287,8 +285,7 @@ contract CompoundV3TestEthereum is CompoundV3Test {
         __test_redeem_success({_cToken: address(non18DecimalCToken), _cTokenAmount: 6 * assetUnit(non18DecimalCToken)});
 
         __test_redeem_success({
-            _cToken: address(regular18DecimalCToken),
-            _cTokenAmount: 10 * assetUnit(regular18DecimalCToken)
+            _cToken: address(regular18DecimalCToken), _cTokenAmount: 10 * assetUnit(regular18DecimalCToken)
         });
     }
 
@@ -312,7 +309,9 @@ contract CompoundV3TestPolygon is CompoundV3Test {
     }
 
     function test_lend_success() public {
-        __test_lend_success({_cToken: address(non18DecimalCToken), _underlyingAmount: 6 * assetUnit(non18DecimalCToken)});
+        __test_lend_success({
+            _cToken: address(non18DecimalCToken), _underlyingAmount: 6 * assetUnit(non18DecimalCToken)
+        });
     }
 
     function test_redeem_success() public {

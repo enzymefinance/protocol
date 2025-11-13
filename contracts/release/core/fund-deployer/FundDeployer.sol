@@ -278,9 +278,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
         __configureExtensions(comptrollerProxy_, _vaultProxy, _feeManagerConfigData, _policyManagerConfigData);
 
-        IDispatcher(getDispatcher()).signalMigration(
-            _vaultProxy, comptrollerProxy_, getVaultLib(), _bypassPrevReleaseFailure
-        );
+        IDispatcher(getDispatcher())
+            .signalMigration(_vaultProxy, comptrollerProxy_, getVaultLib(), _bypassPrevReleaseFailure);
 
         emit MigrationRequestCreated(msg.sender, _vaultProxy, comptrollerProxy_);
 
@@ -377,22 +376,18 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     ) private {
         // Since fees can only be set in this step, if there are no fees, there is no need to set the validated VaultProxy
         if (_feeManagerConfigData.length > 0) {
-            IExtension(IComptroller(_comptrollerProxy).getFeeManager()).setConfigForFund(
-                _comptrollerProxy, _vaultProxy, _feeManagerConfigData
-            );
+            IExtension(IComptroller(_comptrollerProxy).getFeeManager())
+                .setConfigForFund(_comptrollerProxy, _vaultProxy, _feeManagerConfigData);
         }
 
         // For all other extensions, we call to cache the validated VaultProxy, for simplicity.
         // In the future, we can consider caching conditionally.
-        IExtension(IComptroller(_comptrollerProxy).getExternalPositionManager()).setConfigForFund(
-            _comptrollerProxy, _vaultProxy, ""
-        );
-        IExtension(IComptroller(_comptrollerProxy).getIntegrationManager()).setConfigForFund(
-            _comptrollerProxy, _vaultProxy, ""
-        );
-        IExtension(IComptroller(_comptrollerProxy).getPolicyManager()).setConfigForFund(
-            _comptrollerProxy, _vaultProxy, _policyManagerConfigData
-        );
+        IExtension(IComptroller(_comptrollerProxy).getExternalPositionManager())
+            .setConfigForFund(_comptrollerProxy, _vaultProxy, "");
+        IExtension(IComptroller(_comptrollerProxy).getIntegrationManager())
+            .setConfigForFund(_comptrollerProxy, _vaultProxy, "");
+        IExtension(IComptroller(_comptrollerProxy).getPolicyManager())
+            .setConfigForFund(_comptrollerProxy, _vaultProxy, _policyManagerConfigData);
     }
 
     /// @dev Helper function to deploy a configured ComptrollerProxy
@@ -420,8 +415,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         string calldata _fundName,
         string calldata _fundSymbol
     ) private returns (address vaultProxy_) {
-        vaultProxy_ =
-            IDispatcher(getDispatcher()).deployVaultProxy(getVaultLib(), _fundOwner, _comptrollerProxy, _fundName);
+        vaultProxy_ = IDispatcher(getDispatcher())
+            .deployVaultProxy(getVaultLib(), _fundOwner, _comptrollerProxy, _fundName);
         if (bytes(_fundSymbol).length != 0) {
             IVault(vaultProxy_).setSymbol(_fundSymbol);
         }
@@ -630,7 +625,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
             );
 
             vaultCallToPayloadToIsAllowed[keccak256(abi.encodePacked(_contracts[i], _selectors[i]))][_dataHashes[i]] =
-                false;
+            false;
 
             emit VaultCallDeregistered(_contracts[i], _selectors[i], _dataHashes[i]);
         }
@@ -659,7 +654,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
             );
 
             vaultCallToPayloadToIsAllowed[keccak256(abi.encodePacked(_contracts[i], _selectors[i]))][_dataHashes[i]] =
-                true;
+            true;
 
             emit VaultCallRegistered(_contracts[i], _selectors[i], _dataHashes[i]);
         }

@@ -72,15 +72,16 @@ contract AaveV3FlashLoanAssetManagerLib is IAaveV3FlashLoanAssetManager, IAaveV3
     {
         if (msg.sender != getOwner()) revert AaveV3FlashLoanAssetManager__FlashLoan__Unauthorized();
 
-        IAaveV3Pool(POOL()).flashLoan({
-            _receiverAddress: address(this),
-            _assets: _assets,
-            _amounts: _amounts,
-            _interestRateModes: new uint256[](_assets.length), // 0 is "no open debt"
-            _onBehalfOf: address(0), // unused when interest mode = 0
-            _params: _encodedCalls,
-            _referralCode: AAVE_REFERRAL_CODE
-        });
+        IAaveV3Pool(POOL())
+            .flashLoan({
+                _receiverAddress: address(this),
+                _assets: _assets,
+                _amounts: _amounts,
+                _interestRateModes: new uint256[](_assets.length), // 0 is "no open debt"
+                _onBehalfOf: address(0), // unused when interest mode = 0
+                _params: _encodedCalls,
+                _referralCode: AAVE_REFERRAL_CODE
+            });
     }
 
     /// @dev Helper to set `borrowedAssetsRecipient`
@@ -109,7 +110,9 @@ contract AaveV3FlashLoanAssetManagerLib is IAaveV3FlashLoanAssetManager, IAaveV3
         address _initiator,
         bytes calldata _params
     ) external override returns (bool success_) {
-        if (_initiator != address(this)) revert AaveV3FlashLoanAssetManager__ExecuteOperation__UnauthorizedInitiator();
+        if (_initiator != address(this)) {
+            revert AaveV3FlashLoanAssetManager__ExecuteOperation__UnauthorizedInitiator();
+        }
         address poolAddress = POOL();
         if (msg.sender != poolAddress) revert AaveV3FlashLoanAssetManager__ExecuteOperation__UnauthorizedCaller();
 

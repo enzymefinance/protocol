@@ -20,9 +20,7 @@ interface IComptroller {
 
     function buyBackProtocolFeeShares(uint256 _sharesAmount) external;
 
-    function buyShares(uint256 _investmentAmount, uint256 _minSharesQuantity)
-        external
-        returns (uint256 sharesReceived_);
+    function buyShares(uint256 _investmentAmount, uint256 _minSharesQuantity) external returns (uint256 sharesReceived_);
 
     function buySharesOnBehalf(address _buyer, uint256 _investmentAmount, uint256 _minSharesQuantity)
         external

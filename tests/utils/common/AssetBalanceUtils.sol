@@ -95,12 +95,8 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
         // safeApprove() required for USDT
         address lendingPoolAddress = getAaveV2LendingPoolAddressForChain();
         underlying.safeApprove(lendingPoolAddress, _amount);
-        IAaveV2LendingPool(lendingPoolAddress).deposit({
-            _underlying: address(underlying),
-            _amount: _amount,
-            _to: _to,
-            _referralCode: 0
-        });
+        IAaveV2LendingPool(lendingPoolAddress)
+            .deposit({_underlying: address(underlying), _amount: _amount, _to: _to, _referralCode: 0});
         vm.stopPrank();
     }
 
@@ -181,12 +177,8 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
         vm.startPrank(_to);
         // safeApprove() required for USDT
         underlying.safeApprove(_lendingPoolAddress, _amount);
-        IAaveV3Pool(_lendingPoolAddress).supply({
-            _asset: address(underlying),
-            _amount: _amount,
-            _onBehalfOf: _to,
-            _referralCode: 0
-        });
+        IAaveV3Pool(_lendingPoolAddress)
+            .supply({_asset: address(underlying), _amount: _amount, _onBehalfOf: _to, _referralCode: 0});
         vm.stopPrank();
     }
 

@@ -61,11 +61,7 @@ contract PerformanceFee is IPerformanceFee, FeeBase, UpdatableFeeRecipientBase {
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _settingsData Encoded settings to apply to the fee for a fund
     /// @dev `highWaterMark`, `lastSharePrice`, and `activated` are set during activation
-    function addFundSettings(address _comptrollerProxy, bytes calldata _settingsData)
-        external
-        override
-        onlyFeeManager
-    {
+    function addFundSettings(address _comptrollerProxy, bytes calldata _settingsData) external override onlyFeeManager {
         (uint256 feeRate, address recipient) = abi.decode(_settingsData, (uint256, address));
         require(feeRate > 0, "addFundSettings: feeRate must be greater than 0");
         // Unlike most other fees, there could be a case for using a rate of exactly 100%,
@@ -211,9 +207,8 @@ contract PerformanceFee is IPerformanceFee, FeeBase, UpdatableFeeRecipientBase {
 
         // Calculate the shares due, inclusive of inflation
         uint256 priceIncrease = sharePrice_.sub(HWM);
-        uint256 rawValueDue = priceIncrease.mul(sharesSupply).mul(comptrollerProxyToFeeInfo[_comptrollerProxy].rate).div(
-            ONE_HUNDRED_PERCENT
-        ).div(SHARE_UNIT);
+        uint256 rawValueDue = priceIncrease.mul(sharesSupply).mul(comptrollerProxyToFeeInfo[_comptrollerProxy].rate)
+            .div(ONE_HUNDRED_PERCENT).div(SHARE_UNIT);
         sharesDue_ = rawValueDue.mul(sharesSupply).div(_gav.sub(rawValueDue));
 
         return (sharePrice_, sharesDue_);

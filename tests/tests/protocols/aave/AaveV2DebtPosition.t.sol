@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IAaveDebtPosition as IAaveDebtPositionProd} from
-    "contracts/release/extensions/external-position-manager/external-positions/aave-v2-debt/IAaveDebtPosition.sol";
+import {
+    IAaveDebtPosition as IAaveDebtPositionProd
+} from "contracts/release/extensions/external-position-manager/external-positions/aave-v2-debt/IAaveDebtPosition.sol";
 
 import {Math} from "openzeppelin-solc-0.8/utils/math/Math.sol";
 
@@ -325,9 +326,7 @@ abstract contract BorrowTest is TestBase {
         __dealATokenAndAddCollateral({_aTokens: _aTokensCollateral, _amounts: _aTokensCollateralAmounts});
 
         (address[] memory uniqueTokensToBorrow, uint256[] memory uniqueTokensToBorrowAmounts) = aggregateAssetAmounts({
-            _rawAssets: _underlyingsToBorrow,
-            _rawAmounts: _underlyingsToBorrowAmounts,
-            _ceilingAtMax: false
+            _rawAssets: _underlyingsToBorrow, _rawAmounts: _underlyingsToBorrowAmounts, _ceilingAtMax: false
         });
 
         // expect the correct event for every unique borrowed underlying
@@ -420,9 +419,8 @@ abstract contract RepayBorrowTest is TestBase {
                 // check that the debt decreased
                 // 1 wei difference is allowed because of the interest accrued if the colletaral is supplied is the same as borrowed asset
                 assertApproxEqAbs(
-                    IERC20(aaveDebtPosition.getDebtTokenForBorrowedAsset(_underlyingsToBorrowAndRepay[i])).balanceOf(
-                        address(aaveDebtPosition)
-                    ),
+                    IERC20(aaveDebtPosition.getDebtTokenForBorrowedAsset(_underlyingsToBorrowAndRepay[i]))
+                        .balanceOf(address(aaveDebtPosition)),
                     _underlyingsToBorrowAmounts[i] - _underlyingsToRepayAmounts[i],
                     1,
                     "Invalid debt amount"
@@ -532,9 +530,7 @@ contract AaveV2DebtPositionTestEthereum is AaveV2DebtPositionTest {
         amountsToRemove[4] = 10_000 * assetUnit(IERC20(aTokens[4]));
 
         __test_removeCollateral_success({
-            _aTokens: aTokens,
-            _amountsToAdd: amountsToAdd,
-            _amountsToRemove: amountsToRemove
+            _aTokens: aTokens, _amountsToAdd: amountsToAdd, _amountsToRemove: amountsToRemove
         });
     }
 
@@ -656,9 +652,7 @@ contract AaveV2DebtPositionTestPolygon is AaveV2DebtPositionTest {
         amountsToRemove[4] = 10_000 * assetUnit(IERC20(aTokens[4]));
 
         __test_removeCollateral_success({
-            _aTokens: aTokens,
-            _amountsToAdd: amountsToAdd,
-            _amountsToRemove: amountsToRemove
+            _aTokens: aTokens, _amountsToAdd: amountsToAdd, _amountsToRemove: amountsToRemove
         });
     }
 

@@ -53,8 +53,7 @@ interface IAaveV2LendingPool {
         uint8 id;
     }
 
-    function borrow(address _underlying, uint256 _amount, uint256 _rateMode, uint16 _referralCode, address _to)
-        external;
+    function borrow(address _underlying, uint256 _amount, uint256 _rateMode, uint16 _referralCode, address _to) external;
 
     function deposit(address _underlying, uint256 _amount, address _to, uint16 _referralCode) external;
 

@@ -125,11 +125,7 @@ abstract contract CurveLiquidityAdapterBase is ICurveLiquidityAdapterBase, Adapt
     }
 
     /// @dev Helper to get a pool asset at a given index
-    function __getPoolAsset(address _pool, uint256 _index, bool _useUnderlying)
-        internal
-        view
-        returns (address asset_)
-    {
+    function __getPoolAsset(address _pool, uint256 _index, bool _useUnderlying) internal view returns (address asset_) {
         if (_useUnderlying) {
             try ICurveLiquidityPool(_pool).underlying_coins(_index) returns (address underlyingCoin) {
                 asset_ = underlyingCoin;

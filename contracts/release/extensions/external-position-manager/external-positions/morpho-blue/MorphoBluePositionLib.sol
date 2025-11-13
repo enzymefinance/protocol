@@ -94,18 +94,12 @@ contract MorphoBluePositionLib is
 
         // Approve the Morpho Blue contract to spend the asset
         __approveAssetMaxAsNeeded({
-            _asset: marketParams.loanToken,
-            _target: address(MORPHO_BLUE),
-            _neededAmount: assetAmount
+            _asset: marketParams.loanToken, _target: address(MORPHO_BLUE), _neededAmount: assetAmount
         });
 
         // Lend the asset
         MORPHO_BLUE.supply({
-            _marketParams: marketParams,
-            _assets: assetAmount,
-            _shares: 0,
-            _onBehalf: address(this),
-            _data: ""
+            _marketParams: marketParams, _assets: assetAmount, _shares: 0, _onBehalf: address(this), _data: ""
         });
     }
 
@@ -137,17 +131,12 @@ contract MorphoBluePositionLib is
 
         // Approve the Morpho Blue contract to spend the asset
         __approveAssetMaxAsNeeded({
-            _asset: marketParams.collateralToken,
-            _target: address(MORPHO_BLUE),
-            _neededAmount: collateralAmount
+            _asset: marketParams.collateralToken, _target: address(MORPHO_BLUE), _neededAmount: collateralAmount
         });
 
         // Add the collateral
         MORPHO_BLUE.supplyCollateral({
-            _marketParams: marketParams,
-            _assets: collateralAmount,
-            _onBehalf: address(this),
-            _data: ""
+            _marketParams: marketParams, _assets: collateralAmount, _onBehalf: address(this), _data: ""
         });
     }
 
@@ -194,9 +183,7 @@ contract MorphoBluePositionLib is
         IMorphoBlue.MarketParams memory marketParams = MORPHO_BLUE.idToMarketParams({_id: marketId});
 
         __approveAssetMaxAsNeeded({
-            _asset: marketParams.loanToken,
-            _target: address(MORPHO_BLUE),
-            _neededAmount: repayAmount
+            _asset: marketParams.loanToken, _target: address(MORPHO_BLUE), _neededAmount: repayAmount
         });
 
         // Repay the borrowed asset
@@ -214,11 +201,7 @@ contract MorphoBluePositionLib is
             });
         } else {
             MORPHO_BLUE.repay({
-                _marketParams: marketParams,
-                _assets: repayAmount,
-                _shares: 0,
-                _onBehalf: address(this),
-                _data: ""
+                _marketParams: marketParams, _assets: repayAmount, _shares: 0, _onBehalf: address(this), _data: ""
             });
         }
 

@@ -37,10 +37,7 @@ abstract contract OneInchV5ActionsMixin is AssetHelpers {
         });
 
         ONE_INCH_V5_AGGREGATION_ROUTER_CONTRACT.swap({
-            _executor: _executor,
-            _desc: _description,
-            _permit: "",
-            _data: _data
+            _executor: _executor, _desc: _description, _permit: "", _data: _data
         });
     }
 }

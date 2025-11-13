@@ -37,8 +37,9 @@ abstract contract UniswapV2PoolTokenValueCalculator {
         uint256 _token0TrustedRateAmount,
         uint256 _token1TrustedRateAmount
     ) internal view returns (uint256 token0Amount_, uint256 token1Amount_) {
-        (uint256 reserve0, uint256 reserve1) =
-            __calcReservesAfterArbitrage(_pair, _token0TrustedRateAmount, _token1TrustedRateAmount);
+        (uint256 reserve0, uint256 reserve1) = __calcReservesAfterArbitrage(
+            _pair, _token0TrustedRateAmount, _token1TrustedRateAmount
+        );
 
         return __calcPoolTokenValue(_factory, _pair, reserve0, reserve1);
     }
@@ -80,7 +81,8 @@ abstract contract UniswapV2PoolTokenValueCalculator {
         uint256 _reserve0,
         uint256 _reserve1
     ) private pure returns (bool token0ToToken1_, uint256 amountIn_) {
-        token0ToToken1_ = _reserve0.mul(_token1TrustedRateAmount).div(_reserve1) < _token0TrustedRateAmount;
+        token0ToToken1_ =
+            _reserve0.mul(_token1TrustedRateAmount).div(_reserve1) < _token0TrustedRateAmount;
 
         uint256 leftSide;
         uint256 rightSide;

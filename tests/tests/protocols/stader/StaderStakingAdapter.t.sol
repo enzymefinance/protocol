@@ -41,8 +41,7 @@ abstract contract EthereumStaderStakingAdapterTestBase is StaderStakingAdapterTe
         setUpMainnetEnvironment();
 
         __initializeStader({
-            _staderStakePoolsManagerAddress: ETHEREUM_STADER_STAKE_POOLS_MANAGER,
-            _ethxAddress: ETHEREUM_ETHX_ADDRESS
+            _staderStakePoolsManagerAddress: ETHEREUM_STADER_STAKE_POOLS_MANAGER, _ethxAddress: ETHEREUM_ETHX_ADDRESS
         });
     }
 }

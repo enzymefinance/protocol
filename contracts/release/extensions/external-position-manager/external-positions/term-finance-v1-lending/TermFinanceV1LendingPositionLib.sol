@@ -12,7 +12,9 @@ pragma solidity 0.8.19;
 import {SafeCast} from "openzeppelin-solc-0.8/utils/math/SafeCast.sol";
 import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {ITermFinanceV1Auction} from "../../../../../external-interfaces/ITermFinanceV1Auction.sol";
-import {ITermFinanceV1AuctionOfferLocker} from "../../../../../external-interfaces/ITermFinanceV1AuctionOfferLocker.sol";
+import {
+    ITermFinanceV1AuctionOfferLocker
+} from "../../../../../external-interfaces/ITermFinanceV1AuctionOfferLocker.sol";
 import {ITermFinanceV1RepoServicer} from "../../../../../external-interfaces/ITermFinanceV1RepoServicer.sol";
 import {ITermFinanceV1RepoToken} from "../../../../../external-interfaces/ITermFinanceV1RepoToken.sol";
 import {AddressArrayLib} from "../../../../../utils/0.8.19/AddressArrayLib.sol";
@@ -93,8 +95,10 @@ contract TermFinanceV1LendingPositionLib is
         bool containsDecrease;
         for (uint256 i; i < submittedOffersLength; i++) {
             // Compute the absolute amounts from the amountsChange
-            uint256 existingOfferAmount = ITermFinanceV1AuctionOfferLocker(termAuction.termAuctionOfferLocker())
-                .lockedOffer(submittedOfferIds[i]).amount;
+            uint256 existingOfferAmount =
+                ITermFinanceV1AuctionOfferLocker(termAuction.termAuctionOfferLocker())
+            .lockedOffer(submittedOfferIds[i])
+            .amount;
 
             if (amountsChange[i] < 0) {
                 containsDecrease = true;
@@ -226,9 +230,8 @@ contract TermFinanceV1LendingPositionLib is
             // the termAuction can be removed from storage (it can never contain additional value).
             if (
                 termAuction.auctionCompleted()
-                    && IERC20(ITermFinanceV1RepoServicer(termAuction.termRepoServicer()).termRepoToken()).balanceOf(
-                        address(this)
-                    ) == 0
+                    && IERC20(ITermFinanceV1RepoServicer(termAuction.termRepoServicer()).termRepoToken())
+                            .balanceOf(address(this)) == 0
             ) {
                 __removeTermAuction({_termAuctionAddress: address(termAuction)});
             }

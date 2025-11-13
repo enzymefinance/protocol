@@ -99,9 +99,7 @@ abstract contract RateAggregatorBase is IChainlinkAggregator {
             }
 
             rate = PriceFeedHelpersLib.convertRateToNewQuoteAsset({
-                _baseRate: rate,
-                _baseRatePrecision: ratePrecision,
-                _quoteRate: quoteRate
+                _baseRate: rate, _baseRatePrecision: ratePrecision, _quoteRate: quoteRate
             });
             ratePrecision = quoteRatePrecision;
             timestamp = PriceFeedHelpersLib.selectOldestTimestamp(timestamp, quoteRateTimestamp);
@@ -109,9 +107,7 @@ abstract contract RateAggregatorBase is IChainlinkAggregator {
 
         // 3. If needed, scale the rate to this aggregator's precision
         rate = PriceFeedHelpersLib.convertRatePrecision({
-            _rate: rate,
-            _fromPrecision: ratePrecision,
-            _toPrecision: PRECISION
+            _rate: rate, _fromPrecision: ratePrecision, _toPrecision: PRECISION
         });
 
         // 4. Return the final rate and timestamp in Chainlink format

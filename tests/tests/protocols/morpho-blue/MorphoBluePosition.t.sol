@@ -6,9 +6,12 @@ import {
     MarketParams as MorphoLibMarketParams,
     MorphoBalancesLib
 } from "morpho-blue/periphery/MorphoBalancesLib.sol";
-import {IMorphoBluePosition as IMorphoBluePositionProd} from
-    "contracts/release/extensions/external-position-manager/external-positions/morpho-blue/IMorphoBluePosition.sol";
-import {IUintListRegistry as IUintListRegistryProd} from "contracts/persistent/uint-list-registry/IUintListRegistry.sol";
+import {
+    IMorphoBluePosition as IMorphoBluePositionProd
+} from "contracts/release/extensions/external-position-manager/external-positions/morpho-blue/IMorphoBluePosition.sol";
+import {
+    IUintListRegistry as IUintListRegistryProd
+} from "contracts/persistent/uint-list-registry/IUintListRegistry.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -59,11 +62,12 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
         marketId = _morphoBlueMarketId;
 
         // Create a new UintListRegistry list for allowed morpho blue vaults
-        allowedMorphoBlueVaultsListId = core.persistent.uintListRegistry.createList({
-            _owner: listOwner,
-            _updateType: formatUintListRegistryUpdateType(IUintListRegistryProd.UpdateType.AddAndRemove),
-            _initialItems: toArray(uint256(marketId))
-        });
+        allowedMorphoBlueVaultsListId = core.persistent.uintListRegistry
+            .createList({
+                _owner: listOwner,
+                _updateType: formatUintListRegistryUpdateType(IUintListRegistryProd.UpdateType.AddAndRemove),
+                _initialItems: toArray(uint256(marketId))
+            });
 
         externalPositionManager = core.release.externalPositionManager;
         (morphoBluePositionLib, morphoBluePositionParser, morphoBlueTypeId) = deployMorphoBlue({
@@ -92,9 +96,7 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
 
         // Add the loanToken and collateralToken to the asset universe
         addPrimitiveWithTestAggregator({
-            _valueInterpreter: core.release.valueInterpreter,
-            _tokenAddress: address(loanToken),
-            _skipIfRegistered: true
+            _valueInterpreter: core.release.valueInterpreter, _tokenAddress: address(loanToken), _skipIfRegistered: true
         });
         addPrimitiveWithTestAggregator({
             _valueInterpreter: core.release.valueInterpreter,
@@ -105,9 +107,7 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
         // Increase the loanToken and collateralToken balances
         increaseTokenBalance({_token: loanToken, _to: address(vaultProxy), _amount: assetUnit(loanToken) * 678});
         increaseTokenBalance({
-            _token: collateralToken,
-            _to: address(vaultProxy),
-            _amount: assetUnit(collateralToken) * 345
+            _token: collateralToken, _to: address(vaultProxy), _amount: assetUnit(collateralToken) * 345
         });
 
         // Supply some loanToken to the MorphoMarket so that assets can be borrowed
@@ -261,11 +261,10 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
 
     function __getBorrowableAmountFromCollateral(uint256 _collateralAmount) private returns (uint256 borrowAmount_) {
         // Get collateralAmount value in terms of borrowAmount
-        uint256 borrowAssetValue = core.release.valueInterpreter.calcCanonicalAssetValue({
-            _baseAsset: address(collateralToken),
-            _amount: _collateralAmount,
-            _quoteAsset: address(loanToken)
-        });
+        uint256 borrowAssetValue = core.release.valueInterpreter
+            .calcCanonicalAssetValue({
+                _baseAsset: address(collateralToken), _amount: _collateralAmount, _quoteAsset: address(loanToken)
+            });
 
         // Return a borrowAmount equivalent to a fraction of the collateralAmount value
         return borrowAssetValue / 100;
@@ -285,9 +284,7 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
         __lend({_marketId: marketId, _assetAmount: assetAmount});
 
         assertExternalPositionAssetsToReceive({
-            _logs: vm.getRecordedLogs(),
-            _externalPositionManager: externalPositionManager,
-            _assets: new address[](0)
+            _logs: vm.getRecordedLogs(), _externalPositionManager: externalPositionManager, _assets: new address[](0)
         });
 
         // Assert that the marketId has been added to the external position
@@ -311,9 +308,9 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
         morphoBlue.accrueInterest({_marketParams: morphoBlue.idToMarketParams(marketId)});
         IMorphoBlue.Market memory market = morphoBlue.market({_id: marketId});
         uint256 postAccrualSuppliedValue = morphoBlue.position({
-            _id: marketId,
-            _user: address(morphoBlueExternalPosition)
-        }).supplyShares * market.totalSupplyAssets / market.totalSupplyShares;
+                _id: marketId, _user: address(morphoBlueExternalPosition)
+            })
+            .supplyShares * market.totalSupplyAssets / market.totalSupplyShares;
 
         assertGt(postAccrualSuppliedValue, assetAmount, "Interest not accrued");
 
@@ -326,10 +323,8 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
         vm.prank(listOwner);
 
         // Remove the market from the list of allowed markets
-        core.persistent.uintListRegistry.removeFromList({
-            _id: allowedMorphoBlueVaultsListId,
-            _items: toArray(uint256(marketId))
-        });
+        core.persistent.uintListRegistry
+            .removeFromList({_id: allowedMorphoBlueVaultsListId, _items: toArray(uint256(marketId))});
 
         vm.expectRevert(IMorphoBluePositionLib.DisallowedMarket.selector);
 
@@ -408,9 +403,7 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
         __addCollateral({_marketId: marketId, _collateralAmount: addedCollateral});
 
         assertExternalPositionAssetsToReceive({
-            _logs: vm.getRecordedLogs(),
-            _externalPositionManager: externalPositionManager,
-            _assets: new address[](0)
+            _logs: vm.getRecordedLogs(), _externalPositionManager: externalPositionManager, _assets: new address[](0)
         });
 
         // Assert that the marketId has been added to the external position
@@ -555,9 +548,7 @@ abstract contract MorphoBlueTestBase is IntegrationTest {
         uint256 borrowAssetBalanceDelta = preRepayVaultAssetBalance - loanToken.balanceOf(address(vaultProxy));
 
         assertExternalPositionAssetsToReceive({
-            _logs: vm.getRecordedLogs(),
-            _externalPositionManager: externalPositionManager,
-            _assets: new address[](0)
+            _logs: vm.getRecordedLogs(), _externalPositionManager: externalPositionManager, _assets: new address[](0)
         });
 
         // Assert that the vaultProxy borrow asset balance has decreased by the repaid amount

@@ -185,19 +185,13 @@ contract BalancerV2Reenterer is BalancerV2Utils, CommonUtils {
             abi.encode(ComposableStablePoolJoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, amountsInWithoutBpt, 1);
 
         IBalancerV2Vault.PoolBalanceChange memory request = IBalancerV2Vault.PoolBalanceChange({
-            assets: poolTokens,
-            limits: amountsInVerbose,
-            userData: userData,
-            useInternalBalance: false
+            assets: poolTokens, limits: amountsInVerbose, userData: userData, useInternalBalance: false
         });
 
         // Join on Balancer
         _joinAsset.approve(address(balancer), _joinAmount);
         balancer.joinPool{value: msg.value}({
-            _poolId: _poolId,
-            _sender: address(this),
-            _recipient: address(this),
-            _request: request
+            _poolId: _poolId, _sender: address(this), _recipient: address(this), _request: request
         });
     }
 }

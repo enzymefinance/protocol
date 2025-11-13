@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IAliceV2Position as IAliceV2PositionProd} from
-    "contracts/release/extensions/external-position-manager/external-positions/alice-v2/AliceV2PositionLib.sol";
-import {IUintListRegistry as IUintListRegistryProd} from "contracts/persistent/uint-list-registry/IUintListRegistry.sol";
+import {
+    IAliceV2Position as IAliceV2PositionProd
+} from "contracts/release/extensions/external-position-manager/external-positions/alice-v2/AliceV2PositionLib.sol";
+import {
+    IUintListRegistry as IUintListRegistryProd
+} from "contracts/persistent/uint-list-registry/IUintListRegistry.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -131,12 +134,10 @@ abstract contract AliceTestBase is IntegrationTest {
         returns (uint256 typeId_)
     {
         IAliceV2PositionLib alicePositionLib = deployAlicePositionLib({
-            _aliceOrderManagerAddress: _aliceOrderManagerAddress,
-            _wrappedNativeAssetAddress: _wrappedNativeAssetAddress
+            _aliceOrderManagerAddress: _aliceOrderManagerAddress, _wrappedNativeAssetAddress: _wrappedNativeAssetAddress
         });
         IAliceV2PositionParser alicePositionParser = deployAlicePositionParser({
-            _aliceOrderManagerAddress: _aliceOrderManagerAddress,
-            _wrappedNativeAssetAddress: _wrappedNativeAssetAddress
+            _aliceOrderManagerAddress: _aliceOrderManagerAddress, _wrappedNativeAssetAddress: _wrappedNativeAssetAddress
         });
 
         typeId_ = registerExternalPositionType({
@@ -275,8 +276,7 @@ abstract contract AliceTestBase is IntegrationTest {
 
         __placeOrder(placeOrderActionArgs);
 
-        return (
-            BuildAndPlaceOrderOutput({
+        return (BuildAndPlaceOrderOutput({
                 orderId: orderId,
                 rawOutgoingAsset: rawOutgoingAsset,
                 rawIncomingAsset: rawIncomingAsset,
@@ -285,8 +285,7 @@ abstract contract AliceTestBase is IntegrationTest {
                 orderQuantity: orderQuantity,
                 timestamp: timestamp,
                 limitAmountToGet: limitAmountToGet
-            })
-        );
+            }));
     }
 
     function __buildAndPlaceOrderWithRefId(bool _inverse) private returns (BuildAndPlaceOrderOutput memory output_) {
@@ -305,8 +304,7 @@ abstract contract AliceTestBase is IntegrationTest {
 
         __placeOrderWithRefId(placeOrderActionArgs);
 
-        return (
-            BuildAndPlaceOrderOutput({
+        return (BuildAndPlaceOrderOutput({
                 orderId: orderId,
                 rawOutgoingAsset: rawOutgoingAsset,
                 rawIncomingAsset: rawIncomingAsset,
@@ -315,8 +313,7 @@ abstract contract AliceTestBase is IntegrationTest {
                 orderQuantity: orderQuantity,
                 timestamp: timestamp,
                 limitAmountToGet: limitAmountToGet
-            })
-        );
+            }));
     }
 
     function __cancelOrder(uint256 _orderId, uint256 _limitAmountToGet, uint256 _timestamp) private {
@@ -369,9 +366,7 @@ abstract contract AliceTestBase is IntegrationTest {
         IERC20 incomingAsset = __parseAliceAsset({_rawAsset: IERC20(orderDetails.incomingAssetAddress)});
 
         increaseTokenBalance({
-            _token: incomingAsset,
-            _to: liquidityPoolContract,
-            _amount: assetUnit(incomingAsset) * 12345
+            _token: incomingAsset, _to: liquidityPoolContract, _amount: assetUnit(incomingAsset) * 12345
         });
 
         vm.prank(aliceOwner);
@@ -402,9 +397,7 @@ abstract contract AliceTestBase is IntegrationTest {
             IERC20 incomingAsset = __parseAliceAsset({_rawAsset: IERC20(orderDetails.incomingAssetAddress)});
 
             increaseTokenBalance({
-                _token: incomingAsset,
-                _to: liquidityPoolContract,
-                _amount: assetUnit(incomingAsset) * 12345
+                _token: incomingAsset, _to: liquidityPoolContract, _amount: assetUnit(incomingAsset) * 12345
             });
         }
 
@@ -434,8 +427,7 @@ abstract contract AliceTestBase is IntegrationTest {
             uint256 orderId,
             IERC20 rawOutgoingAsset,
             IERC20 rawIncomingAsset,
-            IERC20 outgoingAsset,
-            ,
+            IERC20 outgoingAsset,,
             uint256 orderQuantity,
         ) = __buildOrder({_inverse: _inverse});
 
@@ -456,9 +448,7 @@ abstract contract AliceTestBase is IntegrationTest {
         uint256 postOrderVaultOutgoingAssetBalance = outgoingAsset.balanceOf(vaultProxyAddress);
 
         assertExternalPositionAssetsToReceive({
-            _logs: vm.getRecordedLogs(),
-            _externalPositionManager: externalPositionManager,
-            _assets: new address[](0)
+            _logs: vm.getRecordedLogs(), _externalPositionManager: externalPositionManager, _assets: new address[](0)
         });
 
         // The orderId should have been added to storage
@@ -556,9 +546,8 @@ abstract contract AliceTestBase is IntegrationTest {
                 _settlementAmount: settlementAmount
             });
 
-            uint256 expectedIncomingAmount = settlementAmount
-                - settlementAmount * aliceOrderManager.feeRate({_user: address(aliceExternalPosition)})
-                    / BPS_ONE_HUNDRED_PERCENT;
+            uint256 expectedIncomingAmount = settlementAmount - settlementAmount
+                * aliceOrderManager.feeRate({_user: address(aliceExternalPosition)}) / BPS_ONE_HUNDRED_PERCENT;
 
             // Assert that the orderId has been removed and some incoming asset is back into the vault
             assertEq(0, aliceExternalPosition.getOrderIds().length, "Incorrect orderIds length");
@@ -767,14 +756,10 @@ abstract contract AliceTestBase is IntegrationTest {
             _skipIfRegistered: true
         });
         increaseTokenBalance({
-            _token: thirdOutgoingAsset,
-            _to: vaultProxyAddress,
-            _amount: assetUnit(thirdOutgoingAsset) * 7
+            _token: thirdOutgoingAsset, _to: vaultProxyAddress, _amount: assetUnit(thirdOutgoingAsset) * 7
         });
         increaseTokenBalance({
-            _token: thirdIncomingAsset,
-            _to: vaultProxyAddress,
-            _amount: assetUnit(thirdOutgoingAsset) * 11
+            _token: thirdIncomingAsset, _to: vaultProxyAddress, _amount: assetUnit(thirdOutgoingAsset) * 11
         });
 
         uint256 thirdOrderQuantity = thirdOutgoingAsset.balanceOf(vaultProxyAddress) / 3;
@@ -826,14 +811,11 @@ abstract contract AliceTestBase is IntegrationTest {
 
             // Cancel order #3
             __cancelOrder({
-                _orderId: thirdOrderId,
-                _limitAmountToGet: thirdOrderLimitAmountToGet,
-                _timestamp: thirdOrderTimestamp
+                _orderId: thirdOrderId, _limitAmountToGet: thirdOrderLimitAmountToGet, _timestamp: thirdOrderTimestamp
             });
 
-            firstOrderNetIncomingAmount = firstOrderSettlementAmount
-                - firstOrderSettlementAmount * aliceOrderManager.feeRate({_user: address(aliceExternalPosition)})
-                    / BPS_ONE_HUNDRED_PERCENT;
+            firstOrderNetIncomingAmount = firstOrderSettlementAmount - firstOrderSettlementAmount
+                * aliceOrderManager.feeRate({_user: address(aliceExternalPosition)}) / BPS_ONE_HUNDRED_PERCENT;
         }
 
         // Orders should be properly valued
@@ -975,13 +957,14 @@ abstract contract AliceTestBase is IntegrationTest {
         // Attempt to parse assets with duplicate order IDs
         address parserAddress = externalPositionManager.getExternalPositionParserForType(aliceTypeId);
         vm.expectRevert(abi.encodeWithSelector(IAliceV2PositionParser.DuplicateOrderId.selector));
-        IAliceV2PositionParser(parserAddress).parseAssetsForAction(
-            address(aliceExternalPosition),
-            uint256(IAliceV2PositionProd.Actions.Sweep),
-            abi.encode(
-                IAliceV2PositionProd.SweepActionArgs({orderIds: toArray(orderOutput.orderId, orderOutput.orderId)})
-            )
-        );
+        IAliceV2PositionParser(parserAddress)
+            .parseAssetsForAction(
+                address(aliceExternalPosition),
+                uint256(IAliceV2PositionProd.Actions.Sweep),
+                abi.encode(
+                    IAliceV2PositionProd.SweepActionArgs({orderIds: toArray(orderOutput.orderId, orderOutput.orderId)})
+                )
+            );
     }
 
     function test_parseAssetsForAction_failsWithUnknownOrderId() public {
@@ -998,11 +981,12 @@ abstract contract AliceTestBase is IntegrationTest {
         uint256 unknownOrderId = 999999;
         address parserAddress = externalPositionManager.getExternalPositionParserForType(aliceTypeId);
         vm.expectRevert(abi.encodeWithSelector(IAliceV2PositionParser.UnknownOrderId.selector));
-        IAliceV2PositionParser(parserAddress).parseAssetsForAction(
-            address(aliceExternalPosition),
-            uint256(IAliceV2PositionProd.Actions.Sweep),
-            abi.encode(IAliceV2PositionProd.SweepActionArgs({orderIds: toArray(unknownOrderId)}))
-        );
+        IAliceV2PositionParser(parserAddress)
+            .parseAssetsForAction(
+                address(aliceExternalPosition),
+                uint256(IAliceV2PositionProd.Actions.Sweep),
+                abi.encode(IAliceV2PositionProd.SweepActionArgs({orderIds: toArray(unknownOrderId)}))
+            );
     }
 
     function test_notifySettle_failsWithInvalidReferenceId() public {
@@ -1110,9 +1094,7 @@ abstract contract AliceTestBase is IntegrationTest {
 
         // 2. Cancel the order so that funds are available for sweeping
         __cancelOrder({
-            _orderId: orderId,
-            _limitAmountToGet: orderOutput.limitAmountToGet,
-            _timestamp: orderOutput.timestamp
+            _orderId: orderId, _limitAmountToGet: orderOutput.limitAmountToGet, _timestamp: orderOutput.timestamp
         });
 
         // 3. Sweep the order

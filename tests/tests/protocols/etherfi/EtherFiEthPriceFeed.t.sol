@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
-    "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
+import {
+    IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd
+} from "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -72,11 +73,12 @@ abstract contract EtherFiEthPriceFeedTestBase is IntegrationTest {
     function test_calcUnderlyingValuesInvariant_success() public {
         __addDerivativeAndUnderlying();
 
-        uint256 eETHvalue = core.release.valueInterpreter.calcCanonicalAssetValue({
-            _baseAsset: ETHERFI_ETH_ADDRESS,
-            _amount: assetUnit(IERC20(ETHERFI_ETH_ADDRESS)),
-            _quoteAsset: address(wethToken)
-        });
+        uint256 eETHvalue = core.release.valueInterpreter
+            .calcCanonicalAssetValue({
+                _baseAsset: ETHERFI_ETH_ADDRESS,
+                _amount: assetUnit(IERC20(ETHERFI_ETH_ADDRESS)),
+                _quoteAsset: address(wethToken)
+            });
 
         // eETH should be worth approximately 1ETH
         assertApproxEqRel(eETHvalue, assetUnit(wethToken), WEI_ONE_PERCENT / 5);

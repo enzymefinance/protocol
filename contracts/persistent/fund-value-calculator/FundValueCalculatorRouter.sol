@@ -139,9 +139,8 @@ contract FundValueCalculatorRouter is IFundValueCalculatorRouter {
         override
         returns (uint256 netValue_)
     {
-        return getFundValueCalculatorForVault(_vaultProxy).calcNetValueForSharesHolderInAsset(
-            _vaultProxy, _sharesHolder, _quoteAsset
-        );
+        return getFundValueCalculatorForVault(_vaultProxy)
+            .calcNetValueForSharesHolderInAsset(_vaultProxy, _sharesHolder, _quoteAsset);
     }
 
     // PUBLIC FUNCTIONS

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IAddressListRegistry as IAddressListRegistryProd} from
-    "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
+import {
+    IAddressListRegistry as IAddressListRegistryProd
+} from "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
@@ -662,15 +663,15 @@ contract SingleAssetDepositQueueTest is IntegrationTest {
             // Assert expected shares dispersed to depositors
             assertApproxEqAbs(
                 sharesToken.balanceOf(_params.depositor1),
-                snapshot.preTxDepositor1DepositSharesBalance
-                    + sharesMinted * depositor1DepositedAssets / totalDepositAssetAmount,
+                snapshot.preTxDepositor1DepositSharesBalance + sharesMinted * depositor1DepositedAssets
+                    / totalDepositAssetAmount,
                 1,
                 "incorrect depositor1 balance"
             );
             assertApproxEqAbs(
                 sharesToken.balanceOf(_params.depositor2),
-                snapshot.preTxDepositor2DepositSharesBalance
-                    + sharesMinted * depositor2DepositedAssets / totalDepositAssetAmount,
+                snapshot.preTxDepositor2DepositSharesBalance + sharesMinted * depositor2DepositedAssets
+                    / totalDepositAssetAmount,
                 1,
                 "incorrect depositor2 balance"
             );
@@ -753,11 +754,12 @@ contract SingleAssetDepositQueueTest is IntegrationTest {
         (address depositor1,) = __setup_queueAndDepositors({_fillQueue: false});
 
         uint64 listId = uint64(
-            core.persistent.addressListRegistry.createList({
-                _owner: fundOwner,
-                _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.AddAndRemove),
-                _initialItems: toArray(depositor1)
-            })
+            core.persistent.addressListRegistry
+                .createList({
+                    _owner: fundOwner,
+                    _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.AddAndRemove),
+                    _initialItems: toArray(depositor1)
+                })
         );
 
         vm.prank(fundOwner);
@@ -831,11 +833,12 @@ contract SingleAssetDepositQueueTest is IntegrationTest {
 
     function test_requestDeposit_failsDepositorIsNotAllowlisted() public {
         uint64 listId = uint64(
-            core.persistent.addressListRegistry.createList({
-                _owner: fundOwner,
-                _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.AddAndRemove),
-                _initialItems: new address[](0)
-            })
+            core.persistent.addressListRegistry
+                .createList({
+                    _owner: fundOwner,
+                    _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.AddAndRemove),
+                    _initialItems: new address[](0)
+                })
         );
 
         depositQueue.init({

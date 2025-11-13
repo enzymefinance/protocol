@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IAaveV3DebtPosition as IAaveV3DebtPositionProd} from
-    "contracts/release/extensions/external-position-manager/external-positions/aave-v3-debt/IAaveV3DebtPosition.sol";
+import {
+    IAaveV3DebtPosition as IAaveV3DebtPositionProd
+} from "contracts/release/extensions/external-position-manager/external-positions/aave-v3-debt/IAaveV3DebtPosition.sol";
 
 import {Math} from "openzeppelin-solc-0.8/utils/math/Math.sol";
 
@@ -148,8 +149,7 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         );
 
         (, uint256 aTokenListId) = deployAaveV3ATokenListOwner({
-            _addressListRegistry: _addressListRegistry,
-            _lendingPoolAddressProvider: address(_poolAddressProvider)
+            _addressListRegistry: _addressListRegistry, _lendingPoolAddressProvider: address(_poolAddressProvider)
         });
 
         address aaveV3DebtPositionParser =
@@ -414,9 +414,7 @@ abstract contract AddCollateralTest is TestBase {
         }
 
         __test_addCollateral_success({
-            _aTokens: __getATokensAddresses(underlyings),
-            _amounts: amounts,
-            _fromUnderlying: false
+            _aTokens: __getATokensAddresses(underlyings), _amounts: amounts, _fromUnderlying: false
         });
     }
 
@@ -429,9 +427,7 @@ abstract contract AddCollateralTest is TestBase {
         }
 
         __test_addCollateral_success({
-            _aTokens: __getATokensAddresses(underlyings),
-            _amounts: amounts,
-            _fromUnderlying: true
+            _aTokens: __getATokensAddresses(underlyings), _amounts: amounts, _fromUnderlying: true
         });
     }
 
@@ -551,9 +547,7 @@ abstract contract RemoveCollateralTest is TestBase {
         vm.expectRevert(formatError("__removeCollateralAssets: Invalid collateral asset"));
 
         __removeCollateral({
-            _aTokens: toArray(makeAddr("InvalidCollateralAsset")),
-            _amounts: toArray(1),
-            _toUnderlying: false
+            _aTokens: toArray(makeAddr("InvalidCollateralAsset")), _amounts: toArray(1), _toUnderlying: false
         });
     }
 }
@@ -581,15 +575,11 @@ abstract contract BorrowTest is TestBase {
             });
 
         __dealATokenAndAddCollateral({
-            _aTokens: toArray(__getATokenAddress(underlyingCollateral)),
-            _amounts: toArray(underlyingCollateralAmount)
+            _aTokens: toArray(__getATokenAddress(underlyingCollateral)), _amounts: toArray(underlyingCollateralAmount)
         });
 
-        (address[] memory uniqueUnderlyingsToBorrow, uint256[] memory uniqueUnderlyingsToBorrowAmounts) =
-        aggregateAssetAmounts({
-            _rawAssets: underlyingsToBorrow,
-            _rawAmounts: underlyingsToBorrowAmounts,
-            _ceilingAtMax: false
+        (address[] memory uniqueUnderlyingsToBorrow, uint256[] memory uniqueUnderlyingsToBorrowAmounts) = aggregateAssetAmounts({
+            _rawAssets: underlyingsToBorrow, _rawAmounts: underlyingsToBorrowAmounts, _ceilingAtMax: false
         });
 
         // expect the correct event for every unique borrowed token
@@ -672,8 +662,7 @@ abstract contract RepayBorrowTest is TestBase {
             });
 
         __dealATokenAndAddCollateral({
-            _aTokens: toArray(__getATokenAddress(underlyingCollateral)),
-            _amounts: toArray(underlyingCollateralAmount)
+            _aTokens: toArray(__getATokenAddress(underlyingCollateral)), _amounts: toArray(underlyingCollateralAmount)
         });
 
         __borrowAssets({_underlyings: underlyingsToBorrowAndRepay, _amounts: underlyingsToBorrowAmounts});
@@ -722,9 +711,8 @@ abstract contract RepayBorrowTest is TestBase {
                 // check that the debt decreased
                 // 1 wei difference is allowed because of the interest accrued if the colletaral is supplied is the same as borrowed asset
                 assertApproxEqAbs(
-                    IERC20(aaveV3DebtPosition.getDebtTokenForBorrowedAsset(underlyingsToBorrowAndRepay[i])).balanceOf(
-                        address(aaveV3DebtPosition)
-                    ),
+                    IERC20(aaveV3DebtPosition.getDebtTokenForBorrowedAsset(underlyingsToBorrowAndRepay[i]))
+                        .balanceOf(address(aaveV3DebtPosition)),
                     underlyingsToBorrowAmounts[i] - underlyingsToRepayAmounts[i],
                     1,
                     "Invalid debt amount"
@@ -859,9 +847,7 @@ abstract contract ClaimRewardsTest is TestBase {
         vm.recordLogs();
 
         __claimRewards({
-            _assets: toArray(collateralATokenAddress),
-            _amount: type(uint256).max,
-            _rewardToken: rewardToken
+            _assets: toArray(collateralATokenAddress), _amount: type(uint256).max, _rewardToken: rewardToken
         });
 
         assertExternalPositionAssetsToReceive({
@@ -885,9 +871,7 @@ abstract contract SweepTest is TestBase {
         for (uint256 i = 0; i < assetToSweep.length; i++) {
             amountsToSweep[i] = (i + 1) * assetUnit(IERC20(assetToSweep[i]));
             increaseTokenBalance({
-                _token: IERC20(assetToSweep[i]),
-                _to: address(aaveV3DebtPosition),
-                _amount: amountsToSweep[i]
+                _token: IERC20(assetToSweep[i]), _to: address(aaveV3DebtPosition), _amount: amountsToSweep[i]
             });
         }
 
@@ -934,13 +918,11 @@ abstract contract ClaimMerklRewardsTest is TestBase {
         uint256 totalAmountRewardedInTheFirstRound = 333;
 
         __test_claimMerklRewards_success({
-            _tokenToClaim: tokenToClaim,
-            _totalAmountRewarded: totalAmountRewardedInTheFirstRound
+            _tokenToClaim: tokenToClaim, _totalAmountRewarded: totalAmountRewardedInTheFirstRound
         });
 
         __test_claimMerklRewards_success({
-            _tokenToClaim: tokenToClaim,
-            _totalAmountRewarded: totalAmountRewardedInTheFirstRound + 244
+            _tokenToClaim: tokenToClaim, _totalAmountRewarded: totalAmountRewardedInTheFirstRound + 244
         });
     }
 

@@ -28,8 +28,5 @@ interface IStaderUserWithdrawalManager {
 
     function requestWithdraw(uint256 _ethXAmount, address _owner) external returns (uint256 requestId_);
 
-    function userWithdrawRequests(uint256 _requestId)
-        external
-        view
-        returns (UserWithdrawInfo memory userWithdrawInfo_);
+    function userWithdrawRequests(uint256 _requestId) external view returns (UserWithdrawInfo memory userWithdrawInfo_);
 }

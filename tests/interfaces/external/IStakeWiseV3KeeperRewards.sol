@@ -1,4 +1,4 @@
-    // SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: GPL-3.0
 
 /*
     This file is part of the Enzyme Protocol.

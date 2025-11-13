@@ -68,9 +68,7 @@ abstract contract ValueTest is TestBase {
         // Remove decimals for readability.
         IERC20 simulatedUsd = getCoreToken("USD");
         uint256 bptUsdPrice = calcTokenPrice({
-            _valueInterpreter: core.release.valueInterpreter,
-            _baseAsset: poolBpt,
-            _quoteAsset: simulatedUsd
+            _valueInterpreter: core.release.valueInterpreter, _baseAsset: poolBpt, _quoteAsset: simulatedUsd
         });
         uint256 bptUsdIntegerPrice = bptUsdPrice / (10 ** simulatedUsd.decimals());
         assertEq(bptUsdIntegerPrice, poolBptExpectedUsdIntegerPrice, "Wrong bpt price");

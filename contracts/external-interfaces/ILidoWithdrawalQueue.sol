@@ -14,8 +14,7 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @title ILidoWithdrawalQueue Interface
 /// @author Enzyme Foundation <security@enzyme.finance>
 interface ILidoWithdrawalQueue {
-    function claimWithdrawalsTo(uint256[] calldata _requestIds, uint256[] calldata _hints, address _recipient)
-        external;
+    function claimWithdrawalsTo(uint256[] calldata _requestIds, uint256[] calldata _hints, address _recipient) external;
 
     function requestWithdrawals(uint256[] calldata _amounts, address _owner)
         external

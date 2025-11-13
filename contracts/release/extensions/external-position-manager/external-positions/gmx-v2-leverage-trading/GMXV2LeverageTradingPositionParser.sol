@@ -127,9 +127,8 @@ contract GMXV2LeverageTradingPositionParser is IExternalPositionParser {
 
             assetsToReceive_ = claimCollateralArgs.tokens;
         } else if (_actionId == uint256(IGMXV2LeverageTradingPosition.Actions.Sweep)) {
-            assetsToReceive_ = IGMXV2LeverageTradingPosition(_externalPositionAddress).getTrackedAssets().addUniqueItem(
-                WRAPPED_NATIVE_TOKEN_ADDRESS
-            );
+            assetsToReceive_ = IGMXV2LeverageTradingPosition(_externalPositionAddress).getTrackedAssets()
+                .addUniqueItem(WRAPPED_NATIVE_TOKEN_ADDRESS);
         }
 
         return (assetsToTransfer_, amountsToTransfer_, assetsToReceive_);

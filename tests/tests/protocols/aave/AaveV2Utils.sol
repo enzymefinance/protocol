@@ -31,9 +31,7 @@ abstract contract AaveV2Utils is AddOnUtilsBase {
     ) internal {
         for (uint256 i = 0; i < _underlyings.length; i++) {
             addPrimitiveWithTestAggregator({
-                _valueInterpreter: _valueInterpreter,
-                _tokenAddress: _underlyings[i],
-                _skipIfRegistered: true
+                _valueInterpreter: _valueInterpreter, _tokenAddress: _underlyings[i], _skipIfRegistered: true
             });
 
             addPrimitiveWithTestAggregator({

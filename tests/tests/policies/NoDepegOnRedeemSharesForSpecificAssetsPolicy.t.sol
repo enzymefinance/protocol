@@ -2,8 +2,9 @@
 pragma solidity 0.8.19;
 
 import {IPolicyManager as IPolicyManagerProd} from "contracts/release/extensions/policy-manager/IPolicyManager.sol";
-import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
-    "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
+import {
+    IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd
+} from "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {TestChainlinkAggregator} from "tests/utils/core/AssetUniverseUtils.sol";
@@ -86,9 +87,7 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
         INoDepegPolicyBaseTypeLibrary.AssetConfig[] memory assetConfigs =
             new INoDepegPolicyBaseTypeLibrary.AssetConfig[](1);
         assetConfigs[0] = INoDepegPolicyBaseTypeLibrary.AssetConfig({
-            asset: address(ethPeggedAsset),
-            referenceAsset: address(wethToken),
-            deviationToleranceInBps: 0
+            asset: address(ethPeggedAsset), referenceAsset: address(wethToken), deviationToleranceInBps: 0
         });
 
         bytes memory encodedSettings = __encodeFundSettings({_assetConfigs: assetConfigs});
@@ -190,8 +189,7 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
 
             vm.prank(address(core.release.policyManager));
             policy.addFundSettings({
-                _comptrollerProxy: comptrollerProxyAddress,
-                _encodedSettings: initialEncodedSettings
+                _comptrollerProxy: comptrollerProxyAddress, _encodedSettings: initialEncodedSettings
             });
         }
 
@@ -234,14 +232,12 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
 
     function test_validateRule_success() public {
         // Define asset configs
-        INoDepegPolicyBaseTypeLibrary.AssetConfig memory ethPeggedAssetConfig = INoDepegPolicyBaseTypeLibrary
-            .AssetConfig({
+        INoDepegPolicyBaseTypeLibrary.AssetConfig memory ethPeggedAssetConfig = INoDepegPolicyBaseTypeLibrary.AssetConfig({
             asset: address(ethPeggedAsset),
             referenceAsset: address(wethToken),
             deviationToleranceInBps: uint16(ONE_HUNDRED_PERCENT_FOR_POLICY / 100)
         });
-        INoDepegPolicyBaseTypeLibrary.AssetConfig memory usdPeggedAssetConfig = INoDepegPolicyBaseTypeLibrary
-            .AssetConfig({
+        INoDepegPolicyBaseTypeLibrary.AssetConfig memory usdPeggedAssetConfig = INoDepegPolicyBaseTypeLibrary.AssetConfig({
             asset: address(usdPeggedAsset),
             referenceAsset: address(simulatedUsd),
             deviationToleranceInBps: uint16(ONE_HUNDRED_PERCENT_FOR_POLICY / 10)

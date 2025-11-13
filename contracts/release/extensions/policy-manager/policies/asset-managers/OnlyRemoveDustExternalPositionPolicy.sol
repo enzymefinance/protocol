@@ -34,10 +34,7 @@ contract OnlyRemoveDustExternalPositionPolicy is PolicyBase, DustEvaluatorMixin,
         PolicyBase(_policyManager)
         DustEvaluatorMixin(_fundDeployer)
         PricelessAssetBypassMixin(
-            _valueInterpreter,
-            _wethToken,
-            _pricelessAssetBypassTimelock,
-            _pricelessAssetBypassTimeLimit
+            _valueInterpreter, _wethToken, _pricelessAssetBypassTimelock, _pricelessAssetBypassTimeLimit
         )
     {}
 

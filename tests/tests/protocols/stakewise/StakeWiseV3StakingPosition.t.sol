@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IAddressListRegistry as IAddressListRegistryProd} from
-    "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
-import {IStakeWiseV3StakingPosition as IStakeWiseV3StakingPositionProd} from
-    "contracts/release/extensions/external-position-manager/external-positions/stakewise-v3-staking/IStakeWiseV3StakingPosition.sol";
+import {
+    IAddressListRegistry as IAddressListRegistryProd
+} from "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
+import {
+    IStakeWiseV3StakingPosition as IStakeWiseV3StakingPositionProd
+} from "contracts/release/extensions/external-position-manager/external-positions/stakewise-v3-staking/IStakeWiseV3StakingPosition.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -70,10 +72,9 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
     function setUp() public virtual override {
         externalPositionManager = core.release.externalPositionManager;
         (stakeWiseV3StakingPositionLib, stakeWiseV3StakingPositionParser, stakeWiseV3StakingTypeId) =
-        deployStakeWiseV3Staking({
-            _stakeWiseVaultsRegistryAddress: stakeWiseV3RegistryAddress,
-            _wethAddress: address(wethToken)
-        });
+            deployStakeWiseV3Staking({
+                _stakeWiseVaultsRegistryAddress: stakeWiseV3RegistryAddress, _wethAddress: address(wethToken)
+            });
 
         IComptrollerLib comptrollerProxy;
         IVaultLib vaultProxy;
@@ -106,11 +107,12 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
         )
     {
         // Create a new AddressListRegistry list containing the supported implementations
-        supportedImplementationsListID = core.persistent.addressListRegistry.createList({
-            _owner: makeAddr("ListOwner"),
-            _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.AddAndRemove),
-            _initialItems: supportedImplementations
-        });
+        supportedImplementationsListID = core.persistent.addressListRegistry
+            .createList({
+                _owner: makeAddr("ListOwner"),
+                _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.AddAndRemove),
+                _initialItems: supportedImplementations
+            });
 
         stakeWiseV3StakingPositionLib_ = deployStakeWiseV3StakingPositionLib({
             _wethAddress: _wethAddress,
@@ -119,8 +121,7 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
             _supportedImplementationsListID: supportedImplementationsListID
         });
         stakeWiseV3StakingPositionParser_ = deployStakeWiseV3StakingPositionParser({
-            _stakeWiseVaultsRegistryAddress: _stakeWiseVaultsRegistryAddress,
-            _wethAddress: _wethAddress
+            _stakeWiseVaultsRegistryAddress: _stakeWiseVaultsRegistryAddress, _wethAddress: _wethAddress
         });
 
         uint256 typeId = registerExternalPositionType({
@@ -320,8 +321,7 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(_oraclePrivateKey, digest);
 
         // push down the stack
-        IStakeWiseV3KeeperRewards.RewardsUpdateParams memory updateParams = IStakeWiseV3KeeperRewards
-            .RewardsUpdateParams({
+        IStakeWiseV3KeeperRewards.RewardsUpdateParams memory updateParams = IStakeWiseV3KeeperRewards.RewardsUpdateParams({
             rewardsRoot: rewardsRoot,
             rewardsIpfsHash: ipfsHash,
             avgRewardPerSecond: avgRewardPerSecond,
@@ -336,10 +336,7 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
 
         bytes32[] memory proof = new bytes32[](0);
         return IStakeWiseV3EthVault.HarvestParams({
-            rewardsRoot: rewardsRoot,
-            reward: _totalReward,
-            unlockedMevReward: _unlockedMevReward,
-            proof: proof
+            rewardsRoot: rewardsRoot, reward: _totalReward, unlockedMevReward: _unlockedMevReward, proof: proof
         });
     }
 
@@ -373,9 +370,7 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
         __stake({_stakeWiseVault: stakeWiseVault, _assetAmount: amount});
 
         assertExternalPositionAssetsToReceive({
-            _logs: vm.getRecordedLogs(),
-            _externalPositionManager: externalPositionManager,
-            _assets: new address[](0)
+            _logs: vm.getRecordedLogs(), _externalPositionManager: externalPositionManager, _assets: new address[](0)
         });
 
         uint256 wethVaulBalancePost = wethToken.balanceOf(vaultProxyAddress);
@@ -614,10 +609,8 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
 
         vm.prank(makeAddr("ListOwner"));
         // Update the supported implementations list to remove all the implementations
-        core.persistent.addressListRegistry.removeFromList({
-            _id: supportedImplementationsListID,
-            _items: supportedImplementations
-        });
+        core.persistent.addressListRegistry
+            .removeFromList({_id: supportedImplementationsListID, _items: supportedImplementations});
 
         vm.expectRevert("__validateStakeWiseVault: Unregistered implementation");
         stakeWiseV3ExternalPosition.getManagedAssets();

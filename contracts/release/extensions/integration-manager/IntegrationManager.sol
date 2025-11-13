@@ -111,9 +111,10 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
     function __addTrackedAssetsToVault(address _caller, address _comptrollerProxy, bytes memory _callArgs) private {
         address[] memory assets = abi.decode(_callArgs, (address[]));
 
-        IPolicyManager(getPolicyManager()).validatePolicies(
-            _comptrollerProxy, IPolicyManager.PolicyHook.AddTrackedAssets, abi.encode(_caller, assets)
-        );
+        IPolicyManager(getPolicyManager())
+            .validatePolicies(
+                _comptrollerProxy, IPolicyManager.PolicyHook.AddTrackedAssets, abi.encode(_caller, assets)
+            );
 
         for (uint256 i; i < assets.length; i++) {
             require(
@@ -132,9 +133,10 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
     {
         address[] memory assets = abi.decode(_callArgs, (address[]));
 
-        IPolicyManager(getPolicyManager()).validatePolicies(
-            _comptrollerProxy, IPolicyManager.PolicyHook.RemoveTrackedAssets, abi.encode(_caller, assets)
-        );
+        IPolicyManager(getPolicyManager())
+            .validatePolicies(
+                _comptrollerProxy, IPolicyManager.PolicyHook.RemoveTrackedAssets, abi.encode(_caller, assets)
+            );
 
         for (uint256 i; i < assets.length; i++) {
             __removeTrackedAsset(_comptrollerProxy, assets[i]);
@@ -177,11 +179,14 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
             uint256[] memory spendAssetAmounts
         ) = __callOnIntegrationInner(_comptrollerProxy, _vaultProxy, adapter, selector, integrationData);
 
-        IPolicyManager(getPolicyManager()).validatePolicies(
-            _comptrollerProxy,
-            IPolicyManager.PolicyHook.PostCallOnIntegration,
-            abi.encode(_caller, adapter, selector, incomingAssets, incomingAssetAmounts, spendAssets, spendAssetAmounts)
-        );
+        IPolicyManager(getPolicyManager())
+            .validatePolicies(
+                _comptrollerProxy,
+                IPolicyManager.PolicyHook.PostCallOnIntegration,
+                abi.encode(
+                    _caller, adapter, selector, incomingAssets, incomingAssetAmounts, spendAssets, spendAssetAmounts
+                )
+            );
 
         emit CallOnIntegrationExecutedForFund(
             _comptrollerProxy,
@@ -271,8 +276,9 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
         bytes memory _integrationData,
         bytes memory _assetData
     ) private {
-        (bool success, bytes memory returnData) =
-            _adapter.call(abi.encodeWithSelector(_selector, _vaultProxy, _integrationData, _assetData));
+        (bool success, bytes memory returnData) = _adapter.call(
+            abi.encodeWithSelector(_selector, _vaultProxy, _integrationData, _assetData)
+        );
         require(success, string(returnData));
     }
 

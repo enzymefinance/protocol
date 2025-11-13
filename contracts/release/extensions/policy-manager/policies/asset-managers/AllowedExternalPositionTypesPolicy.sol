@@ -57,7 +57,7 @@ contract AllowedExternalPositionTypesPolicy is PolicyBase {
         uint256[] memory allowedExternalPositionTypeIds = abi.decode(_encodedSettings, (uint256[]));
         for (uint256 i; i < allowedExternalPositionTypeIds.length; i++) {
             comptrollerProxyToExternalPositionTypeToIsAllowed[_comptrollerProxy][allowedExternalPositionTypeIds[i]] =
-                true;
+            true;
 
             emit AllowedExternalPositionTypeAddedForFund(_comptrollerProxy, allowedExternalPositionTypeIds[i]);
         }

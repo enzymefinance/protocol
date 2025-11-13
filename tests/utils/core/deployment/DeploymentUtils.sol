@@ -80,15 +80,12 @@ abstract contract DeploymentUtils is CoreUtilsBase {
             _globalConfigLibAddress: deployGlobalConfigLib({_fundDeployerV4Address: address(0)})
         });
         IProtocolFeeReserveLib protocolFeeReserveProxy = deployProtocolFeeReserveProxy({
-            _dispatcher: dispatcher,
-            _protocolFeeReserveLibAddress: deployProtocolFeeReserveLib()
+            _dispatcher: dispatcher, _protocolFeeReserveLibAddress: deployProtocolFeeReserveLib()
         });
         IUintListRegistry uintListRegistry = deployUintListRegistry({_dispatcher: dispatcher});
 
         IFundValueCalculatorRouter fundValueCalculatorRouter = deployFundValueCalculatorRouter({
-            _dispatcher: dispatcher,
-            _fundDeployers: new address[](0),
-            _fundValueCalculators: new address[](0)
+            _dispatcher: dispatcher, _fundDeployers: new address[](0), _fundValueCalculators: new address[](0)
         });
 
         vm.stopPrank();
@@ -179,8 +176,7 @@ abstract contract DeploymentUtils is CoreUtilsBase {
                 _gasRelayRelayFeeMaxPercent: _config.gasRelayFeeMaxPercent
             });
             releaseContracts_.gasRelayPaymasterFactory = deployGasRelayPaymasterFactory({
-                _dispatcher: _persistentContracts.dispatcher,
-                _gasRelayPaymasterLibAddress: gasRelayPaymasterLibAddress
+                _dispatcher: _persistentContracts.dispatcher, _gasRelayPaymasterLibAddress: gasRelayPaymasterLibAddress
             });
         }
 
@@ -285,8 +281,7 @@ abstract contract DeploymentUtils is CoreUtilsBase {
 
         vm.prank(dispatcher.getOwner());
         _fundValueCalculatorRouter.setFundValueCalculators({
-            _fundDeployers: _fundDeployers,
-            _fundValueCalculators: _fundValueCalculators
+            _fundDeployers: _fundDeployers, _fundValueCalculators: _fundValueCalculators
         });
     }
 

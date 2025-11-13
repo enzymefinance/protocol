@@ -19,8 +19,7 @@ interface IAaveV3FlashLoanAssetManager {
         bytes data;
     }
 
-    function flashLoan(address[] calldata _assets, uint256[] calldata _amounts, bytes calldata _encodedCalls)
-        external;
+    function flashLoan(address[] calldata _assets, uint256[] calldata _amounts, bytes calldata _encodedCalls) external;
 
     function init(address _owner, address _vaultProxyAddress) external;
 }

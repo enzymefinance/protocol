@@ -32,7 +32,9 @@ contract ConvertedQuoteAggregator is RateAggregatorBase {
         bool _quoteConversionAggregatorInverted,
         address _sourceAggregatorAddress
     )
-        RateAggregatorBase(_thisAggregatorDecimals, _quoteConversionAggregatorAddress, _quoteConversionAggregatorInverted)
+        RateAggregatorBase(
+            _thisAggregatorDecimals, _quoteConversionAggregatorAddress, _quoteConversionAggregatorInverted
+        )
     {
         SOURCE_AGGREGATOR_ADDRESS = _sourceAggregatorAddress;
         SOURCE_AGGREGATOR_PRECISION =

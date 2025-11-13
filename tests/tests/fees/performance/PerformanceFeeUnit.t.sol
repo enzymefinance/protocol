@@ -74,9 +74,8 @@ contract PerformanceFeeTest is UnitTest, PerformanceFeeUtils {
 
     function test_settlesOnHook() public {
         for (uint256 i; i < uint256(type(IFeeManagerProd.FeeHook).max); i++) {
-            bytes memory returnData = address(performanceFee).functionStaticCall(
-                abi.encodeWithSelector(performanceFee.settlesOnHook.selector, i)
-            );
+            bytes memory returnData = address(performanceFee)
+                .functionStaticCall(abi.encodeWithSelector(performanceFee.settlesOnHook.selector, i));
 
             (bool updates, bool usesGav) = abi.decode(returnData, (bool, bool));
 
@@ -97,9 +96,8 @@ contract PerformanceFeeTest is UnitTest, PerformanceFeeUtils {
 
     function test_updatesOnHook() public {
         for (uint256 i; i < uint256(type(IFeeManagerProd.FeeHook).max); i++) {
-            bytes memory returnData = address(performanceFee).functionStaticCall(
-                abi.encodeWithSelector(performanceFee.updatesOnHook.selector, i)
-            );
+            bytes memory returnData = address(performanceFee)
+                .functionStaticCall(abi.encodeWithSelector(performanceFee.updatesOnHook.selector, i));
 
             (bool updates, bool usesGav) = abi.decode(returnData, (bool, bool));
 

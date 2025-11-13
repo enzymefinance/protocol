@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {IExternalPositionManager as IExternalPositionManagerProd} from
-    "contracts/release/extensions/external-position-manager/IExternalPositionManager.sol";
+import {
+    IExternalPositionManager as IExternalPositionManagerProd
+} from "contracts/release/extensions/external-position-manager/IExternalPositionManager.sol";
 
 import {VmSafe} from "forge-std/Vm.sol";
 
@@ -79,9 +80,7 @@ abstract contract ExternalPositionUtils is CoreUtilsBase {
         vm.prank(epmOwner);
 
         _externalPositionManager.updateExternalPositionTypesInfo({
-            _typeIds: toArray(typeId_),
-            _libs: toArray(_lib),
-            _parsers: toArray(_parser)
+            _typeIds: toArray(typeId_), _libs: toArray(_lib), _parsers: toArray(_parser)
         });
 
         return typeId_;
@@ -100,8 +99,9 @@ abstract contract ExternalPositionUtils is CoreUtilsBase {
             )
         );
 
-        VmSafe.Log[] memory matchingLogs =
-            filterLogsMatchingSelector({_logs: _logs, _selector: selector, _emitter: address(_externalPositionManager)});
+        VmSafe.Log[] memory matchingLogs = filterLogsMatchingSelector({
+            _logs: _logs, _selector: selector, _emitter: address(_externalPositionManager)
+        });
 
         assertEq(matchingLogs.length, 1, "assertExternalPositionAssetsToReceive: event not found");
 

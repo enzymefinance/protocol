@@ -20,7 +20,8 @@ bytes constant RELAY_DATA_TYPE =
     "RelayData(uint256 gasPrice,uint256 pctRelayFee,uint256 baseRelayFee,address relayWorker,address paymaster,address forwarder,bytes paymasterData,uint256 clientId)";
 string constant RELAY_REQUEST_NAME = "RelayRequest";
 string constant RELAY_REQUEST_SUFFIX = string(abi.encodePacked("RelayData relayData)", RELAY_DATA_TYPE));
-bytes constant RELAY_REQUEST_TYPE = abi.encodePacked(RELAY_REQUEST_NAME, "(", GENERIC_PARAMS, ",", RELAY_REQUEST_SUFFIX);
+bytes constant RELAY_REQUEST_TYPE =
+    abi.encodePacked(RELAY_REQUEST_NAME, "(", GENERIC_PARAMS, ",", RELAY_REQUEST_SUFFIX);
 bytes32 constant RELAY_DATA_TYPE_HASH = keccak256(RELAY_DATA_TYPE);
 bytes32 constant RELAY_REQUEST_TYPE_HASH = keccak256(RELAY_REQUEST_TYPE);
 

@@ -11,8 +11,9 @@
 
 import {IAaveAToken} from "../../../../../external-interfaces/IAaveAToken.sol";
 import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
-import {AddOnlyAddressListOwnerConsumerMixin} from
-    "../../../../../persistent/address-list-registry/address-list-owners/utils/0.8.19/AddOnlyAddressListOwnerConsumerMixin.sol";
+import {
+    AddOnlyAddressListOwnerConsumerMixin
+} from "../../../../../persistent/address-list-registry/address-list-owners/utils/0.8.19/AddOnlyAddressListOwnerConsumerMixin.sol";
 import {IExternalPositionParser} from "../../IExternalPositionParser.sol";
 import {AaveV3DebtPositionDataDecoder} from "./AaveV3DebtPositionDataDecoder.sol";
 import {IAaveV3DebtPosition} from "./IAaveV3DebtPosition.sol";

@@ -266,9 +266,8 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
         override
         onlyAccessor
     {
-        uint256 mlnAmountToBurn = IProtocolFeeReserve1(getProtocolFeeReserve()).buyBackSharesViaTrustedVaultProxy(
-            _sharesAmount, _mlnValue, _gav
-        );
+        uint256 mlnAmountToBurn = IProtocolFeeReserve1(getProtocolFeeReserve())
+            .buyBackSharesViaTrustedVaultProxy(_sharesAmount, _mlnValue, _gav);
 
         if (mlnAmountToBurn == 0) {
             return;

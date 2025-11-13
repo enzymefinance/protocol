@@ -64,8 +64,8 @@ contract AllowedAdaptersPolicy is AddressListRegistryPolicyBase {
     /// @param _adapter The adapter for which to check the rule
     /// @return isValid_ True if the rule passes
     function passesRule(address _comptrollerProxy, address _adapter) public view returns (bool isValid_) {
-        return IAddressListRegistry(getAddressListRegistry()).isInSomeOfLists(
-            getListIdsForFund(_comptrollerProxy), _adapter
-        );
+        return
+            IAddressListRegistry(getAddressListRegistry())
+                .isInSomeOfLists(getListIdsForFund(_comptrollerProxy), _adapter);
     }
 }

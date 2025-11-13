@@ -8,8 +8,9 @@ import {
     ISharePriceThrottledAssetManagerLib,
     IMultiCallAccountMixin as IMultiCallAccountMixinTypeLibrary
 } from "tests/interfaces/internal/ISharePriceThrottledAssetManagerLib.sol";
-import {ISharePriceThrottledAssetManagerFactory} from
-    "tests/interfaces/internal/ISharePriceThrottledAssetManagerFactory.sol";
+import {
+    ISharePriceThrottledAssetManagerFactory
+} from "tests/interfaces/internal/ISharePriceThrottledAssetManagerFactory.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {MockDefaultFundValueCalculator} from "tests/utils/Mocks.sol";
 

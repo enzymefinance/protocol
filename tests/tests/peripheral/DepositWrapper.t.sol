@@ -3,8 +3,9 @@ pragma solidity 0.8.19;
 
 import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
 
-import {IAddressListRegistry as IAddressListRegistryProd} from
-    "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
+import {
+    IAddressListRegistry as IAddressListRegistryProd
+} from "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -37,11 +38,12 @@ abstract contract TestBase is IntegrationTest, UniswapV3Utils {
 
     function setUp() public virtual override {
         // Create an allowedExchanges list, with Uniswap router as the only allowed exchange
-        allowedExchangesListId = core.persistent.addressListRegistry.createList({
-            _owner: address(this),
-            _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.AddAndRemove),
-            _initialItems: toArray(exchangeAddress)
-        });
+        allowedExchangesListId = core.persistent.addressListRegistry
+            .createList({
+                _owner: address(this),
+                _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.AddAndRemove),
+                _initialItems: toArray(exchangeAddress)
+            });
 
         // Deploy deposit wrapper
         depositWrapper = __deployDepositWrapper();
@@ -74,11 +76,10 @@ abstract contract TestBase is IntegrationTest, UniswapV3Utils {
         uint256 acceptableSlippageBps = BPS_ONE_PERCENT;
         uint256 sharesUnit = 1 ether;
 
-        uint256 denominationAssetValue = core.release.valueInterpreter.calcCanonicalAssetValue({
-            _baseAsset: address(_inputAsset),
-            _amount: _inputAssetAmount,
-            _quoteAsset: address(denominationAsset)
-        });
+        uint256 denominationAssetValue = core.release.valueInterpreter
+            .calcCanonicalAssetValue({
+                _baseAsset: address(_inputAsset), _amount: _inputAssetAmount, _quoteAsset: address(denominationAsset)
+            });
         uint256 exactSharesValue = sharesUnit * denominationAssetValue / comptrollerProxy.calcGrossShareValue();
         uint256 acceptableSlippageAbs = exactSharesValue * acceptableSlippageBps / BPS_ONE_HUNDRED_PERCENT;
 
@@ -128,11 +129,10 @@ abstract contract ExchangeErc20AndBuySharesTest is TestBase {
     }
 
     function test_failsWithExchangeMinNotReceived() public {
-        uint256 denominationAssetValue = core.release.valueInterpreter.calcCanonicalAssetValue({
-            _baseAsset: address(inputAsset),
-            _amount: inputAssetAmount,
-            _quoteAsset: address(denominationAsset)
-        });
+        uint256 denominationAssetValue = core.release.valueInterpreter
+            .calcCanonicalAssetValue({
+                _baseAsset: address(inputAsset), _amount: inputAssetAmount, _quoteAsset: address(denominationAsset)
+            });
         uint256 reasonableMin = denominationAssetValue * 9 / 10;
         uint256 unreasonableMin = denominationAssetValue * 11 / 10;
 

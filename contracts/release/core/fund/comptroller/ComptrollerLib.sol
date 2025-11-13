@@ -271,9 +271,8 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
         uint256 gav = calcGav();
 
-        IVault(vaultProxyCopy).buyBackProtocolFeeShares(
-            _sharesAmount, __getBuybackValueInMln(vaultProxyCopy, _sharesAmount, gav), gav
-        );
+        IVault(vaultProxyCopy)
+            .buyBackProtocolFeeShares(_sharesAmount, __getBuybackValueInMln(vaultProxyCopy, _sharesAmount, gav), gav);
     }
 
     /// @notice Sets whether to attempt to buyback protocol fee shares immediately when collected
@@ -309,9 +308,8 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
         uint256 buybackValueInDenominationAsset = grossShareValue.mul(_sharesAmount).div(SHARES_UNIT);
 
-        return IValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
-            denominationAssetCopy, buybackValueInDenominationAsset, getMlnToken()
-        );
+        return IValueInterpreter(getValueInterpreter())
+            .calcCanonicalAssetValue(denominationAssetCopy, buybackValueInDenominationAsset, getMlnToken());
     }
 
     ////////////////////////////////
@@ -498,9 +496,8 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             balances[i] = ERC20(assets[i]).balanceOf(vaultProxyAddress);
         }
 
-        gav_ = IValueInterpreter(getValueInterpreter()).calcCanonicalAssetsTotalValue(
-            assets, balances, getDenominationAsset()
-        );
+        gav_ = IValueInterpreter(getValueInterpreter())
+            .calcCanonicalAssetsTotalValue(assets, balances, getDenominationAsset());
 
         if (externalPositions.length > 0) {
             for (uint256 i; i < externalPositions.length; i++) {
@@ -531,16 +528,14 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         (address[] memory managedAssets, uint256[] memory managedAmounts) =
             IExternalPosition(_externalPosition).getManagedAssets();
 
-        uint256 managedValue = IValueInterpreter(getValueInterpreter()).calcCanonicalAssetsTotalValue(
-            managedAssets, managedAmounts, getDenominationAsset()
-        );
+        uint256 managedValue = IValueInterpreter(getValueInterpreter())
+            .calcCanonicalAssetsTotalValue(managedAssets, managedAmounts, getDenominationAsset());
 
         (address[] memory debtAssets, uint256[] memory debtAmounts) =
             IExternalPosition(_externalPosition).getDebtAssets();
 
-        uint256 debtValue = IValueInterpreter(getValueInterpreter()).calcCanonicalAssetsTotalValue(
-            debtAssets, debtAmounts, getDenominationAsset()
-        );
+        uint256 debtValue = IValueInterpreter(getValueInterpreter())
+            .calcCanonicalAssetsTotalValue(debtAssets, debtAmounts, getDenominationAsset());
 
         if (managedValue > debtValue) {
             value_ = managedValue.sub(debtValue);
@@ -606,9 +601,10 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         bool hasSharesActionTimelock = getSharesActionTimelock() > 0;
         address canonicalSender = __msgSender();
 
-        return __buyShares(
-            canonicalSender, _investmentAmount, _minSharesQuantity, hasSharesActionTimelock, canonicalSender
-        );
+        return
+            __buyShares(
+                canonicalSender, _investmentAmount, _minSharesQuantity, hasSharesActionTimelock, canonicalSender
+            );
     }
 
     /// @dev Helper for buy shares logic
@@ -679,9 +675,8 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     /// @dev Helper for Extension actions immediately prior to issuing shares
     function __preBuySharesHook(address _buyer, uint256 _investmentAmount, uint256 _gav) private {
-        IFeeManager(getFeeManager()).invokeHook(
-            IFeeManager.FeeHook.PreBuyShares, abi.encode(_buyer, _investmentAmount), _gav
-        );
+        IFeeManager(getFeeManager())
+            .invokeHook(IFeeManager.FeeHook.PreBuyShares, abi.encode(_buyer, _investmentAmount), _gav);
     }
 
     /// @dev Helper for Extension actions immediately after issuing shares.
@@ -695,15 +690,15 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         uint256 _preBuySharesGav
     ) private {
         uint256 gav = _preBuySharesGav.add(_investmentAmount);
-        IFeeManager(getFeeManager()).invokeHook(
-            IFeeManager.FeeHook.PostBuyShares, abi.encode(_buyer, _investmentAmount, _sharesIssued), gav
-        );
+        IFeeManager(getFeeManager())
+            .invokeHook(IFeeManager.FeeHook.PostBuyShares, abi.encode(_buyer, _investmentAmount, _sharesIssued), gav);
 
-        IPolicyManager(getPolicyManager()).validatePolicies(
-            address(this),
-            IPolicyManager.PolicyHook.PostBuyShares,
-            abi.encode(_buyer, _investmentAmount, _sharesIssued, gav)
-        );
+        IPolicyManager(getPolicyManager())
+            .validatePolicies(
+                address(this),
+                IPolicyManager.PolicyHook.PostBuyShares,
+                abi.encode(_buyer, _investmentAmount, _sharesIssued, gav)
+            );
     }
 
     /// @dev Helper to execute ERC20.transferFrom() while calculating the actual amount received
@@ -895,11 +890,12 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
                 continue;
             }
 
-            payoutAmounts_[i] = IValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
-                denominationAssetCopy,
-                _owedGav.mul(_payoutAssetPercentages[i]).div(ONE_HUNDRED_PERCENT),
-                _payoutAssets[i]
-            );
+            payoutAmounts_[i] = IValueInterpreter(getValueInterpreter())
+                .calcCanonicalAssetValue(
+                    denominationAssetCopy,
+                    _owedGav.mul(_payoutAssetPercentages[i]).div(ONE_HUNDRED_PERCENT),
+                    _payoutAssets[i]
+                );
             // Guards against corner case of primitive-to-derivative asset conversion that floors to 0,
             // or redeeming a very low shares amount and/or percentage where asset value owed is 0
             require(payoutAmounts_[i] > 0, "__payoutSpecifiedAssetPercentages: Zero amount for asset");
@@ -920,11 +916,13 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         bool _forSpecifiedAssets,
         uint256 _gavIfCalculated
     ) private allowsPermissionedVaultAction {
-        try IFeeManager(getFeeManager()).invokeHook(
-            IFeeManager.FeeHook.PreRedeemShares,
-            abi.encode(_redeemer, _sharesToRedeem, _forSpecifiedAssets),
-            _gavIfCalculated
-        ) {} catch (bytes memory reason) {
+        try IFeeManager(getFeeManager())
+            .invokeHook(
+                IFeeManager.FeeHook.PreRedeemShares,
+                abi.encode(_redeemer, _sharesToRedeem, _forSpecifiedAssets),
+                _gavIfCalculated
+            ) {}
+        catch (bytes memory reason) {
             emit PreRedeemSharesHookFailed(reason, _redeemer, _sharesToRedeem);
         }
     }
@@ -939,11 +937,12 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         uint256[] memory _assetAmounts,
         uint256 _gavPreRedeem
     ) private {
-        IPolicyManager(getPolicyManager()).validatePolicies(
-            address(this),
-            IPolicyManager.PolicyHook.RedeemSharesForSpecificAssets,
-            abi.encode(_redeemer, _recipient, _sharesToRedeemPostFees, _assets, _assetAmounts, _gavPreRedeem)
-        );
+        IPolicyManager(getPolicyManager())
+            .validatePolicies(
+                address(this),
+                IPolicyManager.PolicyHook.RedeemSharesForSpecificAssets,
+                abi.encode(_redeemer, _recipient, _sharesToRedeemPostFees, _assets, _assetAmounts, _gavPreRedeem)
+            );
     }
 
     /// @dev Helper to execute common pre-shares redemption logic
@@ -1002,9 +1001,10 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         require(msg.sender == vaultProxyCopy, "preTransferSharesHook: Only VaultProxy callable");
         __assertSharesActionNotTimelocked(vaultProxyCopy, _sender);
 
-        IPolicyManager(getPolicyManager()).validatePolicies(
-            address(this), IPolicyManager.PolicyHook.PreTransferShares, abi.encode(_sender, _recipient, _amount)
-        );
+        IPolicyManager(getPolicyManager())
+            .validatePolicies(
+                address(this), IPolicyManager.PolicyHook.PreTransferShares, abi.encode(_sender, _recipient, _amount)
+            );
     }
 
     /// @notice Runs logic prior to transferring shares that are freely transferable

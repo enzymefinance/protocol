@@ -59,8 +59,7 @@ abstract contract ValueTest is TestBase {
         vm.startPrank(priceFeedOwner);
         priceFeed.addPoolFactories(toArray(poolFactoryAddress));
         priceFeed.addPools({
-            _pools: toArray(address(poolBpt)),
-            _invariantProxyAssets: toArray(address(poolInvariantProxyAsset))
+            _pools: toArray(address(poolBpt)), _invariantProxyAssets: toArray(address(poolInvariantProxyAsset))
         });
         vm.stopPrank();
         addDerivative({
@@ -73,9 +72,7 @@ abstract contract ValueTest is TestBase {
         // Stable pools should slowly trend upwards from 1 unit of the invariant proxy asset (IPA)
         // so assert the bpt value is between 1 and 1.10 unit
         uint256 bptIPAPrice = calcTokenPrice({
-            _valueInterpreter: core.release.valueInterpreter,
-            _baseAsset: poolBpt,
-            _quoteAsset: poolInvariantProxyAsset
+            _valueInterpreter: core.release.valueInterpreter, _baseAsset: poolBpt, _quoteAsset: poolInvariantProxyAsset
         });
         uint256 oneIPAUnit = assetUnit(poolInvariantProxyAsset);
         assertTrue(bptIPAPrice > oneIPAUnit, "bpt <= 1 unit");
@@ -87,8 +84,7 @@ abstract contract ValueTest is TestBase {
         vm.startPrank(priceFeedOwner);
         priceFeed.addPoolFactories(toArray(poolFactoryAddress));
         priceFeed.addPools({
-            _pools: toArray(address(poolBpt)),
-            _invariantProxyAssets: toArray(address(poolInvariantProxyAsset))
+            _pools: toArray(address(poolBpt)), _invariantProxyAssets: toArray(address(poolInvariantProxyAsset))
         });
         vm.stopPrank();
 

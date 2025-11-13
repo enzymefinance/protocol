@@ -73,8 +73,7 @@ contract StakeWiseV3StakingPositionLib is
         WETH_TOKEN.withdraw(assetAmount);
 
         IStakeWiseV3EthVault(stakeWiseVault).deposit{value: assetAmount}({
-            _receiver: address(this),
-            _referrer: REFERRER_ADDRESS
+            _receiver: address(this), _referrer: REFERRER_ADDRESS
         });
 
         if (!stakeWiseVaultTokens.storageArrayContains(address(stakeWiseVault))) {
@@ -134,9 +133,7 @@ contract StakeWiseV3StakingPositionLib is
 
         // Claim the position ticket
         stakeWiseVault.claimExitedAssets({
-            _positionTicket: positionTicket,
-            _timestamp: timestamp,
-            _exitQueueIndex: uint256(exitQueueIndex)
+            _positionTicket: positionTicket, _timestamp: timestamp, _exitQueueIndex: uint256(exitQueueIndex)
         });
 
         // Update or remove the ExitRequest
@@ -187,8 +184,7 @@ contract StakeWiseV3StakingPositionLib is
     function __validateStakeWiseVault(IStakeWiseV3EthVault _stakeWiseVault) private view {
         require(
             ADDRESS_LIST_REGISTRY.isInList({
-                _id: SUPPORTED_IMPLEMENTATIONS_LIST_ID,
-                _item: _stakeWiseVault.implementation()
+                _id: SUPPORTED_IMPLEMENTATIONS_LIST_ID, _item: _stakeWiseVault.implementation()
             }),
             "__validateStakeWiseVault: Unregistered implementation"
         );

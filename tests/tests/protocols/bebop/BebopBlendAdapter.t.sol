@@ -2,12 +2,15 @@
 pragma solidity 0.8.19;
 
 import {IBebopBlend as IBebopBlendProd} from "contracts/external-interfaces/IBebopBlend.sol";
-import {IAddressListRegistry as IAddressListRegistryProd} from
-    "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
-import {IBebopBlendAdapter as IBebopBlendAdapterProd} from
-    "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/IBebopBlendAdapter.sol";
-import {IIntegrationManager as IIntegrationManagerProd} from
-    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {
+    IAddressListRegistry as IAddressListRegistryProd
+} from "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
+import {
+    IBebopBlendAdapter as IBebopBlendAdapterProd
+} from "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/IBebopBlendAdapter.sol";
+import {
+    IIntegrationManager as IIntegrationManagerProd
+} from "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
 import {IBebopBlend} from "tests/interfaces/external/IBebopBlend.sol";
@@ -54,8 +57,7 @@ abstract contract TestBase is IntegrationTest {
         // Add maker to a new list in the AddressListRegistry
         uint256 trustedMakersListId;
         (trustedMakersListId,) = createRegisteredAddressList({
-            _addressListRegistry: core.persistent.addressListRegistry,
-            _item: trustedMaker
+            _addressListRegistry: core.persistent.addressListRegistry, _item: trustedMaker
         });
 
         // Deploy adapter with a trusted makers list
@@ -115,9 +117,7 @@ abstract contract TestBase is IntegrationTest {
             _actionId: IBebopBlendAdapterProd.Action.SwapSingle,
             _encodedActionArgs: abi.encode(
                 IBebopBlendAdapterProd.SwapSingleActionArgs({
-                    order: _order,
-                    makerSignature: makerSignature,
-                    minIncomingAssetAmount: _minIncomingAssetAmount
+                    order: _order, makerSignature: makerSignature, minIncomingAssetAmount: _minIncomingAssetAmount
                 })
             )
         });
@@ -166,10 +166,7 @@ abstract contract TestBase is IntegrationTest {
         core.persistent.addressListRegistry.removeFromList({_id: listId, _items: toArray(trustedMaker)});
 
         (IBebopBlend.Single memory order, bytes memory signature) = __createSignedSingleOrder({
-            _takerToken: address(takerToken),
-            _takerAmount: 1,
-            _makerToken: address(makerToken),
-            _makerAmount: 1
+            _takerToken: address(takerToken), _takerAmount: 1, _makerToken: address(makerToken), _makerAmount: 1
         });
 
         vm.expectRevert(IBebopBlendAdapter.BebopBlendAdapter__SwapSingle__UntrustedMaker.selector);

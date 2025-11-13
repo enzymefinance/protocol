@@ -64,9 +64,8 @@ contract FundValueCalculatorUsdWrapper {
     /// @param _vaultProxy The VaultProxy of the fund
     /// @return grossShareValue_ The gross share value quoted in USD
     function calcGrossShareValue(address _vaultProxy) external returns (uint256 grossShareValue_) {
-        uint256 valueInEth = FundValueCalculatorRouter(getFundValueCalculatorRouter()).calcGrossShareValueInAsset(
-            _vaultProxy, getWethToken()
-        );
+        uint256 valueInEth = FundValueCalculatorRouter(getFundValueCalculatorRouter())
+            .calcGrossShareValueInAsset(_vaultProxy, getWethToken());
 
         return __convertEthToUsd(valueInEth);
     }
@@ -85,9 +84,8 @@ contract FundValueCalculatorUsdWrapper {
     /// @param _vaultProxy The VaultProxy of the fund
     /// @return netShareValue_ The net share value quoted in USD
     function calcNetShareValue(address _vaultProxy) external returns (uint256 netShareValue_) {
-        uint256 valueInEth = FundValueCalculatorRouter(getFundValueCalculatorRouter()).calcNetShareValueInAsset(
-            _vaultProxy, getWethToken()
-        );
+        uint256 valueInEth = FundValueCalculatorRouter(getFundValueCalculatorRouter())
+            .calcNetShareValueInAsset(_vaultProxy, getWethToken());
 
         return __convertEthToUsd(valueInEth);
     }

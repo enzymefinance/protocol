@@ -204,9 +204,7 @@ contract SingleAssetRedemptionQueueTest is IntegrationTest {
 
         // Increase the fund's balance of the redemption asset, so shares are worth more than original amount
         increaseTokenBalance({
-            _token: redemptionAsset,
-            _to: vaultProxyAddress,
-            _amount: assetUnit(redemptionAsset) * 1000
+            _token: redemptionAsset, _to: vaultProxyAddress, _amount: assetUnit(redemptionAsset) * 1000
         });
 
         // Grant shares allowance to the redemptionQueue for the holders
@@ -271,19 +269,13 @@ contract SingleAssetRedemptionQueueTest is IntegrationTest {
 
         // Do redemption requests from 2 different users, with 2 requests from the same user
         __test_requestRedeem({
-            _redemptionQueue: testVars.redemptionQueue,
-            _redeemer: testVars.holder1,
-            _sharesAmount: 123
+            _redemptionQueue: testVars.redemptionQueue, _redeemer: testVars.holder1, _sharesAmount: 123
         });
         __test_requestRedeem({
-            _redemptionQueue: testVars.redemptionQueue,
-            _redeemer: testVars.holder2,
-            _sharesAmount: 456
+            _redemptionQueue: testVars.redemptionQueue, _redeemer: testVars.holder2, _sharesAmount: 456
         });
         __test_requestRedeem({
-            _redemptionQueue: testVars.redemptionQueue,
-            _redeemer: testVars.holder1,
-            _sharesAmount: 789
+            _redemptionQueue: testVars.redemptionQueue, _redeemer: testVars.holder1, _sharesAmount: 789
         });
     }
 
@@ -517,15 +509,15 @@ contract SingleAssetRedemptionQueueTest is IntegrationTest {
         // Assert expected redemption asset amounts dispersed to holders
         assertApproxEqAbs(
             _testVars.redemptionAsset.balanceOf(_testVars.holder1),
-            preTxHolder1RedemptionAssetBalance
-                + preTxVaultRedemptionAssetBalance * holder1RedeemedShares / preTxSharesTotalSupply,
+            preTxHolder1RedemptionAssetBalance + preTxVaultRedemptionAssetBalance * holder1RedeemedShares
+                / preTxSharesTotalSupply,
             1,
             "incorrect holder1 balance"
         );
         assertApproxEqAbs(
             _testVars.redemptionAsset.balanceOf(_testVars.holder2),
-            preTxHolder2RedemptionAssetBalance
-                + preTxVaultRedemptionAssetBalance * holder2RedeemedShares / preTxSharesTotalSupply,
+            preTxHolder2RedemptionAssetBalance + preTxVaultRedemptionAssetBalance * holder2RedeemedShares
+                / preTxSharesTotalSupply,
             1,
             "incorrect holder2 balance"
         );
