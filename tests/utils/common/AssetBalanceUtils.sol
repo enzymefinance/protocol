@@ -14,10 +14,6 @@ import {
     ARBITRUM_POOL_ADDRESS as ARBITRUM_AAVE_V3_POOL_ADDRESS,
     BASE_POOL_ADDRESS as BASE_AAVE_V3_POOL_ADDRESS
 } from "tests/tests/protocols/aave/AaveV3Constants.sol";
-import {
-    ETHEREUM_ZERO_LEND_RWA_STABLECOINS_AAVE_V3_POOL,
-    ETHEREUM_ZERO_LEND_LRT_BTC_AAVE_V3_POOL
-} from "tests/tests/protocols/zero-lend/ZeroLendConstants.sol";
 
 import {
     ETHEREUM_COMPOUND_V3_CONFIGURATOR,
@@ -52,15 +48,6 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
             increaseAaveV2TokenBalance(_token, _to, _amount);
         } else if (isAaveV3Token(_token, getAaveV3PoolAddressForChain())) {
             increaseAaveV3TokenBalance(_token, _to, _amount, getAaveV3PoolAddressForChain());
-        } else if (isAaveV3Token(_token, getZeroLendAaveV3PoolAddressForChainAndMarket(ZeroLendMarket.RWA_STABLECOINS)))
-        {
-            increaseAaveV3TokenBalance(
-                _token, _to, _amount, getZeroLendAaveV3PoolAddressForChainAndMarket(ZeroLendMarket.RWA_STABLECOINS)
-            );
-        } else if (isAaveV3Token(_token, getZeroLendAaveV3PoolAddressForChainAndMarket(ZeroLendMarket.LRT_BTC))) {
-            increaseAaveV3TokenBalance(
-                _token, _to, _amount, getZeroLendAaveV3PoolAddressForChainAndMarket(ZeroLendMarket.LRT_BTC)
-            );
         } else if (isCompoundV3Token(_token)) {
             increaseCompoundV3TokenBalance(_token, _to, _amount);
         } else if (isEeth(_token)) {
@@ -137,31 +124,6 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
             return ARBITRUM_AAVE_V3_POOL_ADDRESS;
         } else if (block.chainid == BASE_CHAIN_ID) {
             return BASE_AAVE_V3_POOL_ADDRESS;
-        }
-    }
-
-    // Zero Lend
-
-    enum ZeroLendMarket {
-        RWA_STABLECOINS,
-        LRT_BTC
-    }
-
-    function getZeroLendAaveV3PoolAddressForChainAndMarket(ZeroLendMarket _market)
-        internal
-        view
-        returns (address lendingPoolAddress_)
-    {
-        if (_market == ZeroLendMarket.RWA_STABLECOINS) {
-            if (block.chainid == ETHEREUM_CHAIN_ID) {
-                return ETHEREUM_ZERO_LEND_RWA_STABLECOINS_AAVE_V3_POOL;
-            }
-        }
-
-        if (_market == ZeroLendMarket.LRT_BTC) {
-            if (block.chainid == ETHEREUM_CHAIN_ID) {
-                return ETHEREUM_ZERO_LEND_LRT_BTC_AAVE_V3_POOL;
-            }
         }
     }
 
