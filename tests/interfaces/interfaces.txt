@@ -116,11 +116,9 @@ IUniswapV2LiquidityAdapter.sol: UniswapV2LiquidityAdapter.abi.json
 IAaveV3Adapter.sol: AaveV3Adapter.abi.json
 IUniswapV3Adapter.sol: UniswapV3Adapter.abi.json
 ICurveLiquidityAdapter.sol: CurveLiquidityAdapter.abi.json
-IUniswapV2ExchangeAdapter.sol: UniswapV2ExchangeAdapter.abi.json
 ICompoundV3Adapter.sol: CompoundV3Adapter.abi.json
 IEnzymeV4VaultAdapter.sol: EnzymeV4VaultAdapter.abi.json
 IYearnVaultV2Adapter.sol: YearnVaultV2Adapter.abi.json
-IParaSwapV5Adapter.sol: ParaSwapV5Adapter.abi.json
 IParaSwapV6Adapter.sol: ParaSwapV6Adapter.abi.json
 IAaveV2Adapter.sol: AaveV2Adapter.abi.json
 IBebopBlendAdapter.sol: BebopBlendAdapter.abi.json
@@ -162,8 +160,6 @@ ITheGraphDelegationPositionLib.sol: TheGraphDelegationPositionLib.abi.json
 ITheGraphDelegationPositionParser.sol: TheGraphDelegationPositionParser.abi.json
 IUniswapV3LiquidityPositionLib.sol: UniswapV3LiquidityPositionLib.abi.json
 IUniswapV3LiquidityPositionParser.sol: UniswapV3LiquidityPositionParser.abi.json
-ITermFinanceV1LendingPositionLib.sol: TermFinanceV1LendingPositionLib.abi.json
-ITermFinanceV1LendingPositionParser.sol: TermFinanceV1LendingPositionParser.abi.json
 IMorphoBluePositionLib.sol: MorphoBluePositionLib.abi.json
 IMorphoBluePositionParser.sol: MorphoBluePositionParser.abi.json
 IAlicePositionLib.sol: AlicePositionLib.abi.json
