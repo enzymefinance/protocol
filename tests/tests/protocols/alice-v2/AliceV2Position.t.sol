@@ -23,7 +23,7 @@ import {
 } from "tests/interfaces/internal/IAliceV2PositionLib.sol";
 import {IAliceV2PositionParser} from "tests/interfaces/internal/IAliceV2PositionParser.sol";
 
-address constant ETHEREUM_ALICE_ORDER_MANAGER = 0x7d8a780bB9006e22b82737aA941Cff35dCFf2129;
+address constant ETHEREUM_ALICE_ORDER_MANAGER = 0x6F13230851B7e00e3e79277DccE6953140D8302D;
 address constant ALICE_NATIVE_ASSET_ADDRESS = address(0);
 
 abstract contract AliceTestBase is IntegrationTest {
