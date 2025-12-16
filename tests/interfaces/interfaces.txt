@@ -20,9 +20,7 @@ IFundValueCalculatorUsdWrapper.sol: FundValueCalculatorUsdWrapper.abi.json
 
 # Address list registry
 IAddressListRegistry.sol: AddressListRegistry.abi.json
-IAaveV2ATokenListOwner.sol: AaveV2ATokenListOwner.abi.json
 IAaveV3ATokenListOwner.sol: AaveV3ATokenListOwner.abi.json
-ICompoundV3CTokenListOwner.sol: CompoundV3CTokenListOwner.abi.json
 
 # Uint list registry
 IUintListRegistry.sol: UintListRegistry.abi.json
@@ -112,20 +110,12 @@ IPerformanceFee.sol: PerformanceFee.abi.json
 # Integrations
 IIntegrationAdapter.sol: IIntegrationAdapter.abi.json
 IIntegrationManager.sol: IntegrationManager.abi.json
-IUniswapV2LiquidityAdapter.sol: UniswapV2LiquidityAdapter.abi.json
-IAaveV3Adapter.sol: AaveV3Adapter.abi.json
 IUniswapV3Adapter.sol: UniswapV3Adapter.abi.json
-ICurveLiquidityAdapter.sol: CurveLiquidityAdapter.abi.json
-ICompoundV3Adapter.sol: CompoundV3Adapter.abi.json
 IEnzymeV4VaultAdapter.sol: EnzymeV4VaultAdapter.abi.json
-IYearnVaultV2Adapter.sol: YearnVaultV2Adapter.abi.json
 IParaSwapV6Adapter.sol: ParaSwapV6Adapter.abi.json
-IAaveV2Adapter.sol: AaveV2Adapter.abi.json
 IBebopBlendAdapter.sol: BebopBlendAdapter.abi.json
-ICompoundAdapter.sol: CompoundAdapter.abi.json
 IERC4626Adapter.sol: ERC4626Adapter.abi.json
 IZeroExV4Adapter.sol: ZeroExV4Adapter.abi.json
-ISwellStakingAdapter.sol: SwellStakingAdapter.abi.json
 IDivaStakingAdapter.sol: DivaStakingAdapter.abi.json
 IGenericWrappingAdapterBase.sol: GenericWrappingAdapterBase.abi.json
 IOneInchV5Adapter.sol: OneInchV5Adapter.abi.json
@@ -134,36 +124,20 @@ IPendleV2Adapter.sol: PendleV2Adapter.abi.json
 
 # External positions
 IExternalPositionManager.sol: ExternalPositionManager.abi.json
-IAaveDebtPositionLib.sol: AaveDebtPositionLib.abi.json
-IAaveDebtPositionParser.sol: AaveDebtPositionParser.abi.json
 IAaveV3DebtPositionLib.sol: AaveV3DebtPositionLib.abi.json
 IAaveV3DebtPositionParser.sol: AaveV3DebtPositionParser.abi.json
 IArbitraryLoanPositionLib.sol: ArbitraryLoanPositionLib.abi.json
 IArbitraryLoanPositionParser.sol: ArbitraryLoanPositionParser.abi.json
 IArbitraryLoanTotalNominalDeltaOracleModule.sol: ArbitraryLoanTotalNominalDeltaOracleModule.abi.json
-ICompoundDebtPositionLib.sol: CompoundDebtPositionLib.abi.json
-ICompoundDebtPositionParser.sol: CompoundDebtPositionParser.abi.json
 IConvexVotingPositionLib.sol: ConvexVotingPositionLib.abi.json
 IConvexVotingPositionParser.sol: ConvexVotingPositionParser.abi.json
 IGMXV2LeverageTradingPositionLib.sol: GMXV2LeverageTradingPositionLib.abi.json
 IGMXV2LeverageTradingPositionLibManagedAssets.sol: GMXV2LeverageTradingPositionLibManagedAssets.abi.json
 IGMXV2LeverageTradingPositionParser.sol: GMXV2LeverageTradingPositionParser.abi.json
-IKilnStakingPositionLib.sol: KilnStakingPositionLib.abi.json
-IKilnStakingPositionParser.sol: KilnStakingPositionParser.abi.json
 ILidoWithdrawalsPositionLib.sol:LidoWithdrawalsPositionLib.abi.json
-IMapleLiquidityPositionLib.sol: MapleLiquidityPositionLib.abi.json
-IMapleLiquidityPositionParser.sol: MapleLiquidityPositionParser.abi.json
 IStaderWithdrawalsPositionLib.sol:StaderWithdrawalsPositionLib.abi.json
-IStakeWiseV3StakingPositionLib.sol: StakeWiseV3StakingPositionLib.abi.json
-IStakeWiseV3StakingPositionParser.sol: StakeWiseV3StakingPositionParser.abi.json
-ITheGraphDelegationPositionLib.sol: TheGraphDelegationPositionLib.abi.json
-ITheGraphDelegationPositionParser.sol: TheGraphDelegationPositionParser.abi.json
 IUniswapV3LiquidityPositionLib.sol: UniswapV3LiquidityPositionLib.abi.json
 IUniswapV3LiquidityPositionParser.sol: UniswapV3LiquidityPositionParser.abi.json
-IMorphoBluePositionLib.sol: MorphoBluePositionLib.abi.json
-IMorphoBluePositionParser.sol: MorphoBluePositionParser.abi.json
-IAlicePositionLib.sol: AlicePositionLib.abi.json
-IAlicePositionParser.sol: AlicePositionParser.abi.json
 IAliceV2PositionLib.sol: AliceV2PositionLib.abi.json
 IAliceV2PositionParser.sol: AliceV2PositionParser.abi.json
 IMysoV3OptionWritingPositionLib.sol: MysoV3OptionWritingPositionLib.abi.json
@@ -174,11 +148,7 @@ IValueInterpreter.sol: ValueInterpreter.abi.json
 
 # Price feeds
 IDerivativePriceFeed.sol: IDerivativePriceFeed.abi.json
-ICurvePriceFeed.sol: CurvePriceFeed.abi.json
-ICompoundPriceFeed.sol: CompoundPriceFeed.abi.json
-IUniswapV2PoolPriceFeed.sol: UniswapV2PoolPriceFeed.abi.json
 IRevertingPriceFeed.sol: RevertingPriceFeed.abi.json
-IYearnVaultV2PriceFeed.sol: YearnVaultV2PriceFeed.abi.json
 IChainlinkPriceFeedMixin.sol: ChainlinkPriceFeedMixin.abi.json
 IERC4626PriceFeed.sol: ERC4626PriceFeed.abi.json
 IEtherFiEthPriceFeed.sol: EtherFiEthPriceFeed.abi.json

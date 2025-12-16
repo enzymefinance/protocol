@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import {IAaveV3Pool} from "tests/interfaces/external/IAaveV3Pool.sol";
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
-import {IAaveV3Adapter} from "tests/interfaces/internal/IAaveV3Adapter.sol";
 import {IAaveV3ATokenListOwner} from "tests/interfaces/internal/IAaveV3ATokenListOwner.sol";
 import {AddOnUtilsBase} from "tests/utils/bases/AddOnUtilsBase.sol";
 import {IIntegrationManager} from "tests/interfaces/internal/IIntegrationManager.sol";
