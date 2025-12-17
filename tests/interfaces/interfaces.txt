@@ -142,6 +142,7 @@ IAliceV2PositionLib.sol: AliceV2PositionLib.abi.json
 IAliceV2PositionParser.sol: AliceV2PositionParser.abi.json
 IMysoV3OptionWritingPositionLib.sol: MysoV3OptionWritingPositionLib.abi.json
 IMysoV3OptionWritingPositionParser.sol: MysoV3OptionWritingPositionParser.abi.json
+IDeprecatedPosition.sol: DeprecatedPositionLib.abi.json
 
 # Value interpreter
 IValueInterpreter.sol: ValueInterpreter.abi.json
