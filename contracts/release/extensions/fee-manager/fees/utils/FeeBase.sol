@@ -21,7 +21,7 @@ abstract contract FeeBase is IFee {
     address internal immutable FEE_MANAGER;
 
     modifier onlyFeeManager() {
-        require(msg.sender == FEE_MANAGER, "Only the FeeManger can make this call");
+        require(msg.sender == FEE_MANAGER, "Only the FeeManager can make this call");
         _;
     }
 
