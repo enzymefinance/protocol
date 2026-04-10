@@ -453,7 +453,7 @@ contract GatedRedemptionQueueSharesWrapperLib is
 
     /// @notice Cancels the caller's redemption request
     function cancelRequestRedeem() external nonReentrant {
-        require(!__isInLatestRedemptionWindow(block.timestamp), "cancelRequestRedeem: Inside redemption window");
+        require(!__isInLatestRedemptionWindow(block.timestamp), "cancelRequestRedeem: In window");
 
         RedemptionQueue storage queue = redemptionQueue;
         uint256 userSharesPending = queue.userToRequest[msg.sender].sharesPending;
@@ -469,7 +469,8 @@ contract GatedRedemptionQueueSharesWrapperLib is
     /// @param _sharesAmount The amount of shares to add to the queue
     /// @dev Each request is additive
     function requestRedeem(uint256 _sharesAmount) external nonReentrant {
-        require(!__isInLatestRedemptionWindow(block.timestamp), "requestRedeem: Inside redemption window");
+        require(_sharesAmount > 0, "requestRedeem: Zero amount");
+        require(!__isInLatestRedemptionWindow(block.timestamp), "requestRedeem: In window");
 
         // Validate user redemption approval and revoke remaining approval
         if (redemptionApprovalsAreUsed()) {
@@ -560,8 +561,8 @@ contract GatedRedemptionQueueSharesWrapperLib is
         if (_endIndex == type(uint256).max) {
             _endIndex = queueLength - 1;
         }
-        require(_endIndex < queueLength, "redeemFromQueue: Out-of-range _endIndex");
-        require(_startIndex <= _endIndex, "redeemFromQueue: Misordered indexes");
+        require(_endIndex < queueLength, "redeemFromQueue: Invalid _endIndex");
+        require(_startIndex <= _endIndex, "redeemFromQueue: Unordered");
 
         __checkpointRelativeSharesAllowed();
 
