@@ -105,8 +105,8 @@ contract AaveV3DebtPositionLib is
 
                 IAaveV3Pool(lendingPoolAddress)
                     .supply({
-                        _underlying: underlying, _amount: amounts[i], _to: address(this), _referralCode: REFERRAL_CODE
-                    });
+                    _underlying: underlying, _amount: amounts[i], _to: address(this), _referralCode: REFERRAL_CODE
+                });
             }
 
             if (!assetIsCollateral(aTokens[i])) {

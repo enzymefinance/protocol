@@ -51,10 +51,10 @@ abstract contract ERC4626PriceFeedTestBase is IntegrationTest {
 
         uint256 erc4626VaultValue = IValueInterpreter(address(core.release.valueInterpreter))
             .calcCanonicalAssetValue({
-                _baseAsset: _erc4626VaultAddress,
-                _amount: assetUnit(IERC20(_erc4626VaultAddress)),
-                _quoteAsset: underlyingAddress
-            });
+            _baseAsset: _erc4626VaultAddress,
+            _amount: assetUnit(IERC20(_erc4626VaultAddress)),
+            _quoteAsset: underlyingAddress
+        });
 
         uint256 underlyingSingleUnit = assetUnit(IERC20(underlyingAddress));
         uint256 timePassed = block.timestamp - _poolCreationTimestamp;

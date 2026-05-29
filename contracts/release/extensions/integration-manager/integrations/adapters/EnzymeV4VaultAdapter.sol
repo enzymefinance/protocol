@@ -95,11 +95,11 @@ contract EnzymeV4VaultAdapter is AdapterBase {
     ) private {
         IComptroller(IVault(_actionArgs.vaultProxy).getAccessor())
             .redeemSharesForSpecificAssets({
-                _recipient: _vaultProxyAddress,
-                _sharesQuantity: _actionArgs.sharesQuantity,
-                _payoutAssets: _actionArgs.payoutAssets,
-                _payoutAssetPercentages: _actionArgs.payoutAssetPercentages
-            });
+            _recipient: _vaultProxyAddress,
+            _sharesQuantity: _actionArgs.sharesQuantity,
+            _payoutAssets: _actionArgs.payoutAssets,
+            _payoutAssetPercentages: _actionArgs.payoutAssetPercentages
+        });
     }
 
     //==================================================================================================================

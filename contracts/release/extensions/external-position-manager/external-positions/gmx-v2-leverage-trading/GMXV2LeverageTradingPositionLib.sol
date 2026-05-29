@@ -223,9 +223,8 @@ contract GMXV2LeverageTradingPositionLib is
     {
         IERC20(address(WRAPPED_NATIVE_TOKEN))
             .safeTransfer({
-                _to: __getOrderVaultAddress(_createOrderArgs.exchangeRouter),
-                _value: _createOrderArgs.numbers.executionFee
-            });
+            _to: __getOrderVaultAddress(_createOrderArgs.exchangeRouter), _value: _createOrderArgs.numbers.executionFee
+        });
 
         IGMXV2ExchangeRouter(_createOrderArgs.exchangeRouter).createOrder(__getCreateOrderParams(_createOrderArgs));
     }
@@ -240,21 +239,21 @@ contract GMXV2LeverageTradingPositionLib is
         if (updateOrderArgs.executionFeeIncrease != 0) {
             IERC20(address(WRAPPED_NATIVE_TOKEN))
                 .safeTransfer({
-                    _to: __getOrderVaultAddress(updateOrderArgs.exchangeRouter),
-                    _value: updateOrderArgs.executionFeeIncrease
-                });
+                _to: __getOrderVaultAddress(updateOrderArgs.exchangeRouter),
+                _value: updateOrderArgs.executionFeeIncrease
+            });
         }
 
         IGMXV2ExchangeRouter(updateOrderArgs.exchangeRouter)
             .updateOrder({
-                _key: updateOrderArgs.key,
-                _sizeDeltaUsd: updateOrderArgs.sizeDeltaUsd,
-                _acceptablePrice: updateOrderArgs.acceptablePrice,
-                _triggerPrice: updateOrderArgs.triggerPrice,
-                _minOutputAmount: updateOrderArgs.minOutputAmount,
-                _validFromTime: updateOrderArgs.validFromTime,
-                _autoCancel: updateOrderArgs.autoCancel
-            });
+            _key: updateOrderArgs.key,
+            _sizeDeltaUsd: updateOrderArgs.sizeDeltaUsd,
+            _acceptablePrice: updateOrderArgs.acceptablePrice,
+            _triggerPrice: updateOrderArgs.triggerPrice,
+            _minOutputAmount: updateOrderArgs.minOutputAmount,
+            _validFromTime: updateOrderArgs.validFromTime,
+            _autoCancel: updateOrderArgs.autoCancel
+        });
     }
 
     /// @dev Helper to handle the cancellation of an order via the GMX ExchangeRouter
@@ -288,8 +287,8 @@ contract GMXV2LeverageTradingPositionLib is
 
         IGMXV2ExchangeRouter(claimFundingFeesArgs.exchangeRouter)
             .claimFundingFees({
-                _markets: claimFundingFeesArgs.markets, _tokens: claimFundingFeesArgs.tokens, _receiver: msg.sender
-            });
+            _markets: claimFundingFeesArgs.markets, _tokens: claimFundingFeesArgs.tokens, _receiver: msg.sender
+        });
 
         // Retrieve all active markets from the current positions
         IGMXV2Position.Props[] memory positions = __getAccountPositions();
@@ -345,11 +344,11 @@ contract GMXV2LeverageTradingPositionLib is
 
         IGMXV2ExchangeRouter(claimCollateralArgs.exchangeRouter)
             .claimCollateral({
-                _markets: claimCollateralArgs.markets,
-                _tokens: claimCollateralArgs.tokens,
-                _timeKeys: claimCollateralArgs.timeKeys,
-                _receiver: msg.sender
-            });
+            _markets: claimCollateralArgs.markets,
+            _tokens: claimCollateralArgs.tokens,
+            _timeKeys: claimCollateralArgs.timeKeys,
+            _receiver: msg.sender
+        });
 
         // collateral can be released for the user in several rounds, so we need to check if all the collateral was claimed
         // if it was claimed entirely, clean up claimable collateral keys, and don't track them anymore

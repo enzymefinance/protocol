@@ -319,10 +319,10 @@ abstract contract TestBase is IntegrationTest {
     function __getLastOrderKey() internal view returns (bytes32 orderKey_) {
         bytes32[] memory orderKeys = IGMXV2DataStore(dataStoreAddress)
             .getBytes32ValuesAt({
-                _setKey: keccak256(abi.encode(keccak256(abi.encode("ACCOUNT_ORDER_LIST")), externalPosition)),
-                _start: 0,
-                _end: type(uint256).max
-            });
+            _setKey: keccak256(abi.encode(keccak256(abi.encode("ACCOUNT_ORDER_LIST")), externalPosition)),
+            _start: 0,
+            _end: type(uint256).max
+        });
 
         return orderKeys[orderKeys.length - 1];
     }
@@ -445,9 +445,9 @@ abstract contract TestBase is IntegrationTest {
 
             IGMXV2DataStore(dataStoreAddress)
                 .setAddress({
-                    _key: __oracleProviderForTokenKey({_oracle: oracleAddress, _token: tokens_[i]}),
-                    _value: address(chainlinkPriceFeedProvider)
-                });
+                _key: __oracleProviderForTokenKey({_oracle: oracleAddress, _token: tokens_[i]}),
+                _value: address(chainlinkPriceFeedProvider)
+            });
         }
         vm.stopPrank();
 
@@ -475,9 +475,9 @@ abstract contract TestBase is IntegrationTest {
         for (uint256 i; i < tokens.length; i++) {
             IGMXV2DataStore(dataStoreAddress)
                 .setAddress({
-                    _key: __oracleProviderForTokenKey({_oracle: ARBITRUM_GMXV2_ORACLE_ADDRESS, _token: tokens[i]}),
-                    _value: oldOracleProviders[i]
-                });
+                _key: __oracleProviderForTokenKey({_oracle: ARBITRUM_GMXV2_ORACLE_ADDRESS, _token: tokens[i]}),
+                _value: oldOracleProviders[i]
+            });
         }
         vm.stopPrank();
     }
@@ -1231,11 +1231,11 @@ abstract contract TestBase is IntegrationTest {
         for (uint256 i; i < _tokens.length; i++) {
             IGMXV2DataStore(dataStoreAddress)
                 .setUint({
-                    _key: __claimableFundingAmountKey({_market: _markets[i], _token: _tokens[i]}),
-                    _value: 123 * i
-                        + IGMXV2DataStore(dataStoreAddress)
-                            .getUint(__claimableFundingAmountKey({_market: _markets[i], _token: _tokens[i]}))
-                });
+                _key: __claimableFundingAmountKey({_market: _markets[i], _token: _tokens[i]}),
+                _value: 123 * i
+                    + IGMXV2DataStore(dataStoreAddress)
+                        .getUint(__claimableFundingAmountKey({_market: _markets[i], _token: _tokens[i]}))
+            });
             rewardAmounts[i] = 123 * i;
         }
         vm.stopPrank();
@@ -1338,9 +1338,9 @@ abstract contract TestBase is IntegrationTest {
         for (uint256 i; i < tokens.length; i++) {
             IGMXV2DataStore(dataStoreAddress)
                 .setAddress({
-                    _key: __oracleProviderForTokenKey({_oracle: oracleAddress, _token: tokens[i]}),
-                    _value: address(chainlinkPriceFeedProvider)
-                });
+                _key: __oracleProviderForTokenKey({_oracle: oracleAddress, _token: tokens[i]}),
+                _value: address(chainlinkPriceFeedProvider)
+            });
         }
         // turn off validation of provider with actual chainlink price feed
         IGMXV2DataStore(dataStoreAddress)
@@ -1445,8 +1445,8 @@ abstract contract TestBase is IntegrationTest {
         IGMXV2DataStore(dataStoreAddress)
             .setUint(
                 __claimableCollateralFactorKey({
-                    _market: _args.market, _token: _args.initialCollateralLongToken, _timeKey: timeKey
-                }),
+                _market: _args.market, _token: _args.initialCollateralLongToken, _timeKey: timeKey
+            }),
                 FLOAT_PRECISION
             );
         vm.stopPrank();
@@ -1473,11 +1473,11 @@ abstract contract TestBase is IntegrationTest {
             IGMXV2DataStore(dataStoreAddress)
                 .getUint(
                     __claimedCollateralAmountKey({
-                        _market: _args.market,
-                        _token: _args.initialCollateralLongToken,
-                        _timeKey: timeKey,
-                        _account: address(externalPosition)
-                    })
+                    _market: _args.market,
+                    _token: _args.initialCollateralLongToken,
+                    _timeKey: timeKey,
+                    _account: address(externalPosition)
+                })
                 ),
             claimableCollateral,
             "Collateral not claimed"
@@ -1522,8 +1522,8 @@ abstract contract TestBase is IntegrationTest {
         IGMXV2DataStore(dataStoreAddress)
             .setUint(
                 __claimableCollateralFactorKey({
-                    _market: _args.market, _token: _args.initialCollateralLongToken, _timeKey: timeKey
-                }),
+                _market: _args.market, _token: _args.initialCollateralLongToken, _timeKey: timeKey
+            }),
                 FLOAT_PRECISION / timeFactorDivisor
             );
         vm.stopPrank();
@@ -1553,11 +1553,11 @@ abstract contract TestBase is IntegrationTest {
         IGMXV2DataStore(dataStoreAddress)
             .setUint(
                 __claimableCollateralFactorForAccountKey({
-                    _market: _args.market,
-                    _token: _args.initialCollateralLongToken,
-                    _timeKey: timeKey,
-                    _account: address(externalPosition)
-                }),
+                _market: _args.market,
+                _token: _args.initialCollateralLongToken,
+                _timeKey: timeKey,
+                _account: address(externalPosition)
+            }),
                 FLOAT_PRECISION / accountFactorDivisor
             );
         vm.stopPrank();
@@ -1588,18 +1588,18 @@ abstract contract TestBase is IntegrationTest {
         IGMXV2DataStore(dataStoreAddress)
             .setUint(
                 __claimableCollateralFactorKey({
-                    _market: _args.market, _token: _args.initialCollateralLongToken, _timeKey: timeKey
-                }),
+                _market: _args.market, _token: _args.initialCollateralLongToken, _timeKey: timeKey
+            }),
                 FLOAT_PRECISION / timeFactorDivisor
             );
         IGMXV2DataStore(dataStoreAddress)
             .setUint(
                 __claimableCollateralFactorForAccountKey({
-                    _market: _args.market,
-                    _token: _args.initialCollateralLongToken,
-                    _timeKey: timeKey,
-                    _account: address(externalPosition)
-                }),
+                _market: _args.market,
+                _token: _args.initialCollateralLongToken,
+                _timeKey: timeKey,
+                _account: address(externalPosition)
+            }),
                 FLOAT_PRECISION / accountFactorDivisor
             );
         vm.stopPrank();
@@ -1635,18 +1635,18 @@ abstract contract TestBase is IntegrationTest {
         IGMXV2DataStore(dataStoreAddress)
             .setUint(
                 __claimableCollateralFactorKey({
-                    _market: _args.market, _token: _args.initialCollateralLongToken, _timeKey: timeKey
-                }),
+                _market: _args.market, _token: _args.initialCollateralLongToken, _timeKey: timeKey
+            }),
                 timeFactor
             );
         IGMXV2DataStore(dataStoreAddress)
             .setUint(
                 __claimableCollateralReductionFactorKey({
-                    _market: _args.market,
-                    _token: _args.initialCollateralLongToken,
-                    _timeKey: timeKey,
-                    _account: address(externalPosition)
-                }),
+                _market: _args.market,
+                _token: _args.initialCollateralLongToken,
+                _timeKey: timeKey,
+                _account: address(externalPosition)
+            }),
                 reductionFactor
             );
         vm.stopPrank();
@@ -1696,11 +1696,11 @@ abstract contract TestBase is IntegrationTest {
             IGMXV2DataStore(dataStoreAddress)
                 .getUint(
                     __claimedCollateralAmountKey({
-                        _market: _args.market,
-                        _token: _args.initialCollateralLongToken,
-                        _timeKey: _args.timeKey,
-                        _account: address(externalPosition)
-                    })
+                    _market: _args.market,
+                    _token: _args.initialCollateralLongToken,
+                    _timeKey: _args.timeKey,
+                    _account: address(externalPosition)
+                })
                 ),
             claimableCollateral / _args.collateralFactorDivisor,
             "Collateral not claimed"
@@ -1860,8 +1860,8 @@ abstract contract TestBase is IntegrationTest {
         IGMXV2DataStore(dataStoreAddress)
             .setUint(
                 __claimableCollateralAmountKey({
-                    _market: market, _token: token, _timeKey: timeKey, _account: address(externalPosition)
-                }),
+                _market: market, _token: token, _timeKey: timeKey, _account: address(externalPosition)
+            }),
                 claimableAmount
             );
         vm.stopPrank();

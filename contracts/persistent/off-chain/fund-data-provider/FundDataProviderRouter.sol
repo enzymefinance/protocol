@@ -85,13 +85,13 @@ contract FundDataProviderRouter {
             ethConversionIsValid_ = true;
             gavInEth_ = IValueInterpreter(valueInterpreter_)
                 .calcCanonicalAssetValue({
-                    _baseAsset: denominationAsset_, _amount: gavInDenominationAsset_, _quoteAsset: WETH_TOKEN
-                });
+                _baseAsset: denominationAsset_, _amount: gavInDenominationAsset_, _quoteAsset: WETH_TOKEN
+            });
 
             navInEth_ = IValueInterpreter(valueInterpreter_)
                 .calcCanonicalAssetValue({
-                    _baseAsset: denominationAsset_, _amount: navInDenominationAsset_, _quoteAsset: WETH_TOKEN
-                });
+                _baseAsset: denominationAsset_, _amount: navInDenominationAsset_, _quoteAsset: WETH_TOKEN
+            });
         } catch {}
 
         return (

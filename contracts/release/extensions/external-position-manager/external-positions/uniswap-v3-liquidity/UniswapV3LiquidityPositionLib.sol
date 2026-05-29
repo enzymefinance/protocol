@@ -156,11 +156,11 @@ contract UniswapV3LiquidityPositionLib is
         INonfungiblePositionManager(getNonFungibleTokenManager())
             .collect(
                 INonfungiblePositionManager.CollectParams({
-                    tokenId: _nftId,
-                    recipient: address(msg.sender),
-                    amount0Max: type(uint128).max,
-                    amount1Max: type(uint128).max
-                })
+                tokenId: _nftId,
+                recipient: address(msg.sender),
+                amount0Max: type(uint128).max,
+                amount1Max: type(uint128).max
+            })
             );
     }
 
@@ -224,12 +224,12 @@ contract UniswapV3LiquidityPositionLib is
             INonfungiblePositionManager(getNonFungibleTokenManager())
                 .decreaseLiquidity(
                     INonfungiblePositionManager.DecreaseLiquidityParams({
-                        tokenId: _nftId,
-                        liquidity: _liquidity,
-                        amount0Min: _amount0Min,
-                        amount1Min: _amount1Min,
-                        deadline: block.timestamp
-                    })
+                    tokenId: _nftId,
+                    liquidity: _liquidity,
+                    amount0Min: _amount0Min,
+                    amount1Min: _amount1Min,
+                    deadline: block.timestamp
+                })
                 );
         }
 

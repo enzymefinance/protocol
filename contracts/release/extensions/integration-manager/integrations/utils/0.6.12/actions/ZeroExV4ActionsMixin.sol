@@ -41,8 +41,8 @@ abstract contract ZeroExV4ActionsMixin is AssetHelpers {
         // Execute order
         IZeroExV4(ZERO_EX_V4_EXCHANGE)
             .fillOrKillLimitOrder({
-                _order: _order, _signature: _signature, _takerTokenFillAmount: _takerAssetFillAmount
-            });
+            _order: _order, _signature: _signature, _takerTokenFillAmount: _takerAssetFillAmount
+        });
     }
 
     /// @dev Helper to execute fillRfqOrder

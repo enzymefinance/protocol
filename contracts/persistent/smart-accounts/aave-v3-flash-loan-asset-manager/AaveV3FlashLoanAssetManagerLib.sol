@@ -74,14 +74,14 @@ contract AaveV3FlashLoanAssetManagerLib is IAaveV3FlashLoanAssetManager, IAaveV3
 
         IAaveV3Pool(POOL())
             .flashLoan({
-                _receiverAddress: address(this),
-                _assets: _assets,
-                _amounts: _amounts,
-                _interestRateModes: new uint256[](_assets.length), // 0 is "no open debt"
-                _onBehalfOf: address(0), // unused when interest mode = 0
-                _params: _encodedCalls,
-                _referralCode: AAVE_REFERRAL_CODE
-            });
+            _receiverAddress: address(this),
+            _assets: _assets,
+            _amounts: _amounts,
+            _interestRateModes: new uint256[](_assets.length), // 0 is "no open debt"
+            _onBehalfOf: address(0), // unused when interest mode = 0
+            _params: _encodedCalls,
+            _referralCode: AAVE_REFERRAL_CODE
+        });
     }
 
     /// @dev Helper to set `borrowedAssetsRecipient`

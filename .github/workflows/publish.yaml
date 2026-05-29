@@ -1,0 +1,49 @@
+on: workflow_dispatch
+
+concurrency:
+  group: prod
+  cancel-in-progress: false
+
+permissions: {}
+
+name: Publish protocol to public repo
+
+jobs:
+  promote:
+    name: Publish
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-large
+    environment: prod
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Temp Auth Token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.PUBLIC_REPO_SYNC_APP_CLIENT_ID }}
+          private-key: ${{ secrets.PUBLIC_REPO_SYNC_APP_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: protocol
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          git fetch https://x-access-token:${GH_TOKEN}@github.com/enzymefinance/protocol.git \
+            refs/heads/dev:refs/remotes/public/dev
+          git push https://x-access-token:${GH_TOKEN}@github.com/enzymefinance/protocol.git \
+            HEAD:dev \
+            --force-with-lease=refs/heads/dev:refs/remotes/public/dev
+
+      - name: Revoke Auth Token
+        if: always()
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: gh api --method DELETE /installation/token
