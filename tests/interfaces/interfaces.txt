@@ -111,7 +111,6 @@ IPerformanceFee.sol: PerformanceFee.abi.json
 IIntegrationAdapter.sol: IIntegrationAdapter.abi.json
 IIntegrationManager.sol: IntegrationManager.abi.json
 IUniswapV3Adapter.sol: UniswapV3Adapter.abi.json
-IEnzymeV4VaultAdapter.sol: EnzymeV4VaultAdapter.abi.json
 IParaSwapV6Adapter.sol: ParaSwapV6Adapter.abi.json
 IBebopBlendAdapter.sol: BebopBlendAdapter.abi.json
 IERC4626Adapter.sol: ERC4626Adapter.abi.json
@@ -157,7 +156,6 @@ IUsdEthSimulatedAggregator.sol: UsdEthSimulatedAggregator.abi.json
 IPeggedDerivativesPriceFeed.sol: PeggedDerivativesPriceFeed.abi.json
 IStaderSDPriceFeed.sol: StaderSDPriceFeed.abi.json
 IConvertedQuoteAggregator.sol: ConvertedQuoteAggregator.abi.json
-IEnzymeVaultPriceFeed.sol: EnzymeVaultPriceFeed.abi.json
 
 # Protocol fee
 IProtocolFeeTracker.sol: ProtocolFeeTracker.abi.json
