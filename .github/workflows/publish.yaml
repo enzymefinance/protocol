@@ -41,9 +41,3 @@ jobs:
           git push https://x-access-token:${GH_TOKEN}@github.com/enzymefinance/protocol.git \
             HEAD:dev \
             --force-with-lease=refs/heads/dev:refs/remotes/public/dev
-
-      - name: Revoke Auth Token
-        if: always()
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: gh api --method DELETE /installation/token
