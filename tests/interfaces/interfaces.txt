@@ -131,7 +131,6 @@ IArbitraryLoanTotalNominalDeltaOracleModule.sol: ArbitraryLoanTotalNominalDeltaO
 IConvexVotingPositionLib.sol: ConvexVotingPositionLib.abi.json
 IConvexVotingPositionParser.sol: ConvexVotingPositionParser.abi.json
 ILidoWithdrawalsPositionLib.sol:LidoWithdrawalsPositionLib.abi.json
-IStaderWithdrawalsPositionLib.sol:StaderWithdrawalsPositionLib.abi.json
 IUniswapV3LiquidityPositionLib.sol: UniswapV3LiquidityPositionLib.abi.json
 IUniswapV3LiquidityPositionParser.sol: UniswapV3LiquidityPositionParser.abi.json
 IAliceV2PositionLib.sol: AliceV2PositionLib.abi.json
@@ -151,7 +150,6 @@ IERC4626PriceFeed.sol: ERC4626PriceFeed.abi.json
 IEtherFiEthPriceFeed.sol: EtherFiEthPriceFeed.abi.json
 IUsdEthSimulatedAggregator.sol: UsdEthSimulatedAggregator.abi.json
 IPeggedDerivativesPriceFeed.sol: PeggedDerivativesPriceFeed.abi.json
-IStaderSDPriceFeed.sol: StaderSDPriceFeed.abi.json
 IConvertedQuoteAggregator.sol: ConvertedQuoteAggregator.abi.json
 
 # Protocol fee
