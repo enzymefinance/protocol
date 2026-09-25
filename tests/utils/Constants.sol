@@ -38,7 +38,6 @@ abstract contract Constants {
     uint256 internal constant ETHEREUM_BLOCK_TIME_SENSITIVE_MYSO_V3 = 21679809; // Jan 22nd, 2025
     uint256 internal constant ETHEREUM_BLOCK_TIME_SENSITIVE_PARASWAP_V6 = 21819120; // Feb 10th 2025
     uint256 internal constant ETHEREUM_BLOCK_TIME_SENSITIVE_ONE_INCH_V5 = 19518890; // March 26th, 2024
-    uint256 internal constant ETHEREUM_BLOCK_TIME_SENSITIVE_PENDLE = 20100000; // June 15th, 2024
     uint256 internal constant ETHEREUM_BLOCK_TIME_SENSITIVE_THE_GRAPH = 20711624; // Sep 9th, 2024
 
     uint256 internal constant POLYGON_BLOCK_LATEST = 67047280; // Jan 23rd, 2025
