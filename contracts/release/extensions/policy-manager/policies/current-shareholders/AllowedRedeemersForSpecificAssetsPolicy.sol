@@ -59,7 +59,8 @@ contract AllowedRedeemersForSpecificAssetsPolicy is AddressListRegistryPolicyBas
     {
         (address redeemer,,,,,) = __decodeRedeemSharesForSpecificAssetsValidationData(_encodedArgs);
 
-        return IAddressListRegistry(getAddressListRegistry())
-            .isInSomeOfLists({_ids: getListIdsForFund(_comptrollerProxy), _item: redeemer});
+        return IAddressListRegistry(getAddressListRegistry()).isInSomeOfLists({
+            _ids: getListIdsForFund(_comptrollerProxy), _item: redeemer
+        });
     }
 }

@@ -1052,8 +1052,9 @@ abstract contract MysoV3OptionWritingPositionTestBase is IntegrationTest {
         uint256 relBid = type(uint256).max; // @dev: for slippage control
         uint256 refSpot = type(uint256).max; // @dev: for slippage control
         bytes[] memory emptyOracleData = new bytes[](0);
-        (IMysoV3DataTypes.BidPreview memory bidPreview,) = IMysoV3Escrow(linkedEscrowAddrs[0])
-            .previewBid({_relBid: relBid, _refSpot: refSpot, _oracleData: emptyOracleData});
+        (IMysoV3DataTypes.BidPreview memory bidPreview,) = IMysoV3Escrow(linkedEscrowAddrs[0]).previewBid({
+            _relBid: relBid, _refSpot: refSpot, _oracleData: emptyOracleData
+        });
 
         // Trading firm bids on auction
         vm.prank(tradingFirm);

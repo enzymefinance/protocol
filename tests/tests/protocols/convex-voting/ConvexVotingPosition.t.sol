@@ -367,8 +367,9 @@ abstract contract TestBase is IntegrationTest {
         });
 
         assertEq(
-            ISnapshotDelegateRegistry(ETHEREUM_SNAPSHOT_DELEGATE_REGISTRY)
-                .delegation({_account: address(convexVotingPosition), _snapshotId: CONVEX_SNAPSHOT_ID}),
+            ISnapshotDelegateRegistry(ETHEREUM_SNAPSHOT_DELEGATE_REGISTRY).delegation({
+                _account: address(convexVotingPosition), _snapshotId: CONVEX_SNAPSHOT_ID
+            }),
             delegatee,
             "Incorrect delegatee"
         );
@@ -480,8 +481,9 @@ abstract contract TestBase is IntegrationTest {
         uint256 stakedCvxCrvAmount = 500 * assetUnit(IERC20(ETHEREUM_CVX_CRV));
         increaseTokenBalance({_token: IERC20(ETHEREUM_CVX_CRV), _to: address(this), _amount: stakedCvxCrvAmount});
         IERC20(ETHEREUM_CVX_CRV).approve(ETHEREUM_CVX_CRV_STAKING_CONTRACT, stakedCvxCrvAmount);
-        IConvexBaseRewardPool(ETHEREUM_CVX_CRV_STAKING_CONTRACT)
-            .stakeFor({_for: address(convexVotingPosition), _amount: stakedCvxCrvAmount});
+        IConvexBaseRewardPool(ETHEREUM_CVX_CRV_STAKING_CONTRACT).stakeFor({
+            _for: address(convexVotingPosition), _amount: stakedCvxCrvAmount
+        });
 
         uint256 preCvxTokenBalance = IERC20(ETHEREUM_CVX_CRV).balanceOf(vaultProxyAddress);
 
@@ -521,8 +523,9 @@ abstract contract TestBase is IntegrationTest {
         bytes32 merkleRoot = __generateMerkleTreeRoot(nodes);
         address votiumMerkleStashOwner = IVotiumMultiMerkleStash(ETHEREUM_VOTIUM_MULTI_MERKLE_STASH_CONTRACT).owner();
         vm.prank(votiumMerkleStashOwner);
-        IVotiumMultiMerkleStash(ETHEREUM_VOTIUM_MULTI_MERKLE_STASH_CONTRACT)
-            .updateMerkleRoot({_token: address(wethToken), _merkleRoot: merkleRoot});
+        IVotiumMultiMerkleStash(ETHEREUM_VOTIUM_MULTI_MERKLE_STASH_CONTRACT).updateMerkleRoot({
+            _token: address(wethToken), _merkleRoot: merkleRoot
+        });
         increaseTokenBalance({
             _token: wethToken, _to: ETHEREUM_VOTIUM_MULTI_MERKLE_STASH_CONTRACT, _amount: rewardsAmount
         });

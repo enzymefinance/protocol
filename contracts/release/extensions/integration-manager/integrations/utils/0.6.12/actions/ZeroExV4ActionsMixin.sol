@@ -39,8 +39,7 @@ abstract contract ZeroExV4ActionsMixin is AssetHelpers {
         });
 
         // Execute order
-        IZeroExV4(ZERO_EX_V4_EXCHANGE)
-            .fillOrKillLimitOrder({
+        IZeroExV4(ZERO_EX_V4_EXCHANGE).fillOrKillLimitOrder({
             _order: _order, _signature: _signature, _takerTokenFillAmount: _takerAssetFillAmount
         });
     }
@@ -57,8 +56,9 @@ abstract contract ZeroExV4ActionsMixin is AssetHelpers {
         });
 
         // Execute order
-        IZeroExV4(ZERO_EX_V4_EXCHANGE)
-            .fillOrKillRfqOrder({_order: _order, _signature: _signature, _takerTokenFillAmount: _takerAssetFillAmount});
+        IZeroExV4(ZERO_EX_V4_EXCHANGE).fillOrKillRfqOrder({
+            _order: _order, _signature: _signature, _takerTokenFillAmount: _takerAssetFillAmount
+        });
     }
 
     /// @dev Helper to execute fillOtcOrder
@@ -73,8 +73,9 @@ abstract contract ZeroExV4ActionsMixin is AssetHelpers {
         });
 
         // Execute order
-        (uint128 takerTokenFilledAmount,) = IZeroExV4(ZERO_EX_V4_EXCHANGE)
-            .fillOtcOrder({_order: _order, _signature: _signature, _takerTokenFillAmount: _takerAssetFillAmount});
+        (uint128 takerTokenFilledAmount,) = IZeroExV4(ZERO_EX_V4_EXCHANGE).fillOtcOrder({
+            _order: _order, _signature: _signature, _takerTokenFillAmount: _takerAssetFillAmount
+        });
 
         // Must have filled exactly the amount requested (replicates the fillAndKill behavior of the other order types)
         require(

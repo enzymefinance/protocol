@@ -119,8 +119,7 @@ abstract contract AdapterUtils is CoreUtilsBase {
             uint256[] memory actualMaxSpendAssetAmounts,
             address[] memory actualIncomingAssets,
             uint256[] memory actualMinIncomingAssetAmounts
-        ) = IIntegrationAdapter(_adapterAddress)
-            .parseAssetsForAction({
+        ) = IIntegrationAdapter(_adapterAddress).parseAssetsForAction({
             _vaultProxy: _vaultProxyAddress, _selector: _actionSelector, _encodedCallArgs: _integrationData
         });
 

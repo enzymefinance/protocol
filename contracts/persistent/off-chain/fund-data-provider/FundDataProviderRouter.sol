@@ -79,17 +79,16 @@ contract FundDataProviderRouter {
                     FundValueCalculatorRouter(getFundValueCalculatorRouter())
                         .getFundValueCalculatorForVault(_vaultProxy)
                 )
-            ).getValueInterpreter() returns (
+            )
+            .getValueInterpreter() returns (
             address valueInterpreter_
         ) {
             ethConversionIsValid_ = true;
-            gavInEth_ = IValueInterpreter(valueInterpreter_)
-                .calcCanonicalAssetValue({
+            gavInEth_ = IValueInterpreter(valueInterpreter_).calcCanonicalAssetValue({
                 _baseAsset: denominationAsset_, _amount: gavInDenominationAsset_, _quoteAsset: WETH_TOKEN
             });
 
-            navInEth_ = IValueInterpreter(valueInterpreter_)
-                .calcCanonicalAssetValue({
+            navInEth_ = IValueInterpreter(valueInterpreter_).calcCanonicalAssetValue({
                 _baseAsset: denominationAsset_, _amount: navInDenominationAsset_, _quoteAsset: WETH_TOKEN
             });
         } catch {}

@@ -103,8 +103,7 @@ contract AaveV3DebtPositionLib is
 
                 __approveAssetMaxAsNeeded({_asset: underlying, _target: lendingPoolAddress, _neededAmount: amounts[i]});
 
-                IAaveV3Pool(lendingPoolAddress)
-                    .supply({
+                IAaveV3Pool(lendingPoolAddress).supply({
                     _underlying: underlying, _amount: amounts[i], _to: address(this), _referralCode: REFERRAL_CODE
                 });
             }
@@ -217,8 +216,9 @@ contract AaveV3DebtPositionLib is
 
         address lendingPoolAddress = LENDING_POOL_ADDRESS_PROVIDER_CONTRACT.getPool();
 
-        IAaveV3Pool(lendingPoolAddress)
-            .setUserUseReserveAsCollateral({_asset: underlying, _useAsCollateral: useAsCollateral});
+        IAaveV3Pool(lendingPoolAddress).setUserUseReserveAsCollateral({
+            _asset: underlying, _useAsCollateral: useAsCollateral
+        });
     }
 
     /// @dev Claims rewards

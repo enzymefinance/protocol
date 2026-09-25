@@ -228,7 +228,10 @@ contract FundValueCalculator is IFundValueCalculator {
 
         uint256 rawSharesDue = sharesSupply.mul(
                 IProtocolFeeTracker(getProtocolFeeTracker()).getFeeBpsForVault(_vaultProxy)
-            ).mul(secondsDue).div(SECONDS_IN_YEAR).div(MAX_BPS);
+            )
+            .mul(secondsDue)
+            .div(SECONDS_IN_YEAR)
+            .div(MAX_BPS);
 
         uint256 supplyNetRawSharesDue = sharesSupply.sub(rawSharesDue);
         if (supplyNetRawSharesDue == 0) {

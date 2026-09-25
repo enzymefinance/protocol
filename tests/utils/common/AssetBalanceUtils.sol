@@ -71,8 +71,9 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
         vm.startPrank(_to);
         // safeApprove() required for USDT
         underlying.safeApprove(_lendingPoolAddress, _amount);
-        IAaveV3Pool(_lendingPoolAddress)
-            .supply({_asset: address(underlying), _amount: _amount, _onBehalfOf: _to, _referralCode: 0});
+        IAaveV3Pool(_lendingPoolAddress).supply({
+            _asset: address(underlying), _amount: _amount, _onBehalfOf: _to, _referralCode: 0
+        });
         vm.stopPrank();
     }
 

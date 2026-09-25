@@ -207,8 +207,10 @@ contract PerformanceFee is IPerformanceFee, FeeBase, UpdatableFeeRecipientBase {
 
         // Calculate the shares due, inclusive of inflation
         uint256 priceIncrease = sharePrice_.sub(HWM);
-        uint256 rawValueDue = priceIncrease.mul(sharesSupply).mul(comptrollerProxyToFeeInfo[_comptrollerProxy].rate)
-            .div(ONE_HUNDRED_PERCENT).div(SHARE_UNIT);
+        uint256 rawValueDue = priceIncrease.mul(sharesSupply)
+            .mul(comptrollerProxyToFeeInfo[_comptrollerProxy].rate)
+            .div(ONE_HUNDRED_PERCENT)
+            .div(SHARE_UNIT);
         sharesDue_ = rawValueDue.mul(sharesSupply).div(_gav.sub(rawValueDue));
 
         return (sharePrice_, sharesDue_);

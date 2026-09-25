@@ -102,7 +102,8 @@ contract ManagementFee is IManagementFee, FeeBase, UpdatableFeeRecipientBase, Ma
                 sharesDue_ = netSharesSupply.mul(
                         __rpow(feeInfo.scaledPerSecondRate, secondsSinceSettlement, RATE_SCALE_BASE)
                             .sub(RATE_SCALE_BASE)
-                    ).div(RATE_SCALE_BASE);
+                    )
+                    .div(RATE_SCALE_BASE);
             }
         }
 

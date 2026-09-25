@@ -72,8 +72,7 @@ contract AaveV3FlashLoanAssetManagerLib is IAaveV3FlashLoanAssetManager, IAaveV3
     {
         if (msg.sender != getOwner()) revert AaveV3FlashLoanAssetManager__FlashLoan__Unauthorized();
 
-        IAaveV3Pool(POOL())
-            .flashLoan({
+        IAaveV3Pool(POOL()).flashLoan({
             _receiverAddress: address(this),
             _assets: _assets,
             _amounts: _amounts,
