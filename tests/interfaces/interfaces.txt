@@ -129,7 +129,6 @@ IArbitraryLoanPositionParser.sol: ArbitraryLoanPositionParser.abi.json
 IArbitraryLoanTotalNominalDeltaOracleModule.sol: ArbitraryLoanTotalNominalDeltaOracleModule.abi.json
 IConvexVotingPositionLib.sol: ConvexVotingPositionLib.abi.json
 IConvexVotingPositionParser.sol: ConvexVotingPositionParser.abi.json
-ILidoWithdrawalsPositionLib.sol:LidoWithdrawalsPositionLib.abi.json
 IUniswapV3LiquidityPositionLib.sol: UniswapV3LiquidityPositionLib.abi.json
 IUniswapV3LiquidityPositionParser.sol: UniswapV3LiquidityPositionParser.abi.json
 IMysoV3OptionWritingPositionLib.sol: MysoV3OptionWritingPositionLib.abi.json
