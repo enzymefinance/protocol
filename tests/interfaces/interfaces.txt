@@ -133,8 +133,6 @@ IConvexVotingPositionParser.sol: ConvexVotingPositionParser.abi.json
 ILidoWithdrawalsPositionLib.sol:LidoWithdrawalsPositionLib.abi.json
 IUniswapV3LiquidityPositionLib.sol: UniswapV3LiquidityPositionLib.abi.json
 IUniswapV3LiquidityPositionParser.sol: UniswapV3LiquidityPositionParser.abi.json
-IAliceV2PositionLib.sol: AliceV2PositionLib.abi.json
-IAliceV2PositionParser.sol: AliceV2PositionParser.abi.json
 IMysoV3OptionWritingPositionLib.sol: MysoV3OptionWritingPositionLib.abi.json
 IMysoV3OptionWritingPositionParser.sol: MysoV3OptionWritingPositionParser.abi.json
 IDeprecatedPosition.sol: DeprecatedPositionLib.abi.json
